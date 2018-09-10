@@ -1,0 +1,531 @@
+@font-face {
+  font-family: 'Roboto Thin';
+  font-style: normal;
+  font-weight: 200;
+  src: url(../resources/Roboto-Thin.ttf) format("truetype");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: normal;
+  src: url(../resources/Roboto-Regular.ttf) format("truetype");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Roboto Bold';
+  font-style: normal;
+  font-weight: bold;
+  src: url(../resources/Roboto-Bold.ttf) format("truetype");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+* {
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  font-family: "Roboto";
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  overflow-y: hidden;
+}
+
+#app {
+  background: #fff;
+  color: #000;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#cover {
+  width: 100%;
+  height: 100%;
+  z-index: 999;
+  background: #fff;
+  color: #000;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  opacity: 1;
+  -webkit-transition: opacity 1s;
+  transition: opacity 1s;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#cover h1 {
+  margin: 0 auto;
+}
+
+#cover.gone {
+  opacity: 0;
+}
+
+#top-bar {
+  z-index: 1000;
+  -webkit-app-region: drag;
+  height: 18px;
+  background: transparent;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  background: #0A0A0A;
+  color: #fff;
+}
+
+#top-bar span {
+  padding: 3px;
+  font-size: 14px;
+}
+
+#top-bar #close-window {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  -webkit-app-region: no-drag;
+  height: 100%;
+}
+
+#top-bar #close-window:hover {
+  background: #f04747;
+}
+
+#content {
+  position: absolute;
+  width: 100%;
+  height: calc(100% - 18px);
+  top: 18px;
+  left: 0;
+  overflow-y: scroll;
+}
+
+#login-wrapper {
+  width: 100%;
+  height: 100%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+#login-wrapper #login-background {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+#login-wrapper #login-form {
+  width: 30%;
+  margin: 0 auto;
+  -webkit-box-shadow: 2px 2px 5px 0px rgba(50, 50, 50, 0.75);
+          box-shadow: 2px 2px 5px 0px rgba(50, 50, 50, 0.75);
+  text-align: center;
+  padding: 3rem 1rem 8rem 1rem;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  position: relative;
+  z-index: 10;
+  background: #fff;
+}
+
+#login-wrapper #login-form #login-form-title {
+  margin-top: 0;
+}
+
+#login-wrapper #login-form label {
+  display: block;
+  text-align: left;
+  margin-bottom: 0.5rem;
+  padding-left: 0.3rem;
+  color: #333;
+}
+
+#login-wrapper #login-form #rememberme-label {
+  display: inline-block;
+  width: 90%;
+  margin: 0;
+}
+
+#login-wrapper #login-form #login-rememberme {
+  margin: 0;
+}
+
+#login-wrapper #login-form #mojang-email,
+#login-wrapper #login-form #mojang-password {
+  background: none;
+  outline: none;
+  border: none;
+  border-bottom: 1px solid black;
+  color: #000;
+  font-family: inherit;
+  font-size: 16px;
+  width: 100%;
+  padding: 0.3rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+#login-wrapper #login-form #mojang-email:focus {
+  border-bottom: 1px solid #000;
+}
+
+#login-wrapper #login-form #login-button {
+  background: none;
+  outline: none;
+  border: none;
+  border-top: 1px solid #A1BBC7;
+  color: #000;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3rem;
+  cursor: pointer;
+}
+
+#login-wrapper #login-form #login-button:disabled {
+  cursor: default;
+}
+
+#login-wrapper #login-form #login-button:not(:disabled):hover {
+  background: #A1BBC7;
+}
+
+#login-wrapper #login-form #login-button:not(:disabled):active {
+  background: #81a4b4;
+}
+
+#navbar {
+  height: 6rem;
+  background: #ddd;
+  position: fixed;
+  width: 100%;
+  z-index: 99;
+}
+
+#navbar .navbar-items {
+  margin: 0 auto;
+  width: -webkit-fit-content;
+  width: -moz-fit-content;
+  width: fit-content;
+  height: 100%;
+}
+
+#navbar .navbar-item {
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  vertical-align: middle;
+  padding: 1rem;
+  cursor: pointer;
+  height: 100%;
+  width: 12rem;
+  text-align: center;
+}
+
+#navbar .navbar-item .navbar-item-content {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  margin: auto 0;
+}
+
+#navbar .navbar-item .navbar-item-content .navbar-item-icon {
+  text-align: center;
+}
+
+#navbar .navbar-item .navbar-item-content .navbar-item-label {
+  margin-top: 10px;
+}
+
+#navbar .navbar-item.navbar-item-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+#navbar .navbar-item.navbar-item-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#navbar .navbar-item:hover {
+  background: #ccc;
+}
+
+#navbar .navbar-item:active,
+#navbar .navbar-item.active {
+  background: #bbb;
+}
+
+#below-navbar {
+  position: absolute;
+  top: 7rem;
+  width: 100%;
+  min-height: calc(100% - 7rem);
+}
+
+#below-navbar #pack-view {
+  padding: 1rem;
+}
+
+#below-navbar #pack-browse {
+  padding: 1rem;
+}
+
+#below-navbar #pack-browse #pack-browse-packs {
+  width: 40%;
+  display: inline-block;
+}
+
+#below-navbar #pack-browse #pack-browse-packs .pack-browse-pack {
+  background: #eee;
+  border-radius: 1rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  cursor: pointer;
+}
+
+#below-navbar #pack-browse #pack-browse-packs .pack-browse-pack .pack-browse-pack-title {
+  text-align: center;
+  margin-top: 0;
+  font-family: "Roboto Thin";
+  font-weight: 200;
+  font-size: 36px;
+  display: block;
+  margin: 0 auto;
+}
+
+#below-navbar #pack-browse #pack-browse-packs .pack-browse-pack .pack-browse-pack-author {
+  text-align: center;
+  display: block;
+  font-family: "Roboto Thin";
+  font-weight: 200;
+  font-size: 24px;
+}
+
+#below-navbar #pack-browse #pack-browse-packs .pack-browse-pack .pack-browse-pack-mod-count {
+  text-align: center;
+  display: block;
+  font-family: "Roboto Thin";
+  font-weight: 200;
+  font-size: 18px;
+  margin-bottom: 1rem;
+}
+
+#below-navbar #pack-browse #pack-browse-packs .pack-browse-pack .pack-browse-pack-desc {
+  text-align: center;
+  display: block;
+}
+
+#below-navbar #pack-browse #pack-browse-packs .pack-browse-pack.selected {
+  background: #8cc1d9;
+}
+
+#below-navbar #pack-browse #pack-browse-pack-info {
+  width: 59%;
+  display: inline-block;
+  position: absolute;
+  padding: 1rem;
+}
+
+#below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-title {
+  margin-top: 0;
+  font-family: "Roboto Thin";
+  font-weight: 200;
+  font-size: 36px;
+  display: block;
+  margin: 0 auto;
+}
+
+#below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-author {
+  display: block;
+  font-family: "Roboto Thin";
+  font-weight: 200;
+  font-size: 24px;
+}
+
+#below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-mod-count {
+  display: block;
+  font-family: "Roboto Thin";
+  font-weight: 200;
+  font-size: 18px;
+  margin-bottom: 1rem;
+}
+
+#below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-desc {
+  display: block;
+}
+
+#below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-mod-list-title {
+  display: block;
+  font-family: "Roboto Bold";
+  font-weight: 700;
+  font-size: 24px;
+  margin-bottom: 1rem;
+}
+
+#below-navbar #pack-browse #pack-browse-pack-info #install-pack-button {
+  outline: none;
+  border: none;
+  background: #2b823a;
+  border-radius: 3px;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  position: absolute;
+  top: 1.5rem;
+  right: 1rem;
+}
+
+#below-navbar #pack-browse #pack-browse-pack-info #install-pack-button:hover {
+  background: #126921;
+}
+
+#below-navbar #pack-browse #pack-browse-pack-info #install-pack-button:active {
+  background: #004F07;
+}
+
+#below-navbar #settings {
+  padding: 1rem;
+}
+
+.modal {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 300;
+  display: none;
+}
+
+.modal .modal-content {
+  width: 40%;
+  margin: 0 auto;
+  margin-top: 10rem;
+  background: #fff;
+  color: #000;
+  border-radius: 10px;
+  z-index: 301;
+  padding: 3rem;
+  max-height: calc(100% - 12rem);
+  overflow-y: scroll;
+}
+
+.modal .modal-content .modal-title {
+  margin-top: 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #ccc;
+}
+
+.modal.shown {
+  display: block;
+}
+
+.progress {
+  display: block;
+  width: 100%;
+  height: 20px;
+  background: #ccc;
+  border-radius: 3px;
+  margin-bottom: 1rem;
+}
+
+.progress .bar {
+  background: #00aaff;
+  border-radius: 3px;
+  width: 0;
+  height: 20px;
+  -webkit-transition: width 0.5s, margin 0.5s;
+  transition: width 0.5s, margin 0.5s;
+}
+
+.progress .bar.indeterminate {
+  position: relative;
+  margin-left: 0;
+  width: 20%;
+  -webkit-animation: indeterminate 2s ease-in-out infinite alternate;
+          animation: indeterminate 2s ease-in-out infinite alternate;
+}
+
+@-webkit-keyframes indeterminate {
+  from {
+    margin-left: 0;
+  }
+  to {
+    margin-left: 80%;
+  }
+}
+
+@keyframes indeterminate {
+  from {
+    margin-left: 0;
+  }
+  to {
+    margin-left: 80%;
+  }
+}
+
+#pack-install-log {
+  overflow-x: scroll;
+  margin-top: 1rem;
+  -webkit-user-select: text;
+     -moz-user-select: text;
+      -ms-user-select: text;
+          user-select: text;
+}
+
+#pack-install-log span {
+  display: block;
+}
+/*# sourceMappingURL=app.css.map */
