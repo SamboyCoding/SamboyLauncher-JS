@@ -1,0 +1,42 @@
+{
+    "name": "launcher-client",
+    "version": "1.0.0",
+    "description": "",
+    "main": "src/main/index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/hasha": "^3.0.0",
+        "@types/jsonfile": "^4.0.1",
+        "@types/jszip": "^3.1.4",
+        "@types/mkdirp": "^0.5.2",
+        "@types/node-fetch": "^2.1.2",
+        "babel-eslint": "^9.0.0",
+        "electron": "^2.0.8",
+        "electron-builder": "^20.28.4",
+        "electron-rebuild": "^1.8.2",
+        "eslint": "^5.5.0",
+        "eslint-config-standard": "^12.0.0",
+        "eslint-plugin-import": "^2.14.0",
+        "eslint-plugin-node": "^7.0.1",
+        "eslint-plugin-promise": "^4.0.1",
+        "eslint-plugin-standard": "^4.0.0",
+        "tslint": "^5.11.0",
+        "tslint-eslint-rules": "^5.4.0",
+        "typescript": "^3.0.3"
+    },
+    "dependencies": {
+        "@fortawesome/fontawesome-free": "^5.3.1",
+        "hasha": "^3.0.0",
+        "jsonfile": "^5.0.0",
+        "jszip": "^3.1.5",
+        "lzma-native": "^4.0.1",
+        "mkdirp": "^0.5.1",
+        "node-fetch": "^2.2.0",
+        "vue": "^2.5.17"
+    }
+}

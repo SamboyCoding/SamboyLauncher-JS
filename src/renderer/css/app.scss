@@ -1,0 +1,489 @@
+$ui-background: #fff;
+$ui-text-colour: #000;
+$ui-button-color: #A1BBC7;
+
+@font-face {
+    font-family: 'Roboto Thin';
+    font-style: normal;
+    font-weight: 200;
+    src: url(../resources/Roboto-Thin.ttf) format('truetype');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: normal;
+    src: url(../resources/Roboto-Regular.ttf) format('truetype');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Roboto Bold';
+    font-style: normal;
+    font-weight: bold;
+    src: url(../resources/Roboto-Bold.ttf) format('truetype');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+*::-webkit-scrollbar {
+    display: none;
+}
+
+html,
+body,
+#app {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    font-family: "Roboto";
+    user-select: none;
+    overflow-y: hidden;
+}
+
+#app {
+    background: $ui-background;
+    color: $ui-text-colour;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#cover {
+    width: 100%;
+    height: 100%;
+    z-index: 999;
+    background: $ui-background;
+    color: $ui-text-colour;
+    display: flex;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 1s;
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    h1 {
+        margin: 0 auto;
+    }
+}
+
+#cover.gone {
+    opacity: 0;
+}
+
+#top-bar {
+    z-index: 1000;
+    -webkit-app-region: drag;
+    height: 18px;
+    background: transparent;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: #0A0A0A;
+    color: #fff;
+
+    span {
+        padding: 3px;
+        font-size: 14px;
+    }
+
+    #close-window {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: none;
+        color: #fff;
+        cursor: pointer;
+        outline: none;
+        border: none;
+        -webkit-app-region: no-drag;
+        height: 100%;
+    }
+
+    #close-window:hover {
+        background: #f04747;
+    }
+}
+
+#content {
+    position: absolute;
+    width: 100%;
+    height: calc(100% - 18px);
+    top: 18px;
+    left: 0;
+    overflow-y: scroll;
+}
+
+#login-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+
+    #login-background {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+    }
+
+    #login-form {
+        width: 30%;
+        margin: 0 auto;
+        box-shadow: 2px 2px 5px 0px rgba(50, 50, 50, 0.75);
+        text-align: center;
+        padding: 3rem 1rem 8rem 1rem;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        z-index: 10;
+        background: $ui-background;
+
+        #login-form-title {
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            margin-bottom: 0.5rem;
+            padding-left: 0.3rem;
+            color: #333;
+        }
+
+        #rememberme-label {
+            display: inline-block;
+            width: 90%;
+            margin: 0;
+        }
+
+        #login-rememberme {
+            margin: 0;
+        }
+
+        #mojang-email,
+        #mojang-password {
+            background: none;
+            outline: none;
+            border: none;
+            border-bottom: 1px solid darken($ui-text-colour, 40%);
+            color: $ui-text-colour;
+            font-family: inherit;
+            font-size: 16px;
+            width: 100%;
+            padding: 0.3rem;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        #mojang-email:focus {
+            border-bottom: 1px solid $ui-text-colour;
+        }
+
+        #login-button {
+            background: none;
+            outline: none;
+            border: none;
+            border-top: 1px solid $ui-button-color;
+            color: $ui-text-colour;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3rem;
+            cursor: pointer;
+        }
+
+        #login-button:disabled {
+            cursor: default;
+        }
+
+        #login-button:not(:disabled):hover {
+            background: $ui-button-color;
+        }
+
+        #login-button:not(:disabled):active {
+            background: darken($ui-button-color, 10%);
+        }
+    }
+}
+
+#navbar {
+    height: 6rem;
+    background: #ddd;
+    position: fixed;
+    width: 100%;
+    z-index: 99;
+
+    .navbar-items {
+        margin: 0 auto;
+        width: fit-content;
+        height: 100%;
+    }
+
+    .navbar-item {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        vertical-align: middle;
+        padding: 1rem;
+        cursor: pointer;
+        height: 100%;
+        width: 12rem;
+        text-align: center;
+
+        .navbar-item-content {
+            display: flex;
+            flex-direction: column;
+            margin: auto 0;
+
+            .navbar-item-icon {
+                text-align: center;
+            }
+
+            .navbar-item-label {
+                margin-top: 10px;
+            }
+        }
+    }
+
+    .navbar-item.navbar-item-right {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+
+    .navbar-item.navbar-item-left {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .navbar-item:hover {
+        background: #ccc;
+    }
+
+    .navbar-item:active,
+    .navbar-item.active {
+        background: #bbb;
+    }
+}
+
+#below-navbar {
+    position: absolute;
+    top: 7rem;
+    width: 100%;
+    min-height: calc(100% - 7rem);
+
+    #pack-view {
+        padding: 1rem;
+    }
+
+    #pack-browse {
+        padding: 1rem;
+
+        #pack-browse-packs {
+            width: 40%;
+            display: inline-block;
+
+            .pack-browse-pack {
+                background: #eee;
+                border-radius: 1rem;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                cursor: pointer;
+
+                .pack-browse-pack-title {
+                    text-align: center;
+                    margin-top: 0;
+                    font-family: "Roboto Thin";
+                    font-weight: 200;
+                    font-size: 36px;
+                    display: block;
+                    margin: 0 auto;
+                }
+
+                .pack-browse-pack-author {
+                    text-align: center;
+                    display: block;
+                    font-family: "Roboto Thin";
+                    font-weight: 200;
+                    font-size: 24px;
+                }
+
+                .pack-browse-pack-mod-count {
+                    text-align: center;
+                    display: block;
+                    font-family: "Roboto Thin";
+                    font-weight: 200;
+                    font-size: 18px;
+                    margin-bottom: 1rem;
+                }
+
+                .pack-browse-pack-desc {
+                    text-align: center;
+                    display: block;
+                }
+            }
+
+            .pack-browse-pack.selected {
+                background: #8cc1d9;
+            }
+        }
+
+        #pack-browse-pack-info {
+            width: 59%;
+            display: inline-block;
+            position: absolute;
+            padding: 1rem;
+
+            #pack-info-pack-title {
+                margin-top: 0;
+                font-family: "Roboto Thin";
+                font-weight: 200;
+                font-size: 36px;
+                display: block;
+                margin: 0 auto;
+            }
+
+            #pack-info-pack-author {
+                display: block;
+                font-family: "Roboto Thin";
+                font-weight: 200;
+                font-size: 24px;
+            }
+
+            #pack-info-pack-mod-count {
+                display: block;
+                font-family: "Roboto Thin";
+                font-weight: 200;
+                font-size: 18px;
+                margin-bottom: 1rem;
+            }
+
+            #pack-info-pack-desc {
+                display: block;
+            }
+
+            #pack-info-pack-mod-list-title {
+                display: block;
+                font-family: "Roboto Bold";
+                font-weight: 700;
+                font-size: 24px;
+                margin-bottom: 1rem;
+            }
+
+            #install-pack-button {
+                outline: none;
+                border: none;
+                background: #2b823a;
+                border-radius: 3px;
+                color: #fff;
+                padding: 0.5rem 1rem;
+                cursor: pointer;
+                position: absolute;
+                top: 1.5rem;
+                right: 1rem;
+            }
+
+            #install-pack-button:hover {
+                background: #126921;
+            }
+
+            #install-pack-button:active {
+                background: #004F07;
+            }
+        }
+    }
+
+    #settings {
+        padding: 1rem;
+    }
+}
+
+.modal {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 300;
+    display: none;
+
+    .modal-content {
+        width: 40%;
+        margin: 0 auto;
+        margin-top: 10rem;
+        background: #fff;
+        color: #000;
+        border-radius: 10px;
+        z-index: 301;
+        padding: 3rem;
+        max-height: calc(100% - 12rem);
+        overflow-y: scroll;
+
+        .modal-title {
+            margin-top: 0;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #ccc;
+        }
+    }
+}
+
+.modal.shown {
+    display: block;
+}
+
+.progress {
+    display: block;
+    width: 100%;
+    height: 20px;
+    background: #ccc;
+    border-radius: 3px;
+    margin-bottom: 1rem;
+
+    .bar {
+        background: #00aaff;
+        border-radius: 3px;
+        width: 0;
+        height: 20px;
+        transition: width 0.5s, margin 0.5s;
+    }
+
+    .bar.indeterminate {
+        position: relative;
+        margin-left: 0;
+        width: 20%;
+        animation: indeterminate 2s ease-in-out infinite alternate;
+    }
+
+    //Thanks to Zudo for this
+    @keyframes indeterminate {
+        from {
+            margin-left: 0;
+        }
+
+        to {
+            margin-left: 80%;
+        }
+    }
+}
+
+#pack-install-log {
+    overflow-x: scroll;
+    margin-top: 1rem;
+    user-select: text;
+
+    span {
+        display: block;
+    }
+}
