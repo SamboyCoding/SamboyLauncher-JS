@@ -55,10 +55,10 @@
         "linux": {
             "category": "Game",
             "icon": "build/icon.png",
-            "target": "AppImage",
-            "arch": [
-                "x64"
-            ]
+            "target": [{
+                "target": "AppImage",
+                "arch": ["x64"]
+            }]
         }
     }
 }
