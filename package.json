@@ -45,7 +45,6 @@
     "build": {
         "appId": "me.samboycoding.samboylauncherjs",
         "productName": "SamboyLauncher",
-        "author": "Samboy063",
         "mac": {
             "category": "public.app-category.games",
             "target": ["dmg"]
