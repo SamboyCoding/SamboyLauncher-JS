@@ -5,3 +5,4 @@ src/main/*\.js
 src/main/*\.js\.map
 
 src/renderer/css/*\.css*
+dist/

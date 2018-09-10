@@ -9,7 +9,9 @@ import * as mkdirp from "mkdirp";
 import * as hasha from "hasha";
 import * as JSZip from "jszip";
 import * as lzma from "lzma-native";
+import * as download from "download";
 import * as child_process from "child_process";
+import { Extract } from "unzipper";
 
 const fetch = web.default;
 const launcherDir: string = path.join(process.env.APPDATA
@@ -27,18 +29,7 @@ function atob(str: string): string {
 }
 
 async function downloadFile(url: string, localPath: string): Promise<any> {
-    return new Promise(async (ff, rj) => {
-        let resp = await fetch(url);
-        let statuscode = resp.status;
-        let buffer = await resp.buffer();
-
-        if (resp.status !== 200) return ff(); //do not download
-
-        fs.writeFile(localPath, buffer, err => {
-            if (err) return rj(err);
-            ff();
-        });
-    });
+    return download(url, path.dirname(localPath), { filename: path.basename(localPath) });
 }
 
 async function mkdirpPromise(path: string): Promise<any> {
@@ -136,8 +127,7 @@ if (fs.existsSync(path.join(launcherDir, "authdata"))) {
 }
 
 ipcMain.on("get backgrounds", (event: IpcMessageEvent) => {
-    console.log("Got get backgrounds");
-    fs.readdir(path.join(__dirname, "src", "renderer", "resources", "backgrounds"), (err: NodeJS.ErrnoException, files: string[]) => {
+    fs.readdir(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"), (err: NodeJS.ErrnoException, files: string[]) => {
         event.sender.send("backgrounds", files);
     });
 });
@@ -513,16 +503,20 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             event.sender.send("modded progress", `Downloading forge ${pack.forgeVersion}`, 1 / 100);
             event.sender.send("install log", "[Modpack] \tDownloading " + forgeJarURL);
 
-            await downloadFile(forgeJarURL, path.join(forgeVersionFolder, "forge.jar"));
+            try {
+                await downloadFile(forgeJarURL, path.join(forgeVersionFolder, "forge_temp.jar"));
+            } catch (e) {
+                //Ignore
+            }
 
-            if (!fs.existsSync(path.join(forgeVersionFolder, "forge.jar"))) {
+            if (!fs.existsSync(path.join(forgeVersionFolder, "forge_temp.jar"))) {
                 forgeJarURL = `http://files.minecraftforge.net/maven/net/minecraftforge/forge/${pack.gameVersion}-${pack.forgeVersion}/forge-${pack.gameVersion}-${pack.forgeVersion}-universal.jar`;
                 event.sender.send("install log", "[Modpack] \tFalling back to old-style url: " + forgeJarURL);
 
-                await downloadFile(forgeJarURL, path.join(forgeVersionFolder, "forge.jar"));
+                await downloadFile(forgeJarURL, path.join(forgeVersionFolder, "forge_temp.jar"));
             }
 
-            let buf = fs.readFileSync(path.join(forgeVersionFolder, "forge.jar"));
+            let buf = fs.readFileSync(path.join(forgeVersionFolder, "forge_temp.jar"));
             let zip = await JSZip.loadAsync(buf);
 
             event.sender.send("modded progress", `Extracting forge version info...`, 2 / 100);
@@ -531,7 +525,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
                 zip.file("version.json")
                     .nodeStream()
                     .pipe(fs.createWriteStream(path.join(forgeVersionFolder, "version.json")))
-                    .on('finish', function() {
+                    .on('finish', function () {
                         ff();
                     });
             });
@@ -554,7 +548,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
                 let libnameSplit = lib.name.split(":");
 
                 let filePath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
-                let url = "http://files.minecraftforge.net/maven/" + filePath;
+                let url = (lib.url ? lib.url : "https://libraries.minecraft.net/") + filePath;
 
                 event.sender.send("modded progress", `Downloading ${lib.name}`, current / 100);
 
@@ -564,49 +558,126 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
                 if (!fs.existsSync(path.dirname(localPath)))
                     await mkdirpPromise(path.dirname(localPath));
 
-                await downloadFile(url, localPath);
+                try {
+                    await downloadFile(url, localPath);
+                } catch (e) {
+                    //Ignore
+                }
 
                 if (!fs.existsSync(localPath)) {
                     url += ".pack.xz";
-                    event.sender.send("install log", "[Modpack] \tFalling back to " + url);
+                    event.sender.send("install log", "[Modpack] \tFalling back to XZ'd Packed jar file: " + url);
                     let tempFolder = path.join(launcherDir, "temp");
                     if (!fs.existsSync(tempFolder))
                         await mkdirpPromise(tempFolder);
                     await downloadFile(url, path.join(tempFolder, path.basename(localPath) + ".pack.xz"));
 
-                    var decompressor = lzma.createDecompressor();
-                    var input = fs.createReadStream(path.join(tempFolder, path.basename(localPath) + ".pack.xz"));
-                    var output = fs.createWriteStream(path.join(tempFolder, path.basename(localPath) + ".pack"));
+                    if (!fs.existsSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"))) {
+                        event.sender.send("install log", "[Modpack] [Error] Unable to acquire even packed jar; aborting");
+                        return;
+                    }
 
-                    input.pipe(decompressor).pipe(output);
+                    let input = fs.readFileSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"));
+
+                    event.sender.send("install log", "[Modpack] \t Reversing LZMA on " + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + "...");
+
+                    let decompressed = await lzma.decompress(input);
+
+                    let end = Buffer.from(decompressed.subarray(decompressed.length - 4, decompressed.length));
+                    let checkString = end.toString("ascii");
+
+                    if (checkString !== "SIGN") {
+                        event.sender.send("install log", "[Modpack] [Error] Failed to verify signature of pack file. Aborting install.");
+                        return;
+                    }
+
+                    event.sender.send("install log", "[Modpack] \t\tPack file is signed. Stripping checksum...");
+
+                    let length = decompressed.length;
+                    event.sender.send("install log", "[Modpack] \t\tFile Length: " + length);
+
+                    let checksumLength = decompressed[length - 8] & 255 | (decompressed[length - 7] & 255) << 8 |
+                        (decompressed[length - 6] & 255) << 16 |
+                        (decompressed[length - 5] & 255) << 24;
+                    event.sender.send("install log", "[Modpack] \t\tCalculated checksum length: " + checksumLength);
+
+                    event.sender.send("install log", "[Modpack] \t\tActual file content length: " + (length - checksumLength - 8));
+                    let actualContent: Buffer = decompressed.subarray(0, length - checksumLength - 8);
+                    fs.writeFileSync(path.join(tempFolder, path.basename(localPath) + ".pack"), actualContent);
+
+                    fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"));
 
                     event.sender.send("install log", "[Modpack] \t" + unpack200 + " \"" + path.join(tempFolder, path.basename(localPath) + ".pack") + "\" \"" + localPath + "\"");
 
                     child_process.execFileSync(unpack200, [path.join(tempFolder, path.basename(localPath) + ".pack"), localPath]);
 
                     if (!fs.existsSync(localPath)) {
-                        event.sender.send("install log", "[Modpack] \t[Error] Failed to unpack packed file - result missing.");
+                        event.sender.send("install log", "[Modpack] \t[Error] Failed to unpack packed file - result missing. Aborting install.");
+                        return;
                     }
-                }
 
+                    fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
+                }
             }
+
+            //Move to here to mark as installed once libs installed.
+            fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
         }
 
         let packDir = path.join(launcherDir, "packs", pack.packName);
-        if (!fs.existsSync(packDir))
-            await mkdirpPromise(packDir);
+        let modsDir = path.join(packDir, "mods");
+
+        if (!fs.existsSync(modsDir))
+            await mkdirpPromise(modsDir);
 
         if (pack.mods.length) {
+
             event.sender.send("modded progress", `Commencing mods download...`, 50 / 100);
-        } else {
-            event.sender.send("modded progress", `Nothing more to do`, 1);
-            jsonfile.writeFileSync(path.join(packDir, "install.json"), {
-                packName: pack.packName,
-                installedVersion: pack.version,
-                installedMods: [],
+            let percentPer = 45 / pack.mods.length;
+            let current = 50;
+
+            for (let index in pack.mods) {
+                current += percentPer;
+                let mod = pack.mods[index];
+                let url = `https://minecraft.curseforge.com/projects/${mod.slug}/files/${mod.fileId}/download`;
+
+                event.sender.send("modded progress", `Downloading mod ${Number(index) + 1}/${pack.mods.length}: ${mod.resolvedName}`, current / 100);
+                event.sender.send("install log", "[Modpack] \tDownloading " + mod.resolvedVersion + " from " + url);
+
+                await downloadFile(url, path.join(modsDir, mod.resolvedVersion));
+            }
+        }
+
+        event.sender.send("modded progress", `Checking for overrides`, 0.95);
+
+        let resp = await fetch("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, {
+            method: "HEAD"
+        });
+
+        if (resp.status === 200) {
+            event.sender.send("modded progress", `Downloading overrides`, 0.96);
+            await downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(packDir, "overrides.zip"));
+
+            event.sender.send("modded progress", `Installing overrides`, 0.97);
+
+            await new Promise((ff, rj) => {
+                fs.createReadStream(path.join(packDir, "overrides.zip")).pipe(Extract({ path: packDir })).on("close", () => {
+                    ff();
+                })
             });
         }
 
+        event.sender.send("modded progress", `Finishing up`, 0.98);
+
+        jsonfile.writeFileSync(path.join(packDir, "install.json"), {
+            packName: pack.packName,
+            installedVersion: pack.version,
+            installedMods: pack.mods,
+        });
+
+        event.sender.send("modded progress", `Finished.`, 1);
+
+        event.sender.send("install complete");
     } catch (e) {
         event.sender.send("install failed", "An exception occurred: " + e);
         event.sender.send("install log", "[Error] An Exception occurred: " + e);
