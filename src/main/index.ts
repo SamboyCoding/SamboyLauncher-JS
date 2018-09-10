@@ -581,7 +581,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
 
                     event.sender.send("install log", "[Modpack] \t Reversing LZMA on " + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + "...");
 
-                    let decompressed = await lzma.decompress(input);
+                    let decompressed = await lzma.decompress(input); //TODO: This lzma library cannot be built on windows (._.) switch to `lzma`
 
                     let end = Buffer.from(decompressed.subarray(decompressed.length - 4, decompressed.length));
                     let checkString = end.toString("ascii");
