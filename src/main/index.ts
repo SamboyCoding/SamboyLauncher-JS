@@ -651,6 +651,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
 
             //Move to here to mark as installed once libs installed.
             fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
+            fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
         }
 
         let packDir = path.join(launcherDir, "packs", pack.packName);
@@ -702,6 +703,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             packName: pack.packName,
             installedVersion: pack.version,
             installedMods: pack.mods,
+            authorId: pack.author.id
         });
 
         event.sender.send("modded progress", `Finished.`, 1);

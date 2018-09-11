@@ -460,12 +460,30 @@ body,
   padding: 3rem;
   max-height: calc(100% - 12rem);
   overflow-y: scroll;
+  position: relative;
 }
 
 .modal .modal-content .modal-title {
   margin-top: 0;
   padding-bottom: 1rem;
   border-bottom: 1px solid #ccc;
+}
+
+.modal .modal-content #close-install-modal {
+  position: absolute;
+  right: 3rem;
+  top: 3rem;
+  outline: none;
+  border: none;
+  background: #159d31;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.modal .modal-content #close-install-modal:hover {
+  background: #117e27;
 }
 
 .modal.shown {
@@ -488,6 +506,10 @@ body,
   height: 20px;
   -webkit-transition: width 0.5s, margin 0.5s;
   transition: width 0.5s, margin 0.5s;
+}
+
+.progress .bar.red {
+  background: #c02626;
 }
 
 .progress .bar.indeterminate {

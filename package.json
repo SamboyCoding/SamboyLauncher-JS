@@ -45,6 +45,12 @@
     "build": {
         "appId": "me.samboycoding.samboylauncherjs",
         "productName": "SamboyLauncher",
+        "artifactName": "SBLauncher-${version}-${os}-${arch}.${ext}",
+        "publish": [{
+            "provider": "github",
+            "repo": "SamboyLauncher-JS",
+            "owner": "SamboyCoding"
+        }],
         "mac": {
             "category": "public.app-category.games",
             "target": [
@@ -57,14 +63,12 @@
         "linux": {
             "category": "Game",
             "icon": "build/icon.png",
-            "target": [
-                {
-                    "target": "AppImage",
-                    "arch": [
-                        "x64"
-                    ]
-                }
-            ]
+            "target": [{
+                "target": "AppImage",
+                "arch": [
+                    "x64"
+                ]
+            }]
         }
     }
 }

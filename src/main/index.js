@@ -695,6 +695,7 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 return [3, 53];
             case 67:
                 fs.copyFileSync(path.join(forgeVersionFolder_1, "forge_temp.jar"), path.join(forgeVersionFolder_1, "forge.jar"));
+                fs.unlinkSync(path.join(forgeVersionFolder_1, "forge_temp.jar"));
                 _q.label = 68;
             case 68:
                 packDir_1 = path.join(launcherDir, "packs", pack.packName);
@@ -755,7 +756,8 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 jsonfile.writeFileSync(path.join(packDir_1, "install.json"), {
                     packName: pack.packName,
                     installedVersion: pack.version,
-                    installedMods: pack.mods
+                    installedMods: pack.mods,
+                    authorId: pack.author.id
                 });
                 event.sender.send("modded progress", "Finished.", 1);
                 event.sender.send("install complete");

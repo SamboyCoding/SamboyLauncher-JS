@@ -128,6 +128,10 @@
                     <div :class="{modal: true, shown: ui.packInstall.show}" id="pack-install-modal">
                         <div class="modal-content">
                             <h1 class="modal-title">Installing pack...</h1>
+                            <button class="modal-top-button" id="close-install-modal" v-if="ui.packInstall.vanillaProgress.progress === 1 && ui.packInstall.moddedProgress.progress === 1 || ui.packInstall.failed"
+                                @click="ui.packInstall.show = false">
+                                Done
+                            </button>
                             <h3 id="pack-install-vanilla-title">
                                 Installing files for Minecraft {{ui.packInstall.gameVersion}}...
                             </h3>
@@ -135,7 +139,7 @@
                                 {{ui.packInstall.vanillaProgress.label}}
                             </label>
                             <div class="progress" id="pack-install-vanilla-progress">
-                                <div :class="{bar: true, indeterminate: ui.packInstall.vanillaProgress.progress === -1}"
+                                <div :class="{bar: true, indeterminate: ui.packInstall.vanillaProgress.progress === -1, red: ui.packInstall.failed && ui.packInstall.vanillaProgress.progress < 1 && ui.packInstall.vanillaProgress.progress !== -1}"
                                     :style="{width: ui.packInstall.vanillaProgress.progress === -1 ? '20%' : (ui.packInstall.vanillaProgress.progress * 100) + '%'}"></div>
                             </div>
 
@@ -146,7 +150,7 @@
                                 {{ui.packInstall.moddedProgress.label}}
                             </label>
                             <div class="progress" id="pack-installed-pack-progress">
-                                <div :class="{bar: true, indeterminate: ui.packInstall.moddedProgress.progress === -1}"
+                                <div :class="{bar: true, indeterminate: ui.packInstall.moddedProgress.progress === -1, red: ui.packInstall.failed && ui.packInstall.moddedProgress.progress < 1 && ui.packInstall.moddedProgress.progress !== -1}"
                                     :style="{width: ui.packInstall.moddedProgress.progress === -1 ? '20%' : (ui.packInstall.moddedProgress.progress * 100) + '%'}"></div>
                             </div>
 

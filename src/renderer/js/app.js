@@ -36,6 +36,7 @@ const app = new Vue({
                 show: false,
                 gameVersion: "1.12.2",
                 log: [],
+                failed: false,
                 vanillaProgress: {
                     label: "Starting installation...",
                     progress: -1
@@ -144,4 +145,16 @@ ipcRenderer.on("modded progress", (event, label, progress) => {
 
 ipcRenderer.on("install log", (event, text) => {
     app.ui.packInstall.log.push(text);
+});
+
+ipcRenderer.on("install failed", (event, reason) => {
+    app.ui.packInstall.failed = true;
+
+    if (app.ui.packInstall.vanillaProgress.progress > -1 && app.ui.packInstall.vanillaProgress.progress < 1) {
+        app.ui.packInstall.vanillaProgress.label = reason;
+    }
+
+    if (app.ui.packInstall.moddedProgress.progress > -1 && app.ui.packInstall.moddedProgress.progress < 1) {
+        app.ui.packInstall.moddedProgress.label = reason;
+    }
 });
