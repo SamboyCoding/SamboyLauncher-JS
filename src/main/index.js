@@ -50,9 +50,10 @@ var download = require("download");
 var child_process = require("child_process");
 var unzipper_1 = require("unzipper");
 var fetch = web["default"];
-var launcherDir = path.join(process.env.APPDATA
-    || (process.platform === "darwin" ? process.env.HOME + "Library/Preferences"
-        : process.env.HOME + ".SamboyLauncher/"), "SamboyLauncher_JS");
+var launcherDir = path.join(process.platform === "win32" ?
+    process.env.APPDATA : (process.platform === "darwin" ?
+    path.join(process.env.HOME, "Library", "Preferences")
+    : path.join(process.env.HOME, ".SamboyLauncher/")), "SamboyLauncher_JS");
 var authData = new objects_1.AuthData();
 function btoa(str) {
     return Buffer.from(str, "binary").toString("base64");

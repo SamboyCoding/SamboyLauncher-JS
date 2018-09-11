@@ -13,9 +13,11 @@ import * as child_process from "child_process";
 import { Extract } from "unzipper";
 
 const fetch = web.default;
-const launcherDir: string = path.join(process.env.APPDATA
-    || (process.platform === "darwin" ? process.env.HOME + "Library/Preferences"
-        : process.env.HOME + ".SamboyLauncher/"), "SamboyLauncher_JS");
+const launcherDir: string = path.join(process.platform === "win32" ?
+    process.env.APPDATA : (process.platform === "darwin" ?
+        path.join(process.env.HOME, "Library", "Preferences")
+        : path.join(process.env.HOME, ".SamboyLauncher/")),
+    "SamboyLauncher_JS");
 
 const authData: AuthData = new AuthData();
 
