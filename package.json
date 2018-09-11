@@ -36,7 +36,7 @@
         "hasha": "^3.0.0",
         "jsonfile": "^5.0.0",
         "jszip": "^3.1.5",
-        "lzma-native": "^4.0.1",
+        "lzma": "^2.3.2",
         "mkdirp": "^0.5.1",
         "node-fetch": "^2.2.0",
         "unzipper": "^0.9.3",
@@ -47,7 +47,9 @@
         "productName": "SamboyLauncher",
         "mac": {
             "category": "public.app-category.games",
-            "target": ["dmg"]
+            "target": [
+                "dmg"
+            ]
         },
         "win": {
             "target": "nsis"
@@ -55,10 +57,14 @@
         "linux": {
             "category": "Game",
             "icon": "build/icon.png",
-            "target": [{
-                "target": "AppImage",
-                "arch": ["x64"]
-            }]
+            "target": [
+                {
+                    "target": "AppImage",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ]
         }
     }
 }

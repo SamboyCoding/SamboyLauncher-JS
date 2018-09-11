@@ -46,7 +46,6 @@ var objects_1 = require("./objects");
 var mkdirp = require("mkdirp");
 var hasha = require("hasha");
 var JSZip = require("jszip");
-var lzma = require("lzma-native");
 var download = require("download");
 var child_process = require("child_process");
 var unzipper_1 = require("unzipper");
@@ -233,11 +232,11 @@ electron_1.ipcMain.on("get top packs", function (event) {
     });
 });
 electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(_this, void 0, void 0, function () {
-    var unpack200, java, files, installation, versions, version, versionData, libraries, natives, currentPercent, percentPer, _a, _b, _i, index, library, dest, directory, success_1, correctHash, fileHash, ourOs_1, arch, _c, _d, _e, index, native, shouldInstall, rule, artifact, dest, directory, success_2, correctHash, fileHash, assetIndexFolder, assetIndexFile, success, correctChecksum, actual, assets, count, current, _f, _g, _h, index, asset, hash, url, directory, success_3, filePath_1, downloaded, actualSha1, filePath, downloaded, actualSha1, forgeVersionFolder_1, forgeJarURL, e_1, buf, zip_1, versionJSON, libs, percentPer, current, _j, _k, _l, index, lib, libnameSplit, filePath, url, localPath, e_2, tempFolder, input, decompressed, end, checkString, length, checksumLength, actualContent, packDir_1, modsDir, percentPer, current, _m, _o, _p, index, mod, url, resp, e_3;
+    var unpack200, java, files, installation, versions, version, versionData, libraries, natives, currentPercent, percentPer, _a, _b, _i, index, library, dest, directory, success_1, correctHash, fileHash, ourOs_1, arch, _c, _d, _e, index, native, shouldInstall, rule, artifact, dest, directory, success_2, correctHash, fileHash, assetIndexFolder, assetIndexFile, success, correctChecksum, actual, assets, count, current, _f, _g, _h, index, asset, hash, url, directory, success_3, filePath_1, downloaded, actualSha1, filePath, downloaded, actualSha1, forgeVersionFolder_1, forgeJarURL, e_1, buf, zip_1, versionJSON, libs, percentPer, current, _j, _k, _l, index, lib, libnameSplit, filePath, url, localPath, e_2, tempFolder, decompressed, end, checkString, length, checksumLength, actualContent, packDir_1, modsDir, percentPer, current, _m, _o, _p, index, mod, url, resp, e_3;
     return __generator(this, function (_q) {
         switch (_q.label) {
             case 0:
-                _q.trys.push([0, 76, , 77]);
+                _q.trys.push([0, 79, , 80]);
                 unpack200 = "unpack200";
                 java = "java";
                 if (process.platform === "win32") {
@@ -540,13 +539,13 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 _q.label = 42;
             case 42:
                 forgeVersionFolder_1 = path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion);
+                if (!(pack.forgeVersion && !fs.existsSync(path.join(forgeVersionFolder_1, "forge.jar")))) return [3, 68];
                 if (!!fs.existsSync(forgeVersionFolder_1)) return [3, 44];
                 return [4, mkdirpPromise(forgeVersionFolder_1)];
             case 43:
                 _q.sent();
                 _q.label = 44;
             case 44:
-                if (!(pack.forgeVersion && !fs.existsSync(path.join(forgeVersionFolder_1, "forge.jar")))) return [3, 65];
                 event.sender.send("modded progress", "Commencing minecraft forge download...", 0 / 100);
                 forgeJarURL = "http://files.minecraftforge.net/maven/net/minecraftforge/forge/" + pack.gameVersion + "-" + pack.forgeVersion + "-" + pack.gameVersion + "/forge-" + pack.gameVersion + "-" + pack.forgeVersion + "-" + pack.gameVersion + "-universal.jar";
                 event.sender.send("modded progress", "Downloading forge " + pack.forgeVersion, 1 / 100);
@@ -598,7 +597,7 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 _l = 0;
                 _q.label = 53;
             case 53:
-                if (!(_l < _j.length)) return [3, 64];
+                if (!(_l < _j.length)) return [3, 67];
                 index = _j[_l];
                 current += percentPer;
                 lib = libs[index];
@@ -623,7 +622,7 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 e_2 = _q.sent();
                 return [3, 58];
             case 58:
-                if (!!fs.existsSync(localPath)) return [3, 63];
+                if (!!fs.existsSync(localPath)) return [3, 66];
                 url += ".pack.xz";
                 event.sender.send("install log", "[Modpack] \tFalling back to XZ'd Packed jar file: " + url);
                 tempFolder = path.join(launcherDir, "temp");
@@ -637,17 +636,38 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 _q.sent();
                 if (!fs.existsSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"))) {
                     event.sender.send("install log", "[Modpack] [Error] Unable to acquire even packed jar; aborting");
+                    event.sender.send("install failed", "Unable to acquire even packed jar for " + lib.name);
                     return [2];
                 }
-                input = fs.readFileSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"));
-                event.sender.send("install log", "[Modpack] \t Reversing LZMA on " + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + "...");
-                return [4, lzma.decompress(input)];
+                event.sender.send("install log", "[Modpack] \t Reversing LZMA on " + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + " using 7za...");
+                if (!(process.platform === "win32")) return [3, 64];
+                if (!!fs.existsSync(path.join(launcherDir, "7za.exe"))) return [3, 63];
+                event.sender.send("install log", "[Modpack] \t\t Grabbing 7za binary...");
+                return [4, downloadFile("https://launcher.samboycoding.me/res/7za.exe", path.join(launcherDir, "7za.exe"))];
             case 62:
-                decompressed = _q.sent();
+                _q.sent();
+                _q.label = 63;
+            case 63:
+                child_process.execFileSync(path.join(launcherDir, "7za.exe"), ["x", path.join(tempFolder, path.basename(localPath) + ".pack.xz"), "-y"], { cwd: tempFolder });
+                return [3, 65];
+            case 64:
+                try {
+                    child_process.execSync("xz -dk \"" + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + "\"", { cwd: tempFolder });
+                }
+                catch (e) {
+                    event.sender.send("install failed", "Unable to unpack .xz file (probably due to missing XZ command-line application - try installing xz) for " + lib.name);
+                    event.sender.send("install log", "[Modpack] [Error] Failed to call xz - probably not installed. Error: " + e);
+                    return [2];
+                }
+                _q.label = 65;
+            case 65:
+                decompressed = fs.readFileSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
+                fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
                 end = Buffer.from(decompressed.subarray(decompressed.length - 4, decompressed.length));
                 checkString = end.toString("ascii");
                 if (checkString !== "SIGN") {
                     event.sender.send("install log", "[Modpack] [Error] Failed to verify signature of pack file. Aborting install.");
+                    event.sender.send("install failed", "Failed to verify pack file signature for " + lib.name);
                     return [2];
                 }
                 event.sender.send("install log", "[Modpack] \t\tPack file is signed. Stripping checksum...");
@@ -665,26 +685,27 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 child_process.execFileSync(unpack200, [path.join(tempFolder, path.basename(localPath) + ".pack"), localPath]);
                 if (!fs.existsSync(localPath)) {
                     event.sender.send("install log", "[Modpack] \t[Error] Failed to unpack packed file - result missing. Aborting install.");
+                    event.sender.send("install failed", "Unable to unpack .pack file (result file doesn't exist) for " + lib.name);
                     return [2];
                 }
                 fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
-                _q.label = 63;
-            case 63:
+                _q.label = 66;
+            case 66:
                 _l++;
                 return [3, 53];
-            case 64:
+            case 67:
                 fs.copyFileSync(path.join(forgeVersionFolder_1, "forge_temp.jar"), path.join(forgeVersionFolder_1, "forge.jar"));
-                _q.label = 65;
-            case 65:
+                _q.label = 68;
+            case 68:
                 packDir_1 = path.join(launcherDir, "packs", pack.packName);
                 modsDir = path.join(packDir_1, "mods");
-                if (!!fs.existsSync(modsDir)) return [3, 67];
+                if (!!fs.existsSync(modsDir)) return [3, 70];
                 return [4, mkdirpPromise(modsDir)];
-            case 66:
+            case 69:
                 _q.sent();
-                _q.label = 67;
-            case 67:
-                if (!pack.mods.length) return [3, 71];
+                _q.label = 70;
+            case 70:
+                if (!pack.mods.length) return [3, 74];
                 event.sender.send("modded progress", "Commencing mods download...", 50 / 100);
                 percentPer = 45 / pack.mods.length;
                 current = 50;
@@ -692,9 +713,9 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 for (_o in pack.mods)
                     _m.push(_o);
                 _p = 0;
-                _q.label = 68;
-            case 68:
-                if (!(_p < _m.length)) return [3, 71];
+                _q.label = 71;
+            case 71:
+                if (!(_p < _m.length)) return [3, 74];
                 index = _m[_p];
                 current += percentPer;
                 mod = pack.mods[index];
@@ -702,23 +723,23 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 event.sender.send("modded progress", "Downloading mod " + (Number(index) + 1) + "/" + pack.mods.length + ": " + mod.resolvedName, current / 100);
                 event.sender.send("install log", "[Modpack] \tDownloading " + mod.resolvedVersion + " from " + url);
                 return [4, downloadFile(url, path.join(modsDir, mod.resolvedVersion))];
-            case 69:
+            case 72:
                 _q.sent();
-                _q.label = 70;
-            case 70:
+                _q.label = 73;
+            case 73:
                 _p++;
-                return [3, 68];
-            case 71:
+                return [3, 71];
+            case 74:
                 event.sender.send("modded progress", "Checking for overrides", 0.95);
                 return [4, fetch("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, {
                         method: "HEAD"
                     })];
-            case 72:
+            case 75:
                 resp = _q.sent();
-                if (!(resp.status === 200)) return [3, 75];
+                if (!(resp.status === 200)) return [3, 78];
                 event.sender.send("modded progress", "Downloading overrides", 0.96);
                 return [4, downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(packDir_1, "overrides.zip"))];
-            case 73:
+            case 76:
                 _q.sent();
                 event.sender.send("modded progress", "Installing overrides", 0.97);
                 return [4, new Promise(function (ff, rj) {
@@ -726,10 +747,10 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                             ff();
                         });
                     })];
-            case 74:
+            case 77:
                 _q.sent();
-                _q.label = 75;
-            case 75:
+                _q.label = 78;
+            case 78:
                 event.sender.send("modded progress", "Finishing up", 0.98);
                 jsonfile.writeFileSync(path.join(packDir_1, "install.json"), {
                     packName: pack.packName,
@@ -738,13 +759,13 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 });
                 event.sender.send("modded progress", "Finished.", 1);
                 event.sender.send("install complete");
-                return [3, 77];
-            case 76:
+                return [3, 80];
+            case 79:
                 e_3 = _q.sent();
                 event.sender.send("install failed", "An exception occurred: " + e_3);
                 event.sender.send("install log", "[Error] An Exception occurred: " + e_3);
-                return [3, 77];
-            case 77: return [2];
+                return [3, 80];
+            case 80: return [2];
         }
     });
 }); });

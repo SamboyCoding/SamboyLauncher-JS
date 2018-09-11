@@ -8,7 +8,6 @@ import { AuthData, Pack, VanillaManifestVersion, VanillaVersionData, LibraryMeta
 import * as mkdirp from "mkdirp";
 import * as hasha from "hasha";
 import * as JSZip from "jszip";
-import * as lzma from "lzma-native";
 import * as download from "download";
 import * as child_process from "child_process";
 import { Extract } from "unzipper";
@@ -491,11 +490,12 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             event.sender.send("vanilla progress", `Game client is already installed.`, 1);
         }
 
-        let forgeVersionFolder = path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion);
-        if (!fs.existsSync(forgeVersionFolder))
-            await mkdirpPromise(forgeVersionFolder);
+        let forgeVersionFolder = path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion)
 
         if (pack.forgeVersion && !fs.existsSync(path.join(forgeVersionFolder, "forge.jar"))) {
+            if (!fs.existsSync(forgeVersionFolder))
+                await mkdirpPromise(forgeVersionFolder);
+
             event.sender.send("modded progress", `Commencing minecraft forge download...`, 0 / 100);
 
             let forgeJarURL = `http://files.minecraftforge.net/maven/net/minecraftforge/forge/${pack.gameVersion}-${pack.forgeVersion}-${pack.gameVersion}/forge-${pack.gameVersion}-${pack.forgeVersion}-${pack.gameVersion}-universal.jar`;
@@ -574,20 +574,48 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
 
                     if (!fs.existsSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"))) {
                         event.sender.send("install log", "[Modpack] [Error] Unable to acquire even packed jar; aborting");
+                        event.sender.send("install failed", "Unable to acquire even packed jar for " + lib.name);
                         return;
                     }
 
-                    let input = fs.readFileSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"));
+                    //let input = fs.readFileSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"));
 
-                    event.sender.send("install log", "[Modpack] \t Reversing LZMA on " + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + "...");
+                    event.sender.send("install log", "[Modpack] \t Reversing LZMA on " + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + " using 7za...");
 
-                    let decompressed = await lzma.decompress(input); //TODO: This lzma library cannot be built on windows (._.) switch to `lzma`
+                    //let decompressed = await lzma.decompress(input); //lzma-native doesn't work on windows.
+
+                    if (process.platform === "win32") {
+                        //So, annoyingly, we're going to need to download 7za and use that to unxz the file.
+                        if (!fs.existsSync(path.join(launcherDir, "7za.exe"))) {
+                            event.sender.send("install log", "[Modpack] \t\t Grabbing 7za binary...");
+                            await downloadFile("https://launcher.samboycoding.me/res/7za.exe", path.join(launcherDir, "7za.exe"));
+                        }
+
+
+                        //Unpack, using 7za
+                        child_process.execFileSync(path.join(launcherDir, "7za.exe"), ["x", path.join(tempFolder, path.basename(localPath) + ".pack.xz"), "-y"], { cwd: tempFolder });
+                    } else {
+                        try {
+                            child_process.execSync("xz -dk \"" + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + "\"", { cwd: tempFolder });
+                        } catch (e) {
+                            event.sender.send("install failed", "Unable to unpack .xz file (probably due to missing XZ command-line application - try installing xz) for " + lib.name);
+                            event.sender.send("install log", "[Modpack] [Error] Failed to call xz - probably not installed. Error: " + e);
+                            return;
+                        }
+                    }
+
+                    //Read the file
+                    let decompressed = fs.readFileSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
+
+                    //Remove the existing pack file as we're going to strip the signature now
+                    fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
 
                     let end = Buffer.from(decompressed.subarray(decompressed.length - 4, decompressed.length));
                     let checkString = end.toString("ascii");
 
                     if (checkString !== "SIGN") {
                         event.sender.send("install log", "[Modpack] [Error] Failed to verify signature of pack file. Aborting install.");
+                        event.sender.send("install failed", "Failed to verify pack file signature for " + lib.name);
                         return;
                     }
 
@@ -602,7 +630,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
                     event.sender.send("install log", "[Modpack] \t\tCalculated checksum length: " + checksumLength);
 
                     event.sender.send("install log", "[Modpack] \t\tActual file content length: " + (length - checksumLength - 8));
-                    let actualContent: Buffer = decompressed.subarray(0, length - checksumLength - 8);
+                    let actualContent = decompressed.subarray(0, length - checksumLength - 8);
                     fs.writeFileSync(path.join(tempFolder, path.basename(localPath) + ".pack"), actualContent);
 
                     fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"));
@@ -613,6 +641,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
 
                     if (!fs.existsSync(localPath)) {
                         event.sender.send("install log", "[Modpack] \t[Error] Failed to unpack packed file - result missing. Aborting install.");
+                        event.sender.send("install failed", "Unable to unpack .pack file (result file doesn't exist) for " + lib.name);
                         return;
                     }
 
