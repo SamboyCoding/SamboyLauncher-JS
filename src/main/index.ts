@@ -94,7 +94,7 @@ app.on("activate", () => {
 });
 
 if (!fs.existsSync(launcherDir)) {
-    fs.mkdirSync(launcherDir);
+    await mkdirpPromise(launcherDir);
 }
 
 if (fs.existsSync(path.join(launcherDir, "authdata"))) {
