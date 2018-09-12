@@ -22,7 +22,7 @@ script:
 - |
   if [ "$TRAVIS_OS_NAME" == "linux" ]; then
     docker run --rm \
-      --env-file <(env | grep -iE 'NODE_|ELECTRON_|YARN_|_TOKEN') \
+      --env-file <(env | grep -iE 'GH_TOKEN') \
       -v ${PWD}:/project \
       -v ~/.cache/electron:/root/.cache/electron \
       -v ~/.cache/electron-builder:/root/.cache/electron-builder \
