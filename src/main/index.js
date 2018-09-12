@@ -121,7 +121,7 @@ electron_1.app.on("activate", function () {
     }
 });
 if (!fs.existsSync(launcherDir)) {
-    fs.mkdirSync(launcherDir);
+    await mkdirpPromise(launcherDir);
 }
 if (fs.existsSync(path.join(launcherDir, "authdata"))) {
     try {
