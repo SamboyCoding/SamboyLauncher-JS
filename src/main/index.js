@@ -49,11 +49,13 @@ var JSZip = require("jszip");
 var download = require("download");
 var child_process = require("child_process");
 var unzipper_1 = require("unzipper");
+var asar = require("asar");
 var fetch = web["default"];
 var launcherDir = path.join(process.platform === "win32" ?
     process.env.APPDATA : (process.platform === "darwin" ?
     path.join(process.env.HOME, "Library", "Preferences")
     : path.join(process.env.HOME, ".SamboyLauncher/")), "SamboyLauncher_JS");
+var packsDir = path.join(launcherDir, "packs");
 var authData = new objects_1.AuthData();
 function btoa(str) {
     return Buffer.from(str, "binary").toString("base64");
@@ -109,7 +111,17 @@ function createWindow() {
         win = null;
     });
 }
-electron_1.app.on("ready", createWindow);
+electron_1.app.on("ready", function () { return __awaiter(_this, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4, onReady()];
+            case 1:
+                _a.sent();
+                createWindow();
+                return [2];
+        }
+    });
+}); });
 electron_1.app.on("window-all-closed", function () {
     if (process.platform !== "darwin") {
         electron_1.app.quit();
@@ -120,39 +132,59 @@ electron_1.app.on("activate", function () {
         createWindow();
     }
 });
-if (!fs.existsSync(launcherDir)) {
-    await mkdirpPromise(launcherDir);
-}
-if (fs.existsSync(path.join(launcherDir, "authdata"))) {
-    try {
-        var content = jsonfile.readFileSync(path.join(launcherDir, "authdata"));
-        if (content.accessToken) {
-            authData.accessToken = content.accessToken;
-        }
-        if (content.clientToken) {
-            authData.clientToken = content.clientToken;
-        }
-        if (content.hash) {
-            authData.password = atob(content.hash);
-        }
-        if (content.username) {
-            authData.username = content.username;
-        }
-        if (content.uuid) {
-            authData.uuid = content.uuid;
-        }
-    }
-    catch (e) {
-        jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
-    }
-}
-else {
-    jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
+function onReady() {
+    return __awaiter(this, void 0, void 0, function () {
+        var content;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!!fs.existsSync(launcherDir)) return [3, 2];
+                    return [4, mkdirpPromise(launcherDir)];
+                case 1:
+                    _a.sent();
+                    _a.label = 2;
+                case 2:
+                    if (fs.existsSync(path.join(launcherDir, "authdata"))) {
+                        try {
+                            content = jsonfile.readFileSync(path.join(launcherDir, "authdata"));
+                            if (content.accessToken) {
+                                authData.accessToken = content.accessToken;
+                            }
+                            if (content.clientToken) {
+                                authData.clientToken = content.clientToken;
+                            }
+                            if (content.hash) {
+                                authData.password = atob(content.hash);
+                            }
+                            if (content.username) {
+                                authData.username = content.username;
+                            }
+                            if (content.uuid) {
+                                authData.uuid = content.uuid;
+                            }
+                        }
+                        catch (e) {
+                            jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
+                        }
+                    }
+                    else {
+                        jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
+                    }
+                    return [2];
+            }
+        });
+    });
 }
 electron_1.ipcMain.on("get backgrounds", function (event) {
-    fs.readdir(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"), function (err, files) {
-        event.sender.send("backgrounds", files);
-    });
+    if (fs.existsSync(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"))) {
+        fs.readdir(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"), function (err, files) {
+            event.sender.send("backgrounds", files);
+        });
+    }
+    else {
+        event.sender.send("backgrounds", asar.listPackage("app.asar").filter(function (file) { return file.indexOf("renderer") >= 0 && file.indexOf("backgrounds") >= 0; })
+            .map(function (file) { return file.replace(".." + path.sep + "renderer", ".."); }));
+    }
 });
 electron_1.ipcMain.on("get profile", function (event) {
     if (authData.accessToken && authData.username && authData.uuid) {
@@ -161,6 +193,19 @@ electron_1.ipcMain.on("get profile", function (event) {
     else {
         event.sender.send("no profile");
     }
+});
+electron_1.ipcMain.on("get installed packs", function (event) {
+    if (!fs.existsSync(packsDir))
+        return event.sender.send("installed packs", []);
+    fs.readdir(packsDir, function (error, packFolders) {
+        if (error)
+            return event.sender.send("installed packs", []);
+        var packData = packFolders
+            .filter(function (packFolder) { return fs.existsSync(path.join(packsDir, packFolder, "install.json")); })
+            .map(function (packFolder) { return path.join(packsDir, packFolder, "install.json"); })
+            .map(function (installJson) { return jsonfile.readFileSync(installJson); });
+        event.sender.send("installed packs", packData);
+    });
 });
 electron_1.ipcMain.on("login", function (event, username, password, remember) {
     fetch("https://authserver.mojang.com/authenticate", {
@@ -233,11 +278,11 @@ electron_1.ipcMain.on("get top packs", function (event) {
     });
 });
 electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(_this, void 0, void 0, function () {
-    var unpack200, java, files, installation, versions, version, versionData, libraries, natives, currentPercent, percentPer, _a, _b, _i, index, library, dest, directory, success_1, correctHash, fileHash, ourOs_1, arch, _c, _d, _e, index, native, shouldInstall, rule, artifact, dest, directory, success_2, correctHash, fileHash, assetIndexFolder, assetIndexFile, success, correctChecksum, actual, assets, count, current, _f, _g, _h, index, asset, hash, url, directory, success_3, filePath_1, downloaded, actualSha1, filePath, downloaded, actualSha1, forgeVersionFolder_1, forgeJarURL, e_1, buf, zip_1, versionJSON, libs, percentPer, current, _j, _k, _l, index, lib, libnameSplit, filePath, url, localPath, e_2, tempFolder, decompressed, end, checkString, length, checksumLength, actualContent, packDir_1, modsDir, percentPer, current, _m, _o, _p, index, mod, url, resp, e_3;
+    var unpack200, java, files, installation, versions, version, versionData, libraries, natives, currentPercent, percentPer, _a, _b, _i, index, library, dest, directory, success_1, correctHash, fileHash, ourOs_1, arch, _c, _d, _e, index, native, shouldInstall, rule, artifact, dest, directory, success_2, correctHash, fileHash, assetIndexFolder, assetIndexFile, success, correctChecksum, actual, assets, count, current, _f, _g, _h, index, asset, hash, url, directory, success_3, filePath_1, downloaded, actualSha1, filePath, downloaded, actualSha1, forgeVersionFolder_1, forgeJarURL, e_1, buf, zip_1, versionJSON, libs, percentPer, current, _j, _k, _l, index, lib, libnameSplit, filePath, url, localPath, e_2, tempFolder, decompressed, end, checkString, length, checksumLength, actualContent, packDir_1, modsDir, installedMods, percentPer, current, _loop_1, _m, _o, _p, index, resp, e_3;
     return __generator(this, function (_q) {
         switch (_q.label) {
             case 0:
-                _q.trys.push([0, 79, , 80]);
+                _q.trys.push([0, 80, , 81]);
                 unpack200 = "unpack200";
                 java = "java";
                 if (process.platform === "win32") {
@@ -699,7 +744,7 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 fs.unlinkSync(path.join(forgeVersionFolder_1, "forge_temp.jar"));
                 _q.label = 68;
             case 68:
-                packDir_1 = path.join(launcherDir, "packs", pack.packName);
+                packDir_1 = path.join(packsDir, pack.packName);
                 modsDir = path.join(packDir_1, "mods");
                 if (!!fs.existsSync(modsDir)) return [3, 70];
                 return [4, mkdirpPromise(modsDir)];
@@ -707,10 +752,35 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 _q.sent();
                 _q.label = 70;
             case 70:
+                installedMods = [];
+                if (fs.existsSync(path.join(packDir_1, "install.json"))) {
+                    installedMods = jsonfile.readFileSync(path.join(packDir_1, "install.json")).installedMods;
+                }
                 if (!pack.mods.length) return [3, 74];
                 event.sender.send("modded progress", "Commencing mods download...", 50 / 100);
                 percentPer = 45 / pack.mods.length;
                 current = 50;
+                _loop_1 = function (index) {
+                    var mod, url;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                current += percentPer;
+                                mod = pack.mods[index];
+                                event.sender.send("modded progress", "Downloading mod " + (Number(index) + 1) + "/" + pack.mods.length + ": " + mod.resolvedName, current / 100);
+                                if (installedMods.find(function (m) { return m.fileId === mod.fileId; })) {
+                                    event.sender.send("install log", "[Modpack] \tVersion already downloaded; not downloading again.");
+                                    return [2, "continue"];
+                                }
+                                url = "https://minecraft.curseforge.com/projects/" + mod.slug + "/files/" + mod.fileId + "/download";
+                                event.sender.send("install log", "[Modpack] \tDownloading " + mod.resolvedVersion + " from " + url);
+                                return [4, downloadFile(url, path.join(modsDir, mod.resolvedVersion))];
+                            case 1:
+                                _a.sent();
+                                return [2];
+                        }
+                    });
+                };
                 _m = [];
                 for (_o in pack.mods)
                     _m.push(_o);
@@ -719,12 +789,7 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
             case 71:
                 if (!(_p < _m.length)) return [3, 74];
                 index = _m[_p];
-                current += percentPer;
-                mod = pack.mods[index];
-                url = "https://minecraft.curseforge.com/projects/" + mod.slug + "/files/" + mod.fileId + "/download";
-                event.sender.send("modded progress", "Downloading mod " + (Number(index) + 1) + "/" + pack.mods.length + ": " + mod.resolvedName, current / 100);
-                event.sender.send("install log", "[Modpack] \tDownloading " + mod.resolvedVersion + " from " + url);
-                return [4, downloadFile(url, path.join(modsDir, mod.resolvedVersion))];
+                return [5, _loop_1(index)];
             case 72:
                 _q.sent();
                 _q.label = 73;
@@ -751,24 +816,28 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                     })];
             case 77:
                 _q.sent();
-                _q.label = 78;
+                return [3, 79];
             case 78:
+                event.sender.send("install log", "[Modpack] \tNo overrides.");
+                _q.label = 79;
+            case 79:
                 event.sender.send("modded progress", "Finishing up", 0.98);
                 jsonfile.writeFileSync(path.join(packDir_1, "install.json"), {
+                    id: pack.id,
                     packName: pack.packName,
                     installedVersion: pack.version,
                     installedMods: pack.mods,
-                    authorId: pack.author.id
+                    author: pack.author
                 });
                 event.sender.send("modded progress", "Finished.", 1);
                 event.sender.send("install complete");
-                return [3, 80];
-            case 79:
+                return [3, 81];
+            case 80:
                 e_3 = _q.sent();
                 event.sender.send("install failed", "An exception occurred: " + e_3);
                 event.sender.send("install log", "[Error] An Exception occurred: " + e_3);
-                return [3, 80];
-            case 80: return [2];
+                return [3, 81];
+            case 81: return [2];
         }
     });
 }); });

@@ -34,6 +34,8 @@
                             <label for="login-rememberme" id="rememberme-label">Remember my password</label>
                         </div>
 
+                        <span id="login-error" v-if="ui.login.error">{{ui.login.error}}</span>
+
                         <button id="login-button" :disabled="ui.login.processing" @click="login">
                             <span v-if="ui.login.processing">
                                 Loading...
@@ -77,7 +79,41 @@
                     </nav>
                     <div id="below-navbar">
                         <div v-if="ui.packView.show" id="pack-view">
-                            -Installed Packs
+                            <div id="pack-view-packs">
+                                <div :class="{'pack-view-pack': true, selected: ui.packView.selectedPackIndex === index}"
+                                    v-for="(pack, index) in ui.packView.packs" @click="ui.packView.selectedPackIndex = index">
+                                    <span class="pack-view-pack-title">{{pack.packName}}</span>
+                                    <span class="pack-view-pack-author">By {{pack.author.name}}</span>
+                                </div>
+                            </div>
+                            <div id="pack-view-pack-info" v-if="ui.packView.selectedPackIndex !== -1">
+                                <span class="installed-pack-info-pack-title">{{ui.packView.packs[ui.packView.selectedPackIndex].packName}}</span>
+                                <span class="installed-pack-info-pack-author">By
+                                    {{ui.packView.packs[ui.packView.selectedPackIndex].author.name}}</span>
+                                <span class="installed-pack-info-pack-version">
+                                    <span v-if="ui.packView.packs[ui.packView.selectedPackIndex].latestVersion">
+                                        <span v-if="ui.packView.packs[ui.packView.selectedPackIndex].update" id="pack-view-update-available">
+                                            Update available! Current:
+                                            {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}},
+                                            latest:
+                                            {{ui.packView.packs[ui.packView.selectedPackIndex].latestVersion}}
+                                        </span>
+                                        <span v-else>
+                                            No update available. (Version
+                                            {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}} is
+                                            installed)
+                                        </span>
+                                    </span>
+                                    <span v-else>
+                                        Checking for updates... (current version is
+                                        {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}})
+                                    </span>
+                                </span>
+                                <span class="installed-pack-info-pack-desc">
+                                    {{ui.packView.packs[ui.packView.selectedPackIndex].desc ?
+                                    ui.packView.packs[ui.packView.selectedPackIndex].desc : "Loading Description..."}}
+                                </span>
+                            </div>
                         </div>
                         <div v-else-if="ui.packBrowse.show" id="pack-browse">
                             <div id="pack-browse-packs">
@@ -99,8 +135,15 @@
                                     By {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].author.name}}
                                 </span>
 
-                                <!--TODO: Handle the case where this pack is installed already-->
-                                <button id="install-pack-button" @click="installPack()">Install Pack</button>
+                                <button id="install-pack-button" :disabled="ui.packView.packs.find(p => p.id === ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].id)"
+                                    @click="installPack()">
+                                    <span v-if="ui.packView.packs.find(p => p.id === ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].id)">
+                                        Pack Installed
+                                    </span>
+                                    <span v-else>
+                                        Install Pack
+                                    </span>
+                                </button>
 
                                 <span id="pack-info-pack-mod-count">
                                     {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].mods.length}} mods
@@ -122,7 +165,7 @@
                             </div>
                         </div>
                         <div v-else-if="ui.settings.show" id="settings">
-                            -Settings
+                            Settings Coming Soon&trade;
                         </div>
                     </div>
                     <div :class="{modal: true, shown: ui.packInstall.show}" id="pack-install-modal">

@@ -213,6 +213,14 @@ body,
         #login-button:not(:disabled):active {
             background: darken($ui-button-color, 10%);
         }
+
+        #login-error {
+            color: red;
+            width: 100%;
+            text-align: center;
+            position: absolute;
+            bottom: 3.5rem;
+        }
     }
 }
 
@@ -225,7 +233,9 @@ body,
 
     .navbar-items {
         margin: 0 auto;
-        width: fit-content;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
         height: 100%;
     }
 
@@ -255,18 +265,6 @@ body,
         }
     }
 
-    .navbar-item.navbar-item-right {
-        position: absolute;
-        top: 0;
-        right: 0;
-    }
-
-    .navbar-item.navbar-item-left {
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-
     .navbar-item:hover {
         background: #ccc;
     }
@@ -279,12 +277,93 @@ body,
 
 #below-navbar {
     position: absolute;
-    top: 7rem;
+    top: 6rem;
     width: 100%;
-    min-height: calc(100% - 7rem);
+    height: calc(100% - 6rem);
 
     #pack-view {
-        padding: 1rem;
+        height: 100%;
+
+        #pack-view-packs {
+            width: 30%;
+            display: inline-block;
+            border-right: 1px solid #ccc;
+            height: 100%;
+
+            .pack-view-pack {
+                background: #eee;
+                padding: 1rem;
+                cursor: pointer;
+
+                .pack-view-pack-title {
+                    margin-top: 0;
+                    font-family: "Roboto";
+                    font-weight: 200;
+                    font-size: 24px;
+                    display: inline-block;
+                    margin: 0 auto;
+                }
+
+                .pack-view-pack-author {
+                    display: inline-block;
+                    font-family: "Roboto Thin";
+                    font-size: 16px;
+                    padding-left: 0.4rem;
+                }
+
+                .pack-view-pack-mod-count {
+                    text-align: center;
+                    display: block;
+                    font-family: "Roboto Thin";
+                    font-weight: 200;
+                    font-size: 18px;
+                    margin-bottom: 1rem;
+                }
+            }
+
+            .pack-view-pack:not(:last-of-type) {
+                border-bottom: 1px solid #ccc;
+            }
+
+            .pack-view-pack.selected {
+                background: #8cc1d9;
+            }
+        }
+
+        #pack-view-pack-info {
+            width: 69%;
+            display: inline-block;
+            position: absolute;
+            padding: 1rem;
+
+            .installed-pack-info-pack-version {
+                display: block;
+                font-family: "Roboto Thin";
+                font-weight: 200;
+                margin-top: 5px;
+            }
+
+            .installed-pack-info-pack-title {
+                margin-top: 0;
+                font-family: "Roboto Thin";
+                font-weight: 200;
+                font-size: 36px;
+                display: block;
+                margin: 0 auto;
+            }
+
+            .installed-pack-info-pack-author {
+                display: block;
+                font-family: "Roboto Thin";
+                font-weight: 200;
+                font-size: 24px;
+            }
+
+            .installed-pack-info-pack-desc {
+                margin-top: 1rem;
+                display: block;
+            }
+        }
     }
 
     #pack-browse {
@@ -394,11 +473,17 @@ body,
                 right: 1rem;
             }
 
-            #install-pack-button:hover {
+            #install-pack-button[disabled] {
+                background: #a0e4ab;
+                color: #777;
+                cursor: not-allowed;
+            }
+
+            #install-pack-button:not([disabled]):hover {
                 background: #126921;
             }
 
-            #install-pack-button:active {
+            #install-pack-button:not([disabled]):active {
                 background: #004F07;
             }
         }

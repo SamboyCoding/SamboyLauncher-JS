@@ -12,7 +12,8 @@ const app = new Vue({
                 backgroundImg: "../resources/backgrounds/1.jpg",
                 email: "",
                 password: "",
-                remember: false
+                remember: false,
+                error: ""
             },
             packView: {
                 packs: [],
@@ -75,6 +76,16 @@ const app = new Vue({
             if (app.ui.packBrowse.selectedPackIndex === -1) return;
 
             ipcRenderer.send("install pack", app.ui.packBrowse.packs[app.ui.packBrowse.selectedPackIndex]);
+
+            app.ui.packInstall.failed = false;
+            app.ui.packInstall.log = [];
+
+            app.ui.packInstall.vanillaProgress.label = "Starting installation...";
+            app.ui.packInstall.vanillaProgress.progress = -1;
+
+            app.ui.packInstall.moddedProgress.label = "Starting installation...";
+            app.ui.packInstall.moddedProgress.progress = -1;
+
             app.ui.packInstall.gameVersion = app.ui.packBrowse.packs[app.ui.packBrowse.selectedPackIndex].gameVersion;
             app.ui.packInstall.show = true;
         }
@@ -100,7 +111,7 @@ ipcRenderer.on("backgrounds", (event, files) => {
 });
 
 ipcRenderer.on("login error", (event, errorMessage) => {
-    console.error(errorMessage);
+    app.ui.login.error = errorMessage;
     app.ui.login.processing = false;
 });
 
@@ -126,6 +137,27 @@ ipcRenderer.on("top packs", (event, packs) => {
 
     packs.forEach((p) => {
         p.mods.sort((a, b) => a.resolvedName.localeCompare(b.resolvedName));
+    });
+});
+
+ipcRenderer.on("installed packs", (event, packData) => {
+    packData.forEach((pack) => {
+        pack.latestVersion = "";
+        pack.update = false;
+        pack.latestMods = [];
+        pack.desc = "";
+    });
+
+    app.ui.packView.packs = packData;
+
+    app.ui.packView.packs.forEach(async (pack) => {
+        let resp = await fetch("https://launcher.samboycoding.me/api/users/" + pack.author.id + "/packs/" + pack.id);
+        let json = await resp.json();
+
+        pack.latestVersion = json.version;
+        pack.update = pack.installedVersion !== pack.latestVersion;
+        pack.latestMods = json.mods;
+        pack.desc = json.description;
     });
 });
 

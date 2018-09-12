@@ -1,6 +1,6 @@
 {
     "name": "launcher-client",
-    "version": "1.0.0",
+    "version": "0.1.0-prerelease",
     "description": "Minecraft Launcher - see https://launcher.samboycoding.me",
     "main": "src/main/index.js",
     "scripts": {
@@ -32,6 +32,7 @@
     },
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.3.1",
+        "asar": "^0.14.3",
         "download": "^7.1.0",
         "hasha": "^3.0.0",
         "jsonfile": "^5.0.0",
@@ -46,11 +47,13 @@
         "appId": "me.samboycoding.samboylauncherjs",
         "productName": "SamboyLauncher",
         "artifactName": "SBLauncher-${version}-${os}-${arch}.${ext}",
-        "publish": [{
-            "provider": "github",
-            "repo": "SamboyLauncher-JS",
-            "owner": "SamboyCoding"
-        }],
+        "publish": [
+            {
+                "provider": "github",
+                "repo": "SamboyLauncher-JS",
+                "owner": "SamboyCoding"
+            }
+        ],
         "mac": {
             "category": "public.app-category.games",
             "target": [
@@ -63,12 +66,14 @@
         "linux": {
             "category": "Game",
             "icon": "build/icon.png",
-            "target": [{
-                "target": "AppImage",
-                "arch": [
-                    "x64"
-                ]
-            }]
+            "target": [
+                {
+                    "target": "AppImage",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ]
         }
     }
 }

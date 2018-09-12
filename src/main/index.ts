@@ -4,13 +4,14 @@ import * as jsonfile from "jsonfile";
 import * as web from "node-fetch";
 import * as path from "path";
 import { getVanillaVersionList, getVanillaVersionManifest } from "./gameInstaller";
-import { AuthData, Pack, VanillaManifestVersion, VanillaVersionData, LibraryMetadata, LibraryArtifact } from './objects';
+import { AuthData, Pack, VanillaManifestVersion, VanillaVersionData, LibraryMetadata, LibraryArtifact, Mod } from './objects';
 import * as mkdirp from "mkdirp";
 import * as hasha from "hasha";
 import * as JSZip from "jszip";
 import * as download from "download";
 import * as child_process from "child_process";
 import { Extract } from "unzipper";
+import * as asar from "asar";
 
 const fetch = web.default;
 const launcherDir: string = path.join(process.platform === "win32" ?
@@ -18,6 +19,8 @@ const launcherDir: string = path.join(process.platform === "win32" ?
         path.join(process.env.HOME, "Library", "Preferences")
         : path.join(process.env.HOME, ".SamboyLauncher/")),
     "SamboyLauncher_JS");
+
+const packsDir = path.join(launcherDir, "packs");
 
 const authData: AuthData = new AuthData();
 
@@ -79,7 +82,10 @@ function createWindow(): void {
     });
 }
 
-app.on("ready", createWindow);
+app.on("ready", async () => {
+    await onReady();
+    createWindow();
+});
 
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
@@ -93,44 +99,51 @@ app.on("activate", () => {
     }
 });
 
-if (!fs.existsSync(launcherDir)) {
-    await mkdirpPromise(launcherDir);
-}
+async function onReady() {
+    if (!fs.existsSync(launcherDir)) {
+        await mkdirpPromise(launcherDir);
+    }
 
-if (fs.existsSync(path.join(launcherDir, "authdata"))) {
-    try {
-        const content: any = jsonfile.readFileSync(path.join(launcherDir, "authdata"));
+    if (fs.existsSync(path.join(launcherDir, "authdata"))) {
+        try {
+            const content: any = jsonfile.readFileSync(path.join(launcherDir, "authdata"));
 
-        if (content.accessToken) {
-            authData.accessToken = content.accessToken;
+            if (content.accessToken) {
+                authData.accessToken = content.accessToken;
+            }
+
+            if (content.clientToken) {
+                authData.clientToken = content.clientToken;
+            }
+
+            if (content.hash) {
+                authData.password = atob(content.hash);
+            }
+
+            if (content.username) {
+                authData.username = content.username;
+            }
+
+            if (content.uuid) {
+                authData.uuid = content.uuid;
+            }
+        } catch (e) {
+            jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
         }
-
-        if (content.clientToken) {
-            authData.clientToken = content.clientToken;
-        }
-
-        if (content.hash) {
-            authData.password = atob(content.hash);
-        }
-
-        if (content.username) {
-            authData.username = content.username;
-        }
-
-        if (content.uuid) {
-            authData.uuid = content.uuid;
-        }
-    } catch (e) {
+    } else {
         jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
     }
-} else {
-    jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
 }
 
 ipcMain.on("get backgrounds", (event: IpcMessageEvent) => {
-    fs.readdir(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"), (err: NodeJS.ErrnoException, files: string[]) => {
-        event.sender.send("backgrounds", files);
-    });
+    if (fs.existsSync(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"))) {
+        fs.readdir(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"), (err: NodeJS.ErrnoException, files: string[]) => {
+            event.sender.send("backgrounds", files);
+        });
+    } else {
+        event.sender.send("backgrounds", asar.listPackage("app.asar").filter((file: string) => file.indexOf("renderer") >= 0 && file.indexOf("backgrounds") >= 0)
+            .map((file: string) => file.replace(".." + path.sep + "renderer", "..")));
+    }
 });
 
 ipcMain.on("get profile", (event: IpcMessageEvent) => {
@@ -139,6 +152,22 @@ ipcMain.on("get profile", (event: IpcMessageEvent) => {
     } else {
         event.sender.send("no profile");
     }
+});
+
+ipcMain.on("get installed packs", (event: IpcMessageEvent) => {
+    if (!fs.existsSync(packsDir))
+        return event.sender.send("installed packs", []);
+
+    fs.readdir(packsDir, (error, packFolders) => {
+        if (error) return event.sender.send("installed packs", []);
+
+        let packData = packFolders
+            .filter(packFolder => fs.existsSync(path.join(packsDir, packFolder, "install.json")))
+            .map(packFolder => path.join(packsDir, packFolder, "install.json"))
+            .map(installJson => jsonfile.readFileSync(installJson));
+
+        event.sender.send("installed packs", packData);
+    })
 });
 
 ipcMain.on("login", (event: IpcMessageEvent, username: string, password: string, remember: boolean) => {
@@ -527,7 +556,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
                 zip.file("version.json")
                     .nodeStream()
                     .pipe(fs.createWriteStream(path.join(forgeVersionFolder, "version.json")))
-                    .on('finish', function () {
+                    .on('finish', function() {
                         ff();
                     });
             });
@@ -656,14 +685,18 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
         }
 
-        let packDir = path.join(launcherDir, "packs", pack.packName);
+        let packDir = path.join(packsDir, pack.packName);
         let modsDir = path.join(packDir, "mods");
 
         if (!fs.existsSync(modsDir))
             await mkdirpPromise(modsDir);
 
-        if (pack.mods.length) {
+        let installedMods: Mod[] = [];
+        if (fs.existsSync(path.join(packDir, "install.json"))) {
+            installedMods = jsonfile.readFileSync(path.join(packDir, "install.json")).installedMods;
+        }
 
+        if (pack.mods.length) {
             event.sender.send("modded progress", `Commencing mods download...`, 50 / 100);
             let percentPer = 45 / pack.mods.length;
             let current = 50;
@@ -671,9 +704,16 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             for (let index in pack.mods) {
                 current += percentPer;
                 let mod = pack.mods[index];
-                let url = `https://minecraft.curseforge.com/projects/${mod.slug}/files/${mod.fileId}/download`;
 
                 event.sender.send("modded progress", `Downloading mod ${Number(index) + 1}/${pack.mods.length}: ${mod.resolvedName}`, current / 100);
+
+                if (installedMods.find(m => m.fileId === mod.fileId)) {
+                    event.sender.send("install log", "[Modpack] \tVersion already downloaded; not downloading again.");
+                    continue;
+                }
+
+                let url = `https://minecraft.curseforge.com/projects/${mod.slug}/files/${mod.fileId}/download`;
+
                 event.sender.send("install log", "[Modpack] \tDownloading " + mod.resolvedVersion + " from " + url);
 
                 await downloadFile(url, path.join(modsDir, mod.resolvedVersion));
@@ -697,15 +737,18 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
                     ff();
                 })
             });
+        } else {
+            event.sender.send("install log", "[Modpack] \tNo overrides.");
         }
 
         event.sender.send("modded progress", `Finishing up`, 0.98);
 
         jsonfile.writeFileSync(path.join(packDir, "install.json"), {
+            id: pack.id,
             packName: pack.packName,
             installedVersion: pack.version,
             installedMods: pack.mods,
-            authorId: pack.author.id
+            author: pack.author
         });
 
         event.sender.send("modded progress", `Finished.`, 1);
