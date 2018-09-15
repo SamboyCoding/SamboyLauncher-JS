@@ -91,24 +91,44 @@ export class LibraryNativesInfo {
     public windows: string;
 }
 
-export class LibraryDownloadRuleOS {
+export class OSRule {
     public name: string;
+    public arch: string;
+    public version: string;
 }
 
-export class LibraryDownloadRule {
+export class ConditionalAllow {
     public action: string;
-    public os: LibraryDownloadRuleOS
+    public os: OSRule
+    public features: any;
 }
 
 export class LibraryMetadata {
     public downloads: LibraryDownloads;
     public name: string;
     public natives: LibraryNativesInfo;
-    public rules: LibraryDownloadRule[];
+    public rules: ConditionalAllow[];
+}
+
+export class ConditionalArgument {
+    public rules: ConditionalAllow[];
+    public value: string | string[];
+}
+
+export class VanillaVersionArguments {
+    public game: (string | ConditionalArgument)[];
+    public jvm: (string | ConditionalArgument)[];
 }
 
 export class VanillaVersionData {
-    public arguments: any;
+    /**
+     * For pre-1.13 versions, just a string
+     */
+    public minecraftArguments: string;
+    /**
+     * Used since 1.13, more complex argument system
+     */
+    public arguments: VanillaVersionArguments;
     public assetIndex: AssetIndexMetadata;
     public assets: string;
     public downloads: DownloadOptions;

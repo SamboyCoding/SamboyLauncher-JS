@@ -13,7 +13,10 @@
         "ter-indent": [true, 4],
         "no-console": false,
         "max-line-length": false,
-        "max-classes-per-file": false
+        "max-classes-per-file": false,
+        "await-promise": true,
+        "no-unsafe-any": false,
+        "no-any": false
     },
     "rulesDirectory": [
         "node_modules/tslint-eslint-rules/dist/rules"

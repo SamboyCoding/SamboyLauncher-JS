@@ -12,6 +12,7 @@ import * as download from "download";
 import * as child_process from "child_process";
 import { Extract } from "unzipper";
 import * as asar from "asar";
+import * as os from "os";
 
 const fetch = web.default;
 const launcherDir: string = path.join(process.platform === "win32" ?
@@ -346,9 +347,13 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             percentPer = 25 / natives.length;
 
             event.sender.send("install log", `[Vanilla] Current OS is ${ourOs}-${arch}`, 30 / 100);
+            let nativesFolder = path.join(launcherDir, "versions", version.id, "natives");
+
+            if (!fs.existsSync(nativesFolder))
+                await mkdirpPromise(nativesFolder);
 
             for (let index in natives) {
-                currentPercent += percentPer;
+                currentPercent += (percentPer / 2);
                 let native: LibraryMetadata = natives[index];
                 event.sender.send("vanilla progress", `Downloading native ${Number(index) + 1} of ${natives.length}:  ${native.name} ...`, currentPercent / 100);
 
@@ -427,6 +432,15 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
                         fs.unlinkSync(dest);
                     }
                 }
+
+                currentPercent += (percentPer / 2);
+                event.sender.send("vanilla progress", `Installing native ${Number(index) + 1} of ${natives.length}:  ${native.name} ...`, currentPercent / 100);
+
+                await new Promise((ff, rj) => {
+                    fs.createReadStream(dest).pipe(Extract({ path: nativesFolder })).on("close", () => {
+                        ff();
+                    })
+                });
             }
 
             event.sender.send("vanilla progress", `Downloading asset index ${versionData.assetIndex.id}...`, 56 / 100);
@@ -556,7 +570,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
                 zip.file("version.json")
                     .nodeStream()
                     .pipe(fs.createWriteStream(path.join(forgeVersionFolder, "version.json")))
-                    .on('finish', function() {
+                    .on('finish', function () {
                         ff();
                     });
             });
@@ -566,7 +580,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
 
             event.sender.send("modded progress", `Preparing to install forge libraries...`, 4 / 100);
 
-            let libs = versionJSON.libraries.filter((lib: any) => lib.name.indexOf("net.minecraftforge:forge:") === -1 && lib.clientreq);
+            let libs = versionJSON.libraries.filter((lib: any) => lib.name.indexOf("net.minecraftforge:forge:") === -1);
 
             event.sender.send("install log", "[Modpack] \tNeed to install " + libs.length + " libraries for forge.");
 
@@ -585,6 +599,9 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
 
                 let localPath = [launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
                 event.sender.send("install log", "[Modpack] \tDownloading " + url + " => " + localPath);
+
+                if (fs.existsSync(localPath))
+                    continue;
 
                 if (!fs.existsSync(path.dirname(localPath)))
                     await mkdirpPromise(path.dirname(localPath));
@@ -621,7 +638,6 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
                             event.sender.send("install log", "[Modpack] \t\t Grabbing 7za binary...");
                             await downloadFile("https://launcher.samboycoding.me/res/7za.exe", path.join(launcherDir, "7za.exe"));
                         }
-
 
                         //Unpack, using 7za
                         child_process.execFileSync(path.join(launcherDir, "7za.exe"), ["x", path.join(tempFolder, path.basename(localPath) + ".pack.xz"), "-y"], { cwd: tempFolder });
@@ -758,4 +774,287 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
         event.sender.send("install failed", "An exception occurred: " + e);
         event.sender.send("install log", "[Error] An Exception occurred: " + e);
     }
+});
+
+ipcMain.on("uninstall pack", (event: IpcMessageEvent, pack: Pack) => {
+
+});
+
+ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
+    let gameArgs: string[] = [];
+    let jvmArgs: string[] = [];
+    let classPath: string[] = [];
+    let mainClass: string;
+
+    let vanillaManifest: VanillaVersionData;
+    let forgeManifest: any;
+
+    if (pack.forgeVersion) {
+        //Launch forge
+        if (!fs.existsSync(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "forge.jar"))
+            || !fs.existsSync(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "version.json"))) {
+            return event.sender.send("launch failed", "Forge version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+
+        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
+            || !fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
+            return event.sender.send("launch failed", "Base game version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+
+        forgeManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "version.json"));
+        vanillaManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"));
+
+        let arch = process.arch.indexOf("64") > -1 ? "x64" : "x86";
+
+        gameArgs = forgeManifest.minecraftArguments.split(" ");
+        jvmArgs = [];
+        if (process.platform === "darwin")
+            jvmArgs.push("-XstartOnFirstThread");
+        if (process.platform === "win32")
+            jvmArgs.push("-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump");
+        if (process.platform === "win32" && os.release().startsWith("10."))
+            jvmArgs = jvmArgs.concat(["-Dos.name=Windows 10", "-Dos.version=10.0"]);
+        if (arch === "x86")
+            jvmArgs.push("-Xss1M");
+
+        jvmArgs = jvmArgs.concat(["-Djava.library.path=${natives_directory}", "-Dminecraft.launcher.brand=${launcher_name}", "-Dminecraft.launcher.version=${launcher_version}", "-cp", "${classpath}"])
+
+        for (let index in vanillaManifest.libraries) {
+            let library = vanillaManifest.libraries[index];
+            if (library.downloads && library.downloads.artifact) {
+                classPath.push(path.join(launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
+            }
+        }
+
+        for (let index in forgeManifest.libraries) {
+            let library: any = forgeManifest.libraries[index];
+            if (library.name.indexOf("net.minecraftforge:forge") === -1) { //Skip forge itself, we add it later
+                let libnameSplit: string = library.name.split(":");
+
+                let filePath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
+                let localPath = [launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
+
+                classPath.push(localPath);
+            }
+        }
+
+        classPath.push(path.join(launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"))
+        classPath.push(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "forge.jar"))
+
+        mainClass = forgeManifest.mainClass;
+
+    } else {
+        //Launch base game
+        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
+            || !fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
+            return event.sender.send("launch failed", "Base game version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+
+        vanillaManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"));
+
+        let ourOs = process.platform === "win32" ? "windows"
+            : process.platform === "darwin" ? "osx"
+                : "linux";
+        let arch = process.arch.indexOf("64") > -1 ? "x64" : "x86";
+        let version = os.release();
+
+        //Some versions (pre-1.13) don't have a complex args system like this, just a simple `minecraftArguments` string
+        //That needs to be split on spaces
+        if (vanillaManifest.arguments) {
+            gameArgs = [];
+            for (let index in vanillaManifest.arguments.game) {
+                let arg = vanillaManifest.arguments.game[index];
+
+                if (typeof (arg) === "string")
+                    gameArgs.push(arg);
+                else {
+                    let allow = false; //Default to false if rules exist and none match us
+                    if (arg.rules.length) {
+                        for (let rIndex in arg.rules) {
+                            let rule = arg.rules[rIndex];
+                            if (rule.os) {
+                                if ((!rule.os.name || rule.os.name === ourOs)
+                                    && (!rule.os.arch || rule.os.arch === arch)
+                                    && (!rule.os.version || RegExp(rule.os.version).exec(version))) { //exec returns null on no match
+                                    if (rule.action === "allow") {
+                                        allow = true;
+                                    } else {
+                                        allow = false;
+                                    }
+                                    break;
+                                }
+                            } else if (rule.features && Object.keys(rule.features).length) {
+                                if (rule.features.hasOwnProperty("has_custom_resolution")) {
+                                    allow = true; //TODO: Change this to if the user has a resolution set once settings done
+                                }
+                            } else {
+                                allow = rule.action === "allow";
+                            }
+                        }
+                    } else {
+                        allow = true; //Default to allow if no rules
+                    }
+
+                    if (allow) {
+                        if (typeof (arg.value) === "string") {
+                            gameArgs.push(arg.value);
+                        } else {
+                            gameArgs = gameArgs.concat(arg.value);
+                        }
+                    }
+                }
+            }
+
+            for (let index in vanillaManifest.arguments.jvm) {
+                let arg = vanillaManifest.arguments.jvm[index];
+
+                if (typeof (arg) === "string")
+                    jvmArgs.push(arg);
+                else {
+                    let allow = false; //Default to false if rules exist and none match us
+                    if (arg.rules.length) {
+                        for (let rIndex in arg.rules) {
+                            let rule = arg.rules[rIndex];
+                            if (rule.os) {
+                                if ((!rule.os.name || rule.os.name === ourOs)
+                                    && (!rule.os.arch || rule.os.arch === arch)
+                                    && (!rule.os.version || RegExp(rule.os.version).exec(version))) { //exec returns null on no match
+                                    if (rule.action === "allow") {
+                                        allow = true;
+                                    } else {
+                                        allow = false;
+                                    }
+                                    break;
+                                }
+                            } else if (rule.features && Object.keys(rule.features).length) {
+                                //No-op?
+                            } else {
+                                allow = rule.action === "allow";
+                            }
+                        }
+                    } else {
+                        allow = true; //Default to allow if no rules
+                    }
+
+                    if (allow) {
+                        if (typeof (arg.value) === "string") {
+                            jvmArgs.push(arg.value);
+                        } else {
+                            jvmArgs = jvmArgs.concat(arg.value);
+                        }
+                    }
+                }
+            }
+        } else {
+            gameArgs = vanillaManifest.minecraftArguments.split(" ");
+            jvmArgs = [];
+            if (process.platform === "darwin")
+                jvmArgs.push("-XstartOnFirstThread");
+            if (process.platform === "win32")
+                jvmArgs.push("-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump");
+            if (process.platform === "win32" && os.release().startsWith("10."))
+                jvmArgs = jvmArgs.concat(["-Dos.name=Windows 10", "-Dos.version=10.0"]);
+            if (arch === "x86")
+                jvmArgs.push("-Xss1M");
+
+            jvmArgs = jvmArgs.concat(["-Djava.library.path=${natives_directory}", "-Dminecraft.launcher.brand=${launcher_name}", "-Dminecraft.launcher.version=${launcher_version}", "-cp", "${classpath}"])
+        }
+
+        for (let index in vanillaManifest.libraries) {
+            let library = vanillaManifest.libraries[index];
+            if (library.downloads && library.downloads.artifact) {
+                classPath.push(path.join(launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
+            }
+        }
+
+        classPath.push(path.join(launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"))
+
+        mainClass = vanillaManifest.mainClass;
+    }
+
+    gameArgs = gameArgs.map(arg => {
+        switch (arg) {
+            case "${auth_player_name}":
+                return authData.username;
+            case "${version_name}":
+                return pack.gameVersion;
+            case "${game_directory}":
+                return path.join(launcherDir, "packs", pack.packName);
+            case "${assets_root}":
+                return path.join(launcherDir, "assets");
+            case "${assets_index_name}":
+                return vanillaManifest.assetIndex.id;
+            case "${auth_uuid}":
+                return authData.uuid;
+            case "${auth_access_token}":
+                return authData.accessToken;
+            case "${user_type}":
+                return "mojang";
+            case "${version_type}":
+                return "release";
+            case "${resolution_width}":
+                return "1280"; //TODO: Change once resolution controls in
+            case "${resolution_height}":
+                return "720"; //TODO: And this
+            default:
+                return arg;
+        }
+    });
+
+    jvmArgs = jvmArgs.map(arg => {
+        return arg.replace("${natives_directory}", path.join(launcherDir, "versions", vanillaManifest.id, "natives"))
+            .replace("${launcher_name}", "SamboyLauncher")
+            .replace("${launcher_version}", "v2")
+            .replace("${game_directory}", path.join(launcherDir, "packs", pack.packName))
+            .replace("${classpath}", classPath.join(process.platform === "win32" ? ";" : ":"));
+    });
+
+    let memGigs = 2;
+
+    jvmArgs = jvmArgs.concat([`-Xmx${memGigs}G`, `-Xms${memGigs - 1}G`, "-Djava.net.preferIPv4Stack=true"]);
+
+    let java = "java";
+
+    if (process.platform === "win32") {
+        //Oracle does stupid stuff on windows with the location of java, so find it manually
+        if (!fs.existsSync(path.join(process.env["PROGRAMFILES"], "Java"))) {
+            event.sender.send("launch failed", "No Java installed. If on 64-bit windows, try installing 64-bit java.");
+            return;
+        }
+
+        let files = fs.readdirSync(path.join(process.env["PROGRAMFILES"], "Java"));
+        let installation = files.find(file => file.startsWith("jre1.8") || file.startsWith("jdk1.8"));
+        if (!installation) {
+            event.sender.send("launch failed", "No correct Java version found. Install Java 8.");
+            return;
+        }
+
+        if (!fs.existsSync(path.join(process.env["PROGRAMFILES"], "Java", installation, "bin", "javaw.exe"))) {
+            event.sender.send("launch failed", "Corrupt Java installation detected. Remove " + path.join(process.env["PROGRAMFILES"], "Java", installation) + " and try again.");
+            return;
+        }
+
+        java = path.join(process.env["PROGRAMFILES"], "Java", installation, "bin", "javaw.exe");
+    }
+
+    let finalArgs = jvmArgs.concat([mainClass]).concat(gameArgs);
+
+    let gameProcess = child_process.spawn(java, finalArgs, {
+        cwd: path.join(launcherDir, "packs", pack.packName),
+        stdio: "pipe",
+        detached: true,
+    });
+
+    event.sender.send("game launched");
+    event.sender.send("game output", java + " " + finalArgs.join(" "));
+
+    gameProcess.stdout.on('data', function (data) {
+        event.sender.send("game output", data.toString("utf8").trim());
+    });
+    gameProcess.stderr.on('data', function (data) {
+        event.sender.send("game error", data.toString("utf8").trim());
+    });
+    gameProcess.on('close', function (code) {
+        event.sender.send("game closed", code);
+    });
 });

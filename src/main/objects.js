@@ -72,24 +72,36 @@ var LibraryNativesInfo = (function () {
     return LibraryNativesInfo;
 }());
 exports.LibraryNativesInfo = LibraryNativesInfo;
-var LibraryDownloadRuleOS = (function () {
-    function LibraryDownloadRuleOS() {
+var OSRule = (function () {
+    function OSRule() {
     }
-    return LibraryDownloadRuleOS;
+    return OSRule;
 }());
-exports.LibraryDownloadRuleOS = LibraryDownloadRuleOS;
-var LibraryDownloadRule = (function () {
-    function LibraryDownloadRule() {
+exports.OSRule = OSRule;
+var ConditionalAllow = (function () {
+    function ConditionalAllow() {
     }
-    return LibraryDownloadRule;
+    return ConditionalAllow;
 }());
-exports.LibraryDownloadRule = LibraryDownloadRule;
+exports.ConditionalAllow = ConditionalAllow;
 var LibraryMetadata = (function () {
     function LibraryMetadata() {
     }
     return LibraryMetadata;
 }());
 exports.LibraryMetadata = LibraryMetadata;
+var ConditionalArgument = (function () {
+    function ConditionalArgument() {
+    }
+    return ConditionalArgument;
+}());
+exports.ConditionalArgument = ConditionalArgument;
+var VanillaVersionArguments = (function () {
+    function VanillaVersionArguments() {
+    }
+    return VanillaVersionArguments;
+}());
+exports.VanillaVersionArguments = VanillaVersionArguments;
 var VanillaVersionData = (function () {
     function VanillaVersionData() {
     }

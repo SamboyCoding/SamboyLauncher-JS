@@ -46,6 +46,12 @@ const app = new Vue({
                     label: "Starting installation...",
                     progress: -1
                 }
+            },
+            gameRun: {
+                show: false,
+                log: [],
+                exitCode: undefined,
+                running: false
             }
         }
     },
@@ -88,6 +94,20 @@ const app = new Vue({
 
             app.ui.packInstall.gameVersion = app.ui.packBrowse.packs[app.ui.packBrowse.selectedPackIndex].gameVersion;
             app.ui.packInstall.show = true;
+        },
+        uninstallPack: function () {
+            if (app.ui.packView.selectedPackIndex === -1) return;
+
+            ipcRenderer.send("uninstall pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex]);
+        },
+        launchPack: function () {
+            if (app.ui.packView.selectedPackIndex === -1) return;
+
+            app.ui.gameRun.log = [];
+            app.ui.gameRun.running = false;
+            app.ui.gameRun.exitCode = undefined;
+            app.ui.gameRun.show = true;
+            ipcRenderer.send("launch pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex]);
         }
     }
 });
@@ -97,6 +117,23 @@ function hideCover() {
     setTimeout(() => {
         document.querySelector("#cover").style.display = "none";
     }, 1000);
+}
+
+function adjustScroll(oldPos) {
+    if (oldPos !== 0) return;
+
+    let elem = document.querySelector("#game-running-modal .modal-content");
+    elem.scrollTop = (elem.scrollHeight - elem.clientHeight);
+}
+
+function getCaptureGroup(string, regex, index) {
+    index || (index = 1); // default to the first capturing group
+    var matches = [];
+    var match;
+    while ((match = regex.exec(string))) {
+        matches.push(match[index]);
+    }
+    return matches;
 }
 
 document.body.onload = function () {
@@ -146,6 +183,8 @@ ipcRenderer.on("installed packs", (event, packData) => {
         pack.update = false;
         pack.latestMods = [];
         pack.desc = "";
+        pack.gameVersion = "";
+        pack.forgeVersion = "";
     });
 
     app.ui.packView.packs = packData;
@@ -158,6 +197,8 @@ ipcRenderer.on("installed packs", (event, packData) => {
         pack.update = pack.installedVersion !== pack.latestVersion;
         pack.latestMods = json.mods;
         pack.desc = json.description;
+        pack.gameVersion = json.gameVersion;
+        pack.forgeVersion = json.forgeVersion;
     });
 });
 
@@ -189,4 +230,57 @@ ipcRenderer.on("install failed", (event, reason) => {
     if (app.ui.packInstall.moddedProgress.progress > -1 && app.ui.packInstall.moddedProgress.progress < 1) {
         app.ui.packInstall.moddedProgress.label = reason;
     }
+});
+
+ipcRenderer.on("game launched", (event) => {
+    app.ui.gameRun.running = true;
+});
+
+ipcRenderer.on("game output", (event, input) => {
+    let elem = document.querySelector("#game-running-modal .modal-content");
+    let offset = (elem.scrollHeight - elem.clientHeight) - elem.scrollTop;
+
+    let lines = input.replace("\r", "").split("\n");
+
+    for (let index in lines) {
+        let line = lines[index].trim().replace("\r", "").replace("\n", "").replace("\r\n", "");
+        let match = /\s*\[(\d+:\d+:\d+)\] \[([a-zA-Z0-9\s-]+)\/([a-zA-Z]+)\](.+)/g.exec(line);
+        if (!match) {
+            app.ui.gameRun.log.push({
+                type: "info",
+                content: line
+            });
+        } else {
+            app.ui.gameRun.log.push({
+                content: line,
+                time: match[1],
+                thread: match[2],
+                level: match[3].toLowerCase(),
+                message: match[4]
+            });
+        }
+    }
+
+    setTimeout(function () {
+        adjustScroll(offset);
+    }, 100);
+});
+
+ipcRenderer.on("game error", (event, line) => {
+    let elem = document.querySelector("#game-running-modal .modal-content");
+    let offset = (elem.scrollHeight - elem.clientHeight) - elem.scrollTop;
+
+    app.ui.gameRun.log.push({
+        type: "error",
+        content: line
+    });
+
+    setTimeout(function () {
+        adjustScroll(offset);
+    }, 100);
+});
+
+ipcRenderer.on("game closed", (event, code) => {
+    app.ui.gameRun.running = false;
+    app.ui.gameRun.exitCode = code;
 });

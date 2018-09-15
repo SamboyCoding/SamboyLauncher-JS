@@ -87,9 +87,22 @@
                                 </div>
                             </div>
                             <div id="pack-view-pack-info" v-if="ui.packView.selectedPackIndex !== -1">
-                                <span class="installed-pack-info-pack-title">{{ui.packView.packs[ui.packView.selectedPackIndex].packName}}</span>
-                                <span class="installed-pack-info-pack-author">By
-                                    {{ui.packView.packs[ui.packView.selectedPackIndex].author.name}}</span>
+                                <button id="installed-pack-uninstall-button" @click="uninstallPack">
+                                    <i class="fas fa-trash-alt"></i>
+                                    Uninstall Pack
+                                </button>
+                                <button id="installed-pack-launch-game-button" @click="launchPack">
+                                    <i class="fas fa-play"></i>
+                                    Launch Pack
+                                </button>
+                                <span class="installed-pack-info-pack-title">
+                                    {{ui.packView.packs[ui.packView.selectedPackIndex].packName}}
+                                </span>
+
+                                <span class="installed-pack-info-pack-author">
+                                    By {{ui.packView.packs[ui.packView.selectedPackIndex].author.name}}
+                                </span>
+
                                 <span class="installed-pack-info-pack-version">
                                     <span v-if="ui.packView.packs[ui.packView.selectedPackIndex].latestVersion">
                                         <span v-if="ui.packView.packs[ui.packView.selectedPackIndex].update" id="pack-view-update-available">
@@ -109,10 +122,26 @@
                                         {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}})
                                     </span>
                                 </span>
+
                                 <span class="installed-pack-info-pack-desc">
                                     {{ui.packView.packs[ui.packView.selectedPackIndex].desc ?
                                     ui.packView.packs[ui.packView.selectedPackIndex].desc : "Loading Description..."}}
                                 </span>
+
+                                <br><br>
+                                <span id="installed-pack-info-pack-mod-list-title" v-if="ui.packView.packs[ui.packView.selectedPackIndex].installedMods.length">
+                                    Currently Installed Mods:
+                                </span>
+                                <span id="installed-pack-info-pack-mod-list-title" v-else>
+                                    [Pack is Unmodded]
+                                </span>
+
+                                <ul id="installed-pack-info-mod-list">
+                                    <li class="installed-pack-info-mod" v-for="mod in ui.packView.packs[ui.packView.selectedPackIndex].installedMods">
+                                        {{mod.resolvedName}} ({{mod.resolvedVersion}})
+                                        <br>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                         <div v-else-if="ui.packBrowse.show" id="pack-browse">
@@ -202,6 +231,62 @@
                                     <span v-for="logEntry in ui.packInstall.log">{{logEntry}}<br></span>
                                 </code>
                             </pre>
+                        </div>
+                    </div>
+
+                    <div :class="{modal: true, shown: ui.gameRun.show}" id="game-running-modal">
+                        <div class="modal-content">
+                            <h1 class="modal-title">Game is running...</h1>
+                            <button class="modal-top-button" id="close-install-modal" v-if="!ui.gameRun.running" @click="ui.gameRun.show = false">
+                                Done
+                            </button>
+                            <table id="game-output-log">
+                                <thead>
+                                    <tr>
+                                        <th>Level</th>
+                                        <th>Time</th>
+                                        <th>Thread</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="logEntry in ui.gameRun.log" :class="{error: logEntry.type === 'error' || logEntry.level === 'error',
+                                                                    warning: logEntry.level === 'warn', info: logEntry.type === 'info' || logEntry.level === 'info'}">
+                                        <td>
+                                            <span v-if="logEntry.level">
+                                                {{logEntry.level}}
+                                            </span>
+                                            <span v-else>
+                                                {{logEntry.type}}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span v-if="logEntry.time">
+                                                {{logEntry.time}}
+                                            </span>
+                                            <span v-else>
+                                                --:--:--
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span v-if="logEntry.thread">
+                                                {{logEntry.thread}}
+                                            </span>
+                                            <span v-else>
+                                                [Game Client]
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span v-if="logEntry.message">
+                                                {{logEntry.message}}
+                                            </span>
+                                            <span v-else>
+                                                {{logEntry.content}}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

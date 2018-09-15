@@ -398,6 +398,64 @@ body,
   display: block;
 }
 
+#below-navbar #pack-view #pack-view-pack-info #installed-pack-info-pack-mod-list-title {
+  font-size: 30px;
+  font-family: "Roboto Thin";
+  font-weight: 200;
+}
+
+#below-navbar #pack-view #pack-view-pack-info #installed-pack-launch-game-button {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  background: none;
+  outline: none;
+  border: 1px solid #0bc139;
+  padding: 1.2rem;
+  border-top-right-radius: 2rem;
+  border-bottom-right-radius: 2rem;
+  color: #0bc139;
+  cursor: pointer;
+  font-size: 14px;
+  border-left: none;
+}
+
+#below-navbar #pack-view #pack-view-pack-info #installed-pack-launch-game-button:hover {
+  background: #0bc139;
+  color: #fff;
+}
+
+#below-navbar #pack-view #pack-view-pack-info #installed-pack-launch-game-button:active {
+  background: #099a2d;
+  color: #fff;
+}
+
+#below-navbar #pack-view #pack-view-pack-info #installed-pack-uninstall-button {
+  position: absolute;
+  top: 2rem;
+  right: 10.5rem;
+  background: none;
+  outline: none;
+  border: 1px solid #9a0909;
+  padding: 1.2rem;
+  border-top-left-radius: 2rem;
+  border-bottom-left-radius: 2rem;
+  color: #9a0909;
+  cursor: pointer;
+  font-size: 14px;
+  border-right: 1px solid #ccc;
+}
+
+#below-navbar #pack-view #pack-view-pack-info #installed-pack-uninstall-button:hover {
+  background: #9a0909;
+  color: #fff;
+}
+
+#below-navbar #pack-view #pack-view-pack-info #installed-pack-uninstall-button:active {
+  background: #7d0707;
+  color: #fff;
+}
+
 #below-navbar #pack-browse {
   padding: 1rem;
 }
@@ -636,5 +694,32 @@ body,
 
 #pack-install-log span {
   display: block;
+}
+
+#game-running-modal .modal-content {
+  width: 85%;
+  margin-top: 3rem;
+  max-height: calc(100% - 6rem);
+}
+
+#game-running-modal .modal-content #game-output-log {
+  overflow-x: scroll;
+  margin-top: 1rem;
+  -webkit-user-select: text;
+     -moz-user-select: text;
+      -ms-user-select: text;
+          user-select: text;
+}
+
+#game-running-modal .modal-content #game-output-log span {
+  display: block;
+}
+
+#game-running-modal .modal-content #game-output-log .error {
+  color: red;
+}
+
+#game-running-modal .modal-content #game-output-log .warning {
+  color: #e4a744;
 }
 /*# sourceMappingURL=app.css.map */

@@ -50,6 +50,7 @@ var download = require("download");
 var child_process = require("child_process");
 var unzipper_1 = require("unzipper");
 var asar = require("asar");
+var os = require("os");
 var fetch = web["default"];
 var launcherDir = path.join(process.platform === "win32" ?
     process.env.APPDATA : (process.platform === "darwin" ?
@@ -278,11 +279,11 @@ electron_1.ipcMain.on("get top packs", function (event) {
     });
 });
 electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(_this, void 0, void 0, function () {
-    var unpack200, java, files, installation, versions, version, versionData, libraries, natives, currentPercent, percentPer, _a, _b, _i, index, library, dest, directory, success_1, correctHash, fileHash, ourOs_1, arch, _c, _d, _e, index, native, shouldInstall, rule, artifact, dest, directory, success_2, correctHash, fileHash, assetIndexFolder, assetIndexFile, success, correctChecksum, actual, assets, count, current, _f, _g, _h, index, asset, hash, url, directory, success_3, filePath_1, downloaded, actualSha1, filePath, downloaded, actualSha1, forgeVersionFolder_1, forgeJarURL, e_1, buf, zip_1, versionJSON, libs, percentPer, current, _j, _k, _l, index, lib, libnameSplit, filePath, url, localPath, e_2, tempFolder, decompressed, end, checkString, length, checksumLength, actualContent, packDir_1, modsDir, installedMods, percentPer, current, _loop_1, _m, _o, _p, index, resp, e_3;
+    var unpack200, java, files, installation, versions, version, versionData, libraries, natives, currentPercent, percentPer, _a, _b, _i, index, library, dest, directory, success_1, correctHash, fileHash, ourOs_1, arch, nativesFolder_1, _loop_1, _c, _d, _e, index, assetIndexFolder, assetIndexFile, success, correctChecksum, actual, assets, count, current, _f, _g, _h, index, asset, hash, url, directory, success_2, filePath_1, downloaded, actualSha1, filePath, downloaded, actualSha1, forgeVersionFolder_1, forgeJarURL, e_1, buf, zip_1, versionJSON, libs, percentPer, current, _j, _k, _l, index, lib, libnameSplit, filePath, url, localPath, e_2, tempFolder, decompressed, end, checkString, length, checksumLength, actualContent, packDir_1, modsDir, installedMods, percentPer, current, _loop_2, _m, _o, _p, index, resp, e_3;
     return __generator(this, function (_q) {
         switch (_q.label) {
             case 0:
-                _q.trys.push([0, 80, , 81]);
+                _q.trys.push([0, 77, , 78]);
                 unpack200 = "unpack200";
                 java = "java";
                 if (process.platform === "win32") {
@@ -309,7 +310,7 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                     unpack200 = path.join(process.env["PROGRAMFILES"], "Java", installation, "bin", "unpack200.exe");
                     java = path.join(process.env["PROGRAMFILES"], "Java", installation, "bin", "javaw.exe");
                 }
-                if (!!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))) return [3, 41];
+                if (!!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))) return [3, 38];
                 event.sender.send("vanilla progress", "Fetching version listing...", 0);
                 event.sender.send("modded progress", "Waiting for base game to install...", -1);
                 return [4, gameInstaller_1.getVanillaVersionList()];
@@ -376,130 +377,160 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 arch = process.arch.indexOf("64") > -1 ? "64" : "32";
                 percentPer = 25 / natives.length;
                 event.sender.send("install log", "[Vanilla] Current OS is " + ourOs_1 + "-" + arch, 30 / 100);
+                nativesFolder_1 = path.join(launcherDir, "versions", version.id, "natives");
+                if (!!fs.existsSync(nativesFolder_1)) return [3, 12];
+                return [4, mkdirpPromise(nativesFolder_1)];
+            case 11:
+                _q.sent();
+                _q.label = 12;
+            case 12:
+                _loop_1 = function (index) {
+                    var native, shouldInstall, rule, artifact, dest, directory, success_3, correctHash, fileHash;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                currentPercent += (percentPer / 2);
+                                native = natives[index];
+                                event.sender.send("vanilla progress", "Downloading native " + (Number(index) + 1) + " of " + natives.length + ":  " + native.name + " ...", currentPercent / 100);
+                                shouldInstall = false;
+                                if (native.rules) {
+                                    rule = native.rules.find(function (rule) { return rule.os && rule.os.name === ourOs_1; });
+                                    if (rule) {
+                                        shouldInstall = rule.action === "allow";
+                                    }
+                                    else {
+                                        rule = native.rules.find(function (rule) { return !rule.os; });
+                                        if (rule) {
+                                            shouldInstall = rule.action === "allow";
+                                        }
+                                    }
+                                }
+                                else
+                                    shouldInstall = true;
+                                if (!shouldInstall) {
+                                    event.sender.send("install log", "[Vanilla] \tSkipping native as it doesn't need to be installed on our OS", 30 / 100);
+                                    return [2, "continue"];
+                                }
+                                artifact = void 0;
+                                if (ourOs_1 === "osx") {
+                                    artifact = native.downloads.classifiers["natives-macos"];
+                                    if (!artifact && arch === "64") {
+                                        artifact = native.downloads.classifiers["natives-macos-64"];
+                                    }
+                                    else if (!artifact) {
+                                        artifact = native.downloads.classifiers["natives-macos-32"];
+                                    }
+                                }
+                                else if (ourOs_1 === "linux") {
+                                    artifact = native.downloads.classifiers["natives-linux"];
+                                    if (!artifact && arch === "64") {
+                                        artifact = native.downloads.classifiers["natives-linux-64"];
+                                    }
+                                    else if (!artifact) {
+                                        artifact = native.downloads.classifiers["natives-linux-32"];
+                                    }
+                                }
+                                else {
+                                    artifact = native.downloads.classifiers["natives-windows"];
+                                    if (!artifact && arch === "64") {
+                                        artifact = native.downloads.classifiers["natives-windows-64"];
+                                    }
+                                    else if (!artifact) {
+                                        artifact = native.downloads.classifiers["natives-windows-32"];
+                                    }
+                                }
+                                dest = path.join(launcherDir, "libraries", artifact.path);
+                                directory = path.dirname(dest);
+                                if (!!fs.existsSync(directory)) return [3, 2];
+                                return [4, mkdirpPromise(directory)];
+                            case 1:
+                                _a.sent();
+                                _a.label = 2;
+                            case 2:
+                                success_3 = false;
+                                _a.label = 3;
+                            case 3:
+                                if (!!success_3) return [3, 7];
+                                if (!!fs.existsSync(dest)) return [3, 5];
+                                event.sender.send("install log", "[Vanilla] \tDownloading " + artifact.url + " => " + dest);
+                                return [4, downloadFile(artifact.url, dest)];
+                            case 4:
+                                _a.sent();
+                                _a.label = 5;
+                            case 5:
+                                event.sender.send("install log", "[Vanilla] \tVerifying checksum of " + dest + "...");
+                                correctHash = artifact.sha1;
+                                return [4, hasha.fromFile(dest, { algorithm: "sha1" })];
+                            case 6:
+                                fileHash = _a.sent();
+                                event.sender.send("install log", "[Vanilla] \tShould be " + correctHash.toUpperCase() + " - is " + fileHash.toUpperCase());
+                                success_3 = fileHash === correctHash;
+                                if (!success_3) {
+                                    event.sender.send("install log", "[Vanilla] \t[WARNING] SHA1 mismatch for " + dest + " - redownloading...");
+                                    fs.unlinkSync(dest);
+                                }
+                                return [3, 3];
+                            case 7:
+                                currentPercent += (percentPer / 2);
+                                event.sender.send("vanilla progress", "Installing native " + (Number(index) + 1) + " of " + natives.length + ":  " + native.name + " ...", currentPercent / 100);
+                                return [4, new Promise(function (ff, rj) {
+                                        fs.createReadStream(dest).pipe(unzipper_1.Extract({ path: nativesFolder_1 })).on("close", function () {
+                                            ff();
+                                        });
+                                    })];
+                            case 8:
+                                _a.sent();
+                                return [2];
+                        }
+                    });
+                };
                 _c = [];
                 for (_d in natives)
                     _c.push(_d);
                 _e = 0;
-                _q.label = 11;
-            case 11:
-                if (!(_e < _c.length)) return [3, 19];
-                index = _c[_e];
-                currentPercent += percentPer;
-                native = natives[index];
-                event.sender.send("vanilla progress", "Downloading native " + (Number(index) + 1) + " of " + natives.length + ":  " + native.name + " ...", currentPercent / 100);
-                shouldInstall = false;
-                if (native.rules) {
-                    rule = native.rules.find(function (rule) { return rule.os && rule.os.name === ourOs_1; });
-                    if (rule) {
-                        shouldInstall = rule.action === "allow";
-                    }
-                    else {
-                        rule = native.rules.find(function (rule) { return !rule.os; });
-                        if (rule) {
-                            shouldInstall = rule.action === "allow";
-                        }
-                    }
-                }
-                else
-                    shouldInstall = true;
-                if (!shouldInstall) {
-                    event.sender.send("install log", "[Vanilla] \tSkipping native as it doesn't need to be installed on our OS", 30 / 100);
-                    return [3, 18];
-                }
-                artifact = void 0;
-                if (ourOs_1 === "osx") {
-                    artifact = native.downloads.classifiers["natives-macos"];
-                    if (!artifact && arch === "64") {
-                        artifact = native.downloads.classifiers["natives-macos-64"];
-                    }
-                    else if (!artifact) {
-                        artifact = native.downloads.classifiers["natives-macos-32"];
-                    }
-                }
-                else if (ourOs_1 === "linux") {
-                    artifact = native.downloads.classifiers["natives-linux"];
-                    if (!artifact && arch === "64") {
-                        artifact = native.downloads.classifiers["natives-linux-64"];
-                    }
-                    else if (!artifact) {
-                        artifact = native.downloads.classifiers["natives-linux-32"];
-                    }
-                }
-                else {
-                    artifact = native.downloads.classifiers["natives-windows"];
-                    if (!artifact && arch === "64") {
-                        artifact = native.downloads.classifiers["natives-windows-64"];
-                    }
-                    else if (!artifact) {
-                        artifact = native.downloads.classifiers["natives-windows-32"];
-                    }
-                }
-                dest = path.join(launcherDir, "libraries", artifact.path);
-                directory = path.dirname(dest);
-                if (!!fs.existsSync(directory)) return [3, 13];
-                return [4, mkdirpPromise(directory)];
-            case 12:
-                _q.sent();
                 _q.label = 13;
             case 13:
-                success_2 = false;
-                _q.label = 14;
+                if (!(_e < _c.length)) return [3, 16];
+                index = _c[_e];
+                return [5, _loop_1(index)];
             case 14:
-                if (!!success_2) return [3, 18];
-                if (!!fs.existsSync(dest)) return [3, 16];
-                event.sender.send("install log", "[Vanilla] \tDownloading " + artifact.url + " => " + dest);
-                return [4, downloadFile(artifact.url, dest)];
-            case 15:
                 _q.sent();
-                _q.label = 16;
-            case 16:
-                event.sender.send("install log", "[Vanilla] \tVerifying checksum of " + dest + "...");
-                correctHash = artifact.sha1;
-                return [4, hasha.fromFile(dest, { algorithm: "sha1" })];
-            case 17:
-                fileHash = _q.sent();
-                event.sender.send("install log", "[Vanilla] \tShould be " + correctHash.toUpperCase() + " - is " + fileHash.toUpperCase());
-                success_2 = fileHash === correctHash;
-                if (!success_2) {
-                    event.sender.send("install log", "[Vanilla] \t[WARNING] SHA1 mismatch for " + dest + " - redownloading...");
-                    fs.unlinkSync(dest);
-                }
-                return [3, 14];
-            case 18:
+                _q.label = 15;
+            case 15:
                 _e++;
-                return [3, 11];
-            case 19:
+                return [3, 13];
+            case 16:
                 event.sender.send("vanilla progress", "Downloading asset index " + versionData.assetIndex.id + "...", 56 / 100);
                 assetIndexFolder = path.join(launcherDir, "assets", "indexes");
                 assetIndexFile = path.join(assetIndexFolder, versionData.assetIndex.id + ".json");
-                if (!!fs.existsSync(assetIndexFolder)) return [3, 21];
+                if (!!fs.existsSync(assetIndexFolder)) return [3, 18];
                 return [4, mkdirpPromise(assetIndexFolder)];
+            case 17:
+                _q.sent();
+                _q.label = 18;
+            case 18:
+                success = false;
+                _q.label = 19;
+            case 19:
+                if (!!success) return [3, 23];
+                if (!!fs.existsSync(assetIndexFile)) return [3, 21];
+                event.sender.send("install log", "[Vanilla] \tDownloading " + versionData.assetIndex.url);
+                return [4, downloadFile(versionData.assetIndex.url, assetIndexFile)];
             case 20:
                 _q.sent();
                 _q.label = 21;
             case 21:
-                success = false;
-                _q.label = 22;
-            case 22:
-                if (!!success) return [3, 26];
-                if (!!fs.existsSync(assetIndexFile)) return [3, 24];
-                event.sender.send("install log", "[Vanilla] \tDownloading " + versionData.assetIndex.url);
-                return [4, downloadFile(versionData.assetIndex.url, assetIndexFile)];
-            case 23:
-                _q.sent();
-                _q.label = 24;
-            case 24:
                 correctChecksum = versionData.assetIndex.sha1;
                 return [4, hasha.fromFile(assetIndexFile, { algorithm: "sha1" })];
-            case 25:
+            case 22:
                 actual = _q.sent();
                 event.sender.send("install log", "[Vanilla] \tChecking Checksum; Should be " + correctChecksum + " - is " + actual);
                 success = correctChecksum === actual;
                 if (!success) {
                     fs.unlinkSync(assetIndexFile);
                 }
-                return [3, 22];
-            case 26:
+                return [3, 19];
+            case 23:
                 assets = jsonfile.readFileSync(assetIndexFile).objects;
                 percentPer = 40 / Object.keys(assets).length;
                 currentPercent = 56;
@@ -509,9 +540,9 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 for (_g in assets)
                     _f.push(_g);
                 _h = 0;
-                _q.label = 27;
-            case 27:
-                if (!(_h < _f.length)) return [3, 35];
+                _q.label = 24;
+            case 24:
+                if (!(_h < _f.length)) return [3, 32];
                 index = _f[_h];
                 currentPercent += percentPer;
                 current++;
@@ -519,55 +550,55 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 hash = asset.hash;
                 url = "http://resources.download.minecraft.net/" + hash.substring(0, 2) + "/" + hash;
                 directory = path.join(launcherDir, "assets", "objects", hash.substring(0, 2));
-                if (!!fs.existsSync(directory)) return [3, 29];
+                if (!!fs.existsSync(directory)) return [3, 26];
                 return [4, mkdirpPromise(directory)];
+            case 25:
+                _q.sent();
+                _q.label = 26;
+            case 26:
+                event.sender.send("vanilla progress", "Downloading asset " + current + "/" + count + ": " + index, currentPercent / 100);
+                success_2 = false;
+                filePath_1 = path.join(directory, hash);
+                _q.label = 27;
+            case 27:
+                if (!!success_2) return [3, 31];
+                downloaded = false;
+                if (!!fs.existsSync(filePath_1)) return [3, 29];
+                return [4, downloadFile(url, filePath_1)];
             case 28:
                 _q.sent();
-                _q.label = 29;
-            case 29:
-                event.sender.send("vanilla progress", "Downloading asset " + current + "/" + count + ": " + index, currentPercent / 100);
-                success_3 = false;
-                filePath_1 = path.join(directory, hash);
-                _q.label = 30;
-            case 30:
-                if (!!success_3) return [3, 34];
-                downloaded = false;
-                if (!!fs.existsSync(filePath_1)) return [3, 32];
-                return [4, downloadFile(url, filePath_1)];
-            case 31:
-                _q.sent();
                 downloaded = true;
-                _q.label = 32;
-            case 32: return [4, hasha.fromFile(filePath_1, { algorithm: "sha1" })];
-            case 33:
+                _q.label = 29;
+            case 29: return [4, hasha.fromFile(filePath_1, { algorithm: "sha1" })];
+            case 30:
                 actualSha1 = _q.sent();
                 if (downloaded)
                     event.sender.send("install log", "[Vanilla] \tChecking checksum; should be " + hash.toUpperCase() + " - is " + actualSha1.toUpperCase());
-                success_3 = actualSha1 === hash;
-                if (!success_3) {
+                success_2 = actualSha1 === hash;
+                if (!success_2) {
                     event.sender.send("install log", "[Vanilla] \t[WARNING] SHA1 mismatch for " + index + " - redownloading...");
                     fs.unlinkSync(filePath_1);
                 }
-                return [3, 30];
-            case 34:
-                _h++;
                 return [3, 27];
-            case 35:
+            case 31:
+                _h++;
+                return [3, 24];
+            case 32:
                 event.sender.send("vanilla progress", "Downloading game client...", 98 / 100);
                 success = false;
                 filePath = path.join(launcherDir, "versions", versionData.id, versionData.id + ".jar");
-                _q.label = 36;
-            case 36:
-                if (!!success) return [3, 40];
+                _q.label = 33;
+            case 33:
+                if (!!success) return [3, 37];
                 downloaded = false;
-                if (!!fs.existsSync(filePath)) return [3, 38];
+                if (!!fs.existsSync(filePath)) return [3, 35];
                 return [4, downloadFile(versionData.downloads.client.url, filePath)];
-            case 37:
+            case 34:
                 _q.sent();
                 downloaded = true;
-                _q.label = 38;
-            case 38: return [4, hasha.fromFile(filePath, { algorithm: "sha1" })];
-            case 39:
+                _q.label = 35;
+            case 35: return [4, hasha.fromFile(filePath, { algorithm: "sha1" })];
+            case 36:
                 actualSha1 = _q.sent();
                 if (downloaded)
                     event.sender.send("install log", "[Vanilla] \tChecking checksum; should be " + versionData.downloads.client.sha1.toUpperCase() + " - is " + actualSha1.toUpperCase());
@@ -576,48 +607,48 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                     event.sender.send("install log", "[Vanilla] \t[WARNING] SHA1 mismatch for game client - redownloading...");
                     fs.unlinkSync(filePath);
                 }
-                return [3, 36];
-            case 40:
+                return [3, 33];
+            case 37:
                 event.sender.send("vanilla progress", "Finished", 1);
-                return [3, 42];
-            case 41:
+                return [3, 39];
+            case 38:
                 event.sender.send("vanilla progress", "Game client is already installed.", 1);
-                _q.label = 42;
-            case 42:
+                _q.label = 39;
+            case 39:
                 forgeVersionFolder_1 = path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion);
-                if (!(pack.forgeVersion && !fs.existsSync(path.join(forgeVersionFolder_1, "forge.jar")))) return [3, 68];
-                if (!!fs.existsSync(forgeVersionFolder_1)) return [3, 44];
+                if (!(pack.forgeVersion && !fs.existsSync(path.join(forgeVersionFolder_1, "forge.jar")))) return [3, 65];
+                if (!!fs.existsSync(forgeVersionFolder_1)) return [3, 41];
                 return [4, mkdirpPromise(forgeVersionFolder_1)];
-            case 43:
+            case 40:
                 _q.sent();
-                _q.label = 44;
-            case 44:
+                _q.label = 41;
+            case 41:
                 event.sender.send("modded progress", "Commencing minecraft forge download...", 0 / 100);
                 forgeJarURL = "http://files.minecraftforge.net/maven/net/minecraftforge/forge/" + pack.gameVersion + "-" + pack.forgeVersion + "-" + pack.gameVersion + "/forge-" + pack.gameVersion + "-" + pack.forgeVersion + "-" + pack.gameVersion + "-universal.jar";
                 event.sender.send("modded progress", "Downloading forge " + pack.forgeVersion, 1 / 100);
                 event.sender.send("install log", "[Modpack] \tDownloading " + forgeJarURL);
-                _q.label = 45;
-            case 45:
-                _q.trys.push([45, 47, , 48]);
+                _q.label = 42;
+            case 42:
+                _q.trys.push([42, 44, , 45]);
                 return [4, downloadFile(forgeJarURL, path.join(forgeVersionFolder_1, "forge_temp.jar"))];
-            case 46:
+            case 43:
                 _q.sent();
-                return [3, 48];
-            case 47:
+                return [3, 45];
+            case 44:
                 e_1 = _q.sent();
-                return [3, 48];
-            case 48:
-                if (!!fs.existsSync(path.join(forgeVersionFolder_1, "forge_temp.jar"))) return [3, 50];
+                return [3, 45];
+            case 45:
+                if (!!fs.existsSync(path.join(forgeVersionFolder_1, "forge_temp.jar"))) return [3, 47];
                 forgeJarURL = "http://files.minecraftforge.net/maven/net/minecraftforge/forge/" + pack.gameVersion + "-" + pack.forgeVersion + "/forge-" + pack.gameVersion + "-" + pack.forgeVersion + "-universal.jar";
                 event.sender.send("install log", "[Modpack] \tFalling back to old-style url: " + forgeJarURL);
                 return [4, downloadFile(forgeJarURL, path.join(forgeVersionFolder_1, "forge_temp.jar"))];
-            case 49:
+            case 46:
                 _q.sent();
-                _q.label = 50;
-            case 50:
+                _q.label = 47;
+            case 47:
                 buf = fs.readFileSync(path.join(forgeVersionFolder_1, "forge_temp.jar"));
                 return [4, JSZip.loadAsync(buf)];
-            case 51:
+            case 48:
                 zip_1 = _q.sent();
                 event.sender.send("modded progress", "Extracting forge version info...", 2 / 100);
                 return [4, new Promise(function (ff, rj) {
@@ -628,12 +659,12 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                             ff();
                         });
                     })];
-            case 52:
+            case 49:
                 _q.sent();
                 event.sender.send("modded progress", "Reading forge version info...", 3 / 100);
                 versionJSON = jsonfile.readFileSync(path.join(forgeVersionFolder_1, "version.json"));
                 event.sender.send("modded progress", "Preparing to install forge libraries...", 4 / 100);
-                libs = versionJSON.libraries.filter(function (lib) { return lib.name.indexOf("net.minecraftforge:forge:") === -1 && lib.clientreq; });
+                libs = versionJSON.libraries.filter(function (lib) { return lib.name.indexOf("net.minecraftforge:forge:") === -1; });
                 event.sender.send("install log", "[Modpack] \tNeed to install " + libs.length + " libraries for forge.");
                 percentPer = 46 / libs.length;
                 current = 4;
@@ -641,9 +672,9 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 for (_k in libs)
                     _j.push(_k);
                 _l = 0;
-                _q.label = 53;
-            case 53:
-                if (!(_l < _j.length)) return [3, 67];
+                _q.label = 50;
+            case 50:
+                if (!(_l < _j.length)) return [3, 64];
                 index = _j[_l];
                 current += percentPer;
                 lib = libs[index];
@@ -653,32 +684,34 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 event.sender.send("modded progress", "Downloading " + lib.name, current / 100);
                 localPath = [launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
                 event.sender.send("install log", "[Modpack] \tDownloading " + url + " => " + localPath);
-                if (!!fs.existsSync(path.dirname(localPath))) return [3, 55];
+                if (fs.existsSync(localPath))
+                    return [3, 63];
+                if (!!fs.existsSync(path.dirname(localPath))) return [3, 52];
                 return [4, mkdirpPromise(path.dirname(localPath))];
-            case 54:
+            case 51:
                 _q.sent();
-                _q.label = 55;
-            case 55:
-                _q.trys.push([55, 57, , 58]);
+                _q.label = 52;
+            case 52:
+                _q.trys.push([52, 54, , 55]);
                 return [4, downloadFile(url, localPath)];
-            case 56:
+            case 53:
                 _q.sent();
-                return [3, 58];
-            case 57:
+                return [3, 55];
+            case 54:
                 e_2 = _q.sent();
-                return [3, 58];
-            case 58:
-                if (!!fs.existsSync(localPath)) return [3, 66];
+                return [3, 55];
+            case 55:
+                if (!!fs.existsSync(localPath)) return [3, 63];
                 url += ".pack.xz";
                 event.sender.send("install log", "[Modpack] \tFalling back to XZ'd Packed jar file: " + url);
                 tempFolder = path.join(launcherDir, "temp");
-                if (!!fs.existsSync(tempFolder)) return [3, 60];
+                if (!!fs.existsSync(tempFolder)) return [3, 57];
                 return [4, mkdirpPromise(tempFolder)];
-            case 59:
+            case 56:
                 _q.sent();
-                _q.label = 60;
-            case 60: return [4, downloadFile(url, path.join(tempFolder, path.basename(localPath) + ".pack.xz"))];
-            case 61:
+                _q.label = 57;
+            case 57: return [4, downloadFile(url, path.join(tempFolder, path.basename(localPath) + ".pack.xz"))];
+            case 58:
                 _q.sent();
                 if (!fs.existsSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"))) {
                     event.sender.send("install log", "[Modpack] [Error] Unable to acquire even packed jar; aborting");
@@ -686,17 +719,17 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                     return [2];
                 }
                 event.sender.send("install log", "[Modpack] \t Reversing LZMA on " + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + " using 7za...");
-                if (!(process.platform === "win32")) return [3, 64];
-                if (!!fs.existsSync(path.join(launcherDir, "7za.exe"))) return [3, 63];
+                if (!(process.platform === "win32")) return [3, 61];
+                if (!!fs.existsSync(path.join(launcherDir, "7za.exe"))) return [3, 60];
                 event.sender.send("install log", "[Modpack] \t\t Grabbing 7za binary...");
                 return [4, downloadFile("https://launcher.samboycoding.me/res/7za.exe", path.join(launcherDir, "7za.exe"))];
-            case 62:
+            case 59:
                 _q.sent();
-                _q.label = 63;
-            case 63:
+                _q.label = 60;
+            case 60:
                 child_process.execFileSync(path.join(launcherDir, "7za.exe"), ["x", path.join(tempFolder, path.basename(localPath) + ".pack.xz"), "-y"], { cwd: tempFolder });
-                return [3, 65];
-            case 64:
+                return [3, 62];
+            case 61:
                 try {
                     child_process.execSync("xz -dk \"" + path.join(tempFolder, path.basename(localPath) + ".pack.xz") + "\"", { cwd: tempFolder });
                 }
@@ -705,8 +738,8 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                     event.sender.send("install log", "[Modpack] [Error] Failed to call xz - probably not installed. Error: " + e);
                     return [2];
                 }
-                _q.label = 65;
-            case 65:
+                _q.label = 62;
+            case 62:
                 decompressed = fs.readFileSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
                 fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
                 end = Buffer.from(decompressed.subarray(decompressed.length - 4, decompressed.length));
@@ -735,32 +768,32 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                     return [2];
                 }
                 fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
-                _q.label = 66;
-            case 66:
+                _q.label = 63;
+            case 63:
                 _l++;
-                return [3, 53];
-            case 67:
+                return [3, 50];
+            case 64:
                 fs.copyFileSync(path.join(forgeVersionFolder_1, "forge_temp.jar"), path.join(forgeVersionFolder_1, "forge.jar"));
                 fs.unlinkSync(path.join(forgeVersionFolder_1, "forge_temp.jar"));
-                _q.label = 68;
-            case 68:
+                _q.label = 65;
+            case 65:
                 packDir_1 = path.join(packsDir, pack.packName);
                 modsDir = path.join(packDir_1, "mods");
-                if (!!fs.existsSync(modsDir)) return [3, 70];
+                if (!!fs.existsSync(modsDir)) return [3, 67];
                 return [4, mkdirpPromise(modsDir)];
-            case 69:
+            case 66:
                 _q.sent();
-                _q.label = 70;
-            case 70:
+                _q.label = 67;
+            case 67:
                 installedMods = [];
                 if (fs.existsSync(path.join(packDir_1, "install.json"))) {
                     installedMods = jsonfile.readFileSync(path.join(packDir_1, "install.json")).installedMods;
                 }
-                if (!pack.mods.length) return [3, 74];
+                if (!pack.mods.length) return [3, 71];
                 event.sender.send("modded progress", "Commencing mods download...", 50 / 100);
                 percentPer = 45 / pack.mods.length;
                 current = 50;
-                _loop_1 = function (index) {
+                _loop_2 = function (index) {
                     var mod, url;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
@@ -785,28 +818,28 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 for (_o in pack.mods)
                     _m.push(_o);
                 _p = 0;
-                _q.label = 71;
-            case 71:
-                if (!(_p < _m.length)) return [3, 74];
+                _q.label = 68;
+            case 68:
+                if (!(_p < _m.length)) return [3, 71];
                 index = _m[_p];
-                return [5, _loop_1(index)];
-            case 72:
+                return [5, _loop_2(index)];
+            case 69:
                 _q.sent();
-                _q.label = 73;
-            case 73:
+                _q.label = 70;
+            case 70:
                 _p++;
-                return [3, 71];
-            case 74:
+                return [3, 68];
+            case 71:
                 event.sender.send("modded progress", "Checking for overrides", 0.95);
                 return [4, fetch("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, {
                         method: "HEAD"
                     })];
-            case 75:
+            case 72:
                 resp = _q.sent();
-                if (!(resp.status === 200)) return [3, 78];
+                if (!(resp.status === 200)) return [3, 75];
                 event.sender.send("modded progress", "Downloading overrides", 0.96);
                 return [4, downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(packDir_1, "overrides.zip"))];
-            case 76:
+            case 73:
                 _q.sent();
                 event.sender.send("modded progress", "Installing overrides", 0.97);
                 return [4, new Promise(function (ff, rj) {
@@ -814,13 +847,13 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                             ff();
                         });
                     })];
-            case 77:
+            case 74:
                 _q.sent();
-                return [3, 79];
-            case 78:
+                return [3, 76];
+            case 75:
                 event.sender.send("install log", "[Modpack] \tNo overrides.");
-                _q.label = 79;
-            case 79:
+                _q.label = 76;
+            case 76:
                 event.sender.send("modded progress", "Finishing up", 0.98);
                 jsonfile.writeFileSync(path.join(packDir_1, "install.json"), {
                     id: pack.id,
@@ -831,14 +864,261 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 });
                 event.sender.send("modded progress", "Finished.", 1);
                 event.sender.send("install complete");
-                return [3, 81];
-            case 80:
+                return [3, 78];
+            case 77:
                 e_3 = _q.sent();
                 event.sender.send("install failed", "An exception occurred: " + e_3);
                 event.sender.send("install log", "[Error] An Exception occurred: " + e_3);
-                return [3, 81];
-            case 81: return [2];
+                return [3, 78];
+            case 78: return [2];
         }
     });
 }); });
+electron_1.ipcMain.on("uninstall pack", function (event, pack) {
+});
+electron_1.ipcMain.on("launch pack", function (event, pack) {
+    var gameArgs = [];
+    var jvmArgs = [];
+    var classPath = [];
+    var mainClass;
+    var vanillaManifest;
+    var forgeManifest;
+    if (pack.forgeVersion) {
+        if (!fs.existsSync(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "forge.jar"))
+            || !fs.existsSync(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "version.json"))) {
+            return event.sender.send("launch failed", "Forge version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
+            || !fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
+            return event.sender.send("launch failed", "Base game version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+        forgeManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "version.json"));
+        vanillaManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"));
+        var arch = process.arch.indexOf("64") > -1 ? "x64" : "x86";
+        gameArgs = forgeManifest.minecraftArguments.split(" ");
+        jvmArgs = [];
+        if (process.platform === "darwin")
+            jvmArgs.push("-XstartOnFirstThread");
+        if (process.platform === "win32")
+            jvmArgs.push("-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump");
+        if (process.platform === "win32" && os.release().startsWith("10."))
+            jvmArgs = jvmArgs.concat(["-Dos.name=Windows 10", "-Dos.version=10.0"]);
+        if (arch === "x86")
+            jvmArgs.push("-Xss1M");
+        jvmArgs = jvmArgs.concat(["-Djava.library.path=${natives_directory}", "-Dminecraft.launcher.brand=${launcher_name}", "-Dminecraft.launcher.version=${launcher_version}", "-cp", "${classpath}"]);
+        for (var index in vanillaManifest.libraries) {
+            var library = vanillaManifest.libraries[index];
+            if (library.downloads && library.downloads.artifact) {
+                classPath.push(path.join(launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
+            }
+        }
+        for (var index in forgeManifest.libraries) {
+            var library = forgeManifest.libraries[index];
+            if (library.name.indexOf("net.minecraftforge:forge") === -1) {
+                var libnameSplit = library.name.split(":");
+                var filePath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
+                var localPath = [launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
+                classPath.push(localPath);
+            }
+        }
+        classPath.push(path.join(launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"));
+        classPath.push(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "forge.jar"));
+        mainClass = forgeManifest.mainClass;
+    }
+    else {
+        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
+            || !fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
+            return event.sender.send("launch failed", "Base game version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+        vanillaManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"));
+        var ourOs = process.platform === "win32" ? "windows"
+            : process.platform === "darwin" ? "osx"
+                : "linux";
+        var arch = process.arch.indexOf("64") > -1 ? "x64" : "x86";
+        var version = os.release();
+        if (vanillaManifest.arguments) {
+            gameArgs = [];
+            for (var index in vanillaManifest.arguments.game) {
+                var arg = vanillaManifest.arguments.game[index];
+                if (typeof (arg) === "string")
+                    gameArgs.push(arg);
+                else {
+                    var allow = false;
+                    if (arg.rules.length) {
+                        for (var rIndex in arg.rules) {
+                            var rule = arg.rules[rIndex];
+                            if (rule.os) {
+                                if ((!rule.os.name || rule.os.name === ourOs)
+                                    && (!rule.os.arch || rule.os.arch === arch)
+                                    && (!rule.os.version || RegExp(rule.os.version).exec(version))) {
+                                    if (rule.action === "allow") {
+                                        allow = true;
+                                    }
+                                    else {
+                                        allow = false;
+                                    }
+                                    break;
+                                }
+                            }
+                            else if (rule.features && Object.keys(rule.features).length) {
+                                if (rule.features.hasOwnProperty("has_custom_resolution")) {
+                                    allow = true;
+                                }
+                            }
+                            else {
+                                allow = rule.action === "allow";
+                            }
+                        }
+                    }
+                    else {
+                        allow = true;
+                    }
+                    if (allow) {
+                        if (typeof (arg.value) === "string") {
+                            gameArgs.push(arg.value);
+                        }
+                        else {
+                            gameArgs = gameArgs.concat(arg.value);
+                        }
+                    }
+                }
+            }
+            for (var index in vanillaManifest.arguments.jvm) {
+                var arg = vanillaManifest.arguments.jvm[index];
+                if (typeof (arg) === "string")
+                    jvmArgs.push(arg);
+                else {
+                    var allow = false;
+                    if (arg.rules.length) {
+                        for (var rIndex in arg.rules) {
+                            var rule = arg.rules[rIndex];
+                            if (rule.os) {
+                                if ((!rule.os.name || rule.os.name === ourOs)
+                                    && (!rule.os.arch || rule.os.arch === arch)
+                                    && (!rule.os.version || RegExp(rule.os.version).exec(version))) {
+                                    if (rule.action === "allow") {
+                                        allow = true;
+                                    }
+                                    else {
+                                        allow = false;
+                                    }
+                                    break;
+                                }
+                            }
+                            else if (rule.features && Object.keys(rule.features).length) {
+                            }
+                            else {
+                                allow = rule.action === "allow";
+                            }
+                        }
+                    }
+                    else {
+                        allow = true;
+                    }
+                    if (allow) {
+                        if (typeof (arg.value) === "string") {
+                            jvmArgs.push(arg.value);
+                        }
+                        else {
+                            jvmArgs = jvmArgs.concat(arg.value);
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            gameArgs = vanillaManifest.minecraftArguments.split(" ");
+            jvmArgs = [];
+            if (process.platform === "darwin")
+                jvmArgs.push("-XstartOnFirstThread");
+            if (process.platform === "win32")
+                jvmArgs.push("-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump");
+            if (process.platform === "win32" && os.release().startsWith("10."))
+                jvmArgs = jvmArgs.concat(["-Dos.name=Windows 10", "-Dos.version=10.0"]);
+            if (arch === "x86")
+                jvmArgs.push("-Xss1M");
+            jvmArgs = jvmArgs.concat(["-Djava.library.path=${natives_directory}", "-Dminecraft.launcher.brand=${launcher_name}", "-Dminecraft.launcher.version=${launcher_version}", "-cp", "${classpath}"]);
+        }
+        for (var index in vanillaManifest.libraries) {
+            var library = vanillaManifest.libraries[index];
+            if (library.downloads && library.downloads.artifact) {
+                classPath.push(path.join(launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
+            }
+        }
+        classPath.push(path.join(launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"));
+        mainClass = vanillaManifest.mainClass;
+    }
+    gameArgs = gameArgs.map(function (arg) {
+        switch (arg) {
+            case "${auth_player_name}":
+                return authData.username;
+            case "${version_name}":
+                return pack.gameVersion;
+            case "${game_directory}":
+                return path.join(launcherDir, "packs", pack.packName);
+            case "${assets_root}":
+                return path.join(launcherDir, "assets");
+            case "${assets_index_name}":
+                return vanillaManifest.assetIndex.id;
+            case "${auth_uuid}":
+                return authData.uuid;
+            case "${auth_access_token}":
+                return authData.accessToken;
+            case "${user_type}":
+                return "mojang";
+            case "${version_type}":
+                return "release";
+            case "${resolution_width}":
+                return "1280";
+            case "${resolution_height}":
+                return "720";
+            default:
+                return arg;
+        }
+    });
+    jvmArgs = jvmArgs.map(function (arg) {
+        return arg.replace("${natives_directory}", path.join(launcherDir, "versions", vanillaManifest.id, "natives"))
+            .replace("${launcher_name}", "SamboyLauncher")
+            .replace("${launcher_version}", "v2")
+            .replace("${game_directory}", path.join(launcherDir, "packs", pack.packName))
+            .replace("${classpath}", classPath.join(process.platform === "win32" ? ";" : ":"));
+    });
+    var memGigs = 2;
+    jvmArgs = jvmArgs.concat(["-Xmx" + memGigs + "G", "-Xms" + (memGigs - 1) + "G", "-Djava.net.preferIPv4Stack=true"]);
+    var java = "java";
+    if (process.platform === "win32") {
+        if (!fs.existsSync(path.join(process.env["PROGRAMFILES"], "Java"))) {
+            event.sender.send("launch failed", "No Java installed. If on 64-bit windows, try installing 64-bit java.");
+            return;
+        }
+        var files = fs.readdirSync(path.join(process.env["PROGRAMFILES"], "Java"));
+        var installation = files.find(function (file) { return file.startsWith("jre1.8") || file.startsWith("jdk1.8"); });
+        if (!installation) {
+            event.sender.send("launch failed", "No correct Java version found. Install Java 8.");
+            return;
+        }
+        if (!fs.existsSync(path.join(process.env["PROGRAMFILES"], "Java", installation, "bin", "javaw.exe"))) {
+            event.sender.send("launch failed", "Corrupt Java installation detected. Remove " + path.join(process.env["PROGRAMFILES"], "Java", installation) + " and try again.");
+            return;
+        }
+        java = path.join(process.env["PROGRAMFILES"], "Java", installation, "bin", "javaw.exe");
+    }
+    var finalArgs = jvmArgs.concat([mainClass]).concat(gameArgs);
+    var gameProcess = child_process.spawn(java, finalArgs, {
+        cwd: path.join(launcherDir, "packs", pack.packName),
+        stdio: "pipe",
+        detached: true
+    });
+    event.sender.send("game launched");
+    event.sender.send("game output", java + " " + finalArgs.join(" "));
+    gameProcess.stdout.on('data', function (data) {
+        event.sender.send("game output", data.toString("utf8").trim());
+    });
+    gameProcess.stderr.on('data', function (data) {
+        event.sender.send("game error", data.toString("utf8").trim());
+    });
+    gameProcess.on('close', function (code) {
+        event.sender.send("game closed", code);
+    });
+});
 //# sourceMappingURL=index.js.map
