@@ -330,6 +330,12 @@ body,
             }
         }
 
+        #pack-view-packs.no-packs {
+            justify-content: center;
+            align-items: center;
+            display: flex;
+        }
+
         #pack-view-pack-info {
             width: 69%;
             display: inline-block;
@@ -549,6 +555,48 @@ body,
 
     #settings {
         padding: 1rem;
+
+        #launcher-update {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+
+            #launcher-update-button {
+                padding: 0.5rem 1rem;
+                cursor: pointer;
+                background: none;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+            }
+        }
+
+        #launcher-update.downloading {
+            background: #C0FFB7;
+            border: 1px solid #74D76B;
+        }
+
+        #launcher-update.downloaded {
+            background: #C0FFB7;
+            border: 1px solid #74D76B;
+
+            #launcher-update-button {
+                background: #278A1E;
+                border: 1px solid #278A1E;
+                color: white;
+            }
+        }
+
+        #launcher-update.errored {
+            background: #FFD1D1;
+            border: 1px solid #D76B6B;
+
+            #launcher-update-button {
+                background: #8d1111;
+                color: #fff;
+                border: 1px solid #8d1111;
+            }
+        }
     }
 }
 

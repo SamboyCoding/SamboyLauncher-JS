@@ -12,7 +12,19 @@ import * as download from "download";
 import * as child_process from "child_process";
 import { Extract } from "unzipper";
 import * as asar from "asar";
+import { autoUpdater } from "electron-updater";
+import * as rmfr from "rmfr";
 import * as os from "os";
+import { Logger } from "./logger";
+import * as isDev from "electron-is-dev";
+
+
+autoUpdater.autoDownload = true;
+autoUpdater.logger = Logger;
+
+autoUpdater.on("update-download", () => {
+    win.webContents.send("update downloaded");
+});
 
 const fetch = web.default;
 const launcherDir: string = path.join(process.platform === "win32" ?
@@ -1058,3 +1070,35 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
         event.sender.send("game closed", code);
     });
 });
+
+ipcMain.on("uninstall pack", async (event: IpcMessageEvent, pack: Pack) => {
+    let packDir = path.join(launcherDir, "packs", pack.packName);
+    if (!fs.existsSync(packDir)) return;
+
+    event.sender.send("uninstalling pack");
+
+    await rmfr(packDir);
+
+    event.sender.send("uninstalled pack");
+});
+
+ipcMain.on("check updates", (event: IpcMessageEvent) => {
+    if (!isDev) {
+        autoUpdater.checkForUpdatesAndNotify().then((update) => {
+            if (update) {
+                event.sender.send("update available", update.updateInfo.releaseName);
+            } else {
+                event.sender.send("no update");
+            }
+        }).catch(e => {
+            Logger.warn("Error checking for updates: " + e);
+            event.sender.send("update error");
+        });
+    } else {
+        event.sender.send("update devmode");
+    }
+});
+
+ipcMain.on("install update", (event: IpcMessageEvent) => {
+    autoUpdater.quitAndInstall();
+})

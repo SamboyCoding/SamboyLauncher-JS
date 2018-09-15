@@ -1,300 +1,338 @@
 <!DOCTYPE html>
 <html>
 
-    <head>
-        <meta charset="utf-8">
-        <title>SamboyLauncher Client</title>
-        <link rel="stylesheet" href="../css/app.css">
-        <link rel="stylesheet" href="../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css">
-    </head>
+<head>
+    <meta charset="utf-8">
+    <title>SamboyLauncher Client</title>
+    <link rel="stylesheet" href="../css/app.css">
+    <link rel="stylesheet" href="../../../node_modules/@fortawesome/fontawesome-free/css/all.min.css">
+</head>
 
-    <body>
-        <div id="cover">
-            <h1>Loading, please wait...</h1>
+<body>
+    <div id="cover">
+        <h1>Loading, please wait...</h1>
+    </div>
+    <div id="app">
+        <div id="top-bar">
+            <span>SamboyLauncher</span>
+            <button id="close-window" @click="close"><i class="fas fa-times"></i></button>
         </div>
-        <div id="app">
-            <div id="top-bar">
-                <span>SamboyLauncher</span>
-                <button id="close-window" @click="close"><i class="fas fa-times"></i></button>
+        <div id="content">
+            <div v-if="ui.login.show" id="login-wrapper">
+                <img id="login-background" :src="ui.login.backgroundImg">
+                <div id="login-form">
+                    <h3 id="login-form-title">Login with your Minecraft account to use the launcher</h3>
+
+                    <label for="mojang-email">Email (or username for legacy accounts): </label>
+                    <input id="mojang-email" v-model="ui.login.email" placeholder="notch@mojang.com">
+
+                    <label for="mojang-password">Password: </label>
+                    <input id="mojang-password" v-model="ui.login.password" type="password" placeholder="goldApples?MoreLikeMeApples">
+
+                    <div>
+                        <input type="checkbox" v-model="ui.login.remember" id="login-rememberme">
+                        <label for="login-rememberme" id="rememberme-label">Remember my password</label>
+                    </div>
+
+                    <span id="login-error" v-if="ui.login.error">{{ui.login.error}}</span>
+
+                    <button id="login-button" :disabled="ui.login.processing" @click="login">
+                        <span v-if="ui.login.processing">
+                            Loading...
+                        </span>
+                        <span v-else>
+                            Login
+                        </span>
+                    </button>
+                </div>
             </div>
-            <div id="content">
-                <div v-if="ui.login.show" id="login-wrapper">
-                    <img id="login-background" :src="ui.login.backgroundImg">
-                    <div id="login-form">
-                        <h3 id="login-form-title">Login with your Minecraft account to use the launcher</h3>
-
-                        <label for="mojang-email">Email (or username for legacy accounts): </label>
-                        <input id="mojang-email" v-model="ui.login.email" placeholder="notch@mojang.com">
-
-                        <label for="mojang-password">Password: </label>
-                        <input id="mojang-password" v-model="ui.login.password" type="password" placeholder="goldApples?MoreLikeMeApples">
-
-                        <div>
-                            <input type="checkbox" v-model="ui.login.remember" id="login-rememberme">
-                            <label for="login-rememberme" id="rememberme-label">Remember my password</label>
+            <div v-else>
+                <nav id="navbar">
+                    <div class="navbar-items">
+                        <div :class="{'navbar-item': true, 'navbar-item-left': true, active: ui.packView.show}" @click="switchToInstalled">
+                            <div class="navbar-item-content">
+                                <i class="fas fa-2x fa-list-ul navbar-item-icon"></i>
+                                <span class="navbar-item-label">
+                                    Installed Packs
+                                </span>
+                            </div>
                         </div>
-
-                        <span id="login-error" v-if="ui.login.error">{{ui.login.error}}</span>
-
-                        <button id="login-button" :disabled="ui.login.processing" @click="login">
-                            <span v-if="ui.login.processing">
-                                Loading...
+                        <div :class="{'navbar-item': true, active: ui.packBrowse.show}" @click="switchToBrowse">
+                            <div class="navbar-item-content">
+                                <i class="fas fa-2x fa-search navbar-item-icon"></i>
+                                <span class="navbar-item-label">
+                                    Browse Top Packs
+                                </span>
+                            </div>
+                        </div>
+                        <div :class="{'navbar-item': true, 'navbar-item-right': true, active: ui.settings.show}" @click="switchToSettings">
+                            <div class="navbar-item-content">
+                                <i class="fas fa-2x fa-cog navbar-item-icon"></i>
+                                <span class="navbar-item-label">
+                                    Settings
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+                <div id="below-navbar">
+                    <div v-if="ui.packView.show" id="pack-view">
+                        <div id="pack-view-packs" v-if="ui.packView.packs.length">
+                            <div :class="{'pack-view-pack': true, selected: ui.packView.selectedPackIndex === index}"
+                                v-for="(pack, index) in ui.packView.packs" @click="ui.packView.selectedPackIndex = index">
+                                <span class="pack-view-pack-title">{{pack.packName}}</span>
+                                <span class="pack-view-pack-author">By {{pack.author.name}}</span>
+                            </div>
+                        </div>
+                        <div id="pack-view-packs" class="no-packs" v-else>
+                            No Packs
+                        </div>
+                        <div id="pack-view-pack-info" v-if="ui.packView.selectedPackIndex !== -1">
+                            <button id="installed-pack-uninstall-button" @click="uninstallPack">
+                                <i class="fas fa-trash-alt"></i>
+                                Uninstall Pack
+                            </button>
+                            <button id="installed-pack-launch-game-button" @click="launchPack">
+                                <i class="fas fa-play"></i>
+                                Launch Pack
+                            </button>
+                            <span class="installed-pack-info-pack-title">
+                                {{ui.packView.packs[ui.packView.selectedPackIndex].packName}}
                             </span>
-                            <span v-else>
-                                Login
+
+                            <span class="installed-pack-info-pack-author">
+                                By {{ui.packView.packs[ui.packView.selectedPackIndex].author.name}}
                             </span>
-                        </button>
+
+                            <span class="installed-pack-info-pack-version">
+                                <span v-if="ui.packView.packs[ui.packView.selectedPackIndex].latestVersion">
+                                    <span v-if="ui.packView.packs[ui.packView.selectedPackIndex].update" id="pack-view-update-available">
+                                        Update available! Current:
+                                        {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}},
+                                        latest:
+                                        {{ui.packView.packs[ui.packView.selectedPackIndex].latestVersion}}
+                                    </span>
+                                    <span v-else>
+                                        No update available. (Version
+                                        {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}} is
+                                        installed)
+                                    </span>
+                                </span>
+                                <span v-else>
+                                    Checking for updates... (current version is
+                                    {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}})
+                                </span>
+                            </span>
+
+                            <span class="installed-pack-info-pack-desc">
+                                {{ui.packView.packs[ui.packView.selectedPackIndex].desc ?
+                                ui.packView.packs[ui.packView.selectedPackIndex].desc : "Loading Description..."}}
+                            </span>
+
+                            <br><br>
+                            <span id="installed-pack-info-pack-mod-list-title" v-if="ui.packView.packs[ui.packView.selectedPackIndex].installedMods.length">
+                                Currently Installed Mods:
+                            </span>
+                            <span id="installed-pack-info-pack-mod-list-title" v-else>
+                                [Pack is Unmodded]
+                            </span>
+
+                            <ul id="installed-pack-info-mod-list">
+                                <li class="installed-pack-info-mod" v-for="mod in ui.packView.packs[ui.packView.selectedPackIndex].installedMods">
+                                    {{mod.resolvedName}} ({{mod.resolvedVersion}})
+                                    <br>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div v-else-if="ui.packBrowse.show" id="pack-browse">
+                        <div id="pack-browse-packs">
+                            <div :class="{'pack-browse-pack': true, selected: ui.packBrowse.selectedPackIndex === index}"
+                                v-for="(pack, index) in ui.packBrowse.packs" @click="ui.packBrowse.selectedPackIndex = index">
+                                <span class="pack-browse-pack-title">{{pack.packName}}</span>
+                                <span class="pack-browse-pack-author">By {{pack.author.name}}</span>
+                                <span class="pack-browse-pack-mod-count">{{pack.mods.length}} mods</span>
+                                <span class="pack-browse-pack-desc">{{pack.description}}</span>
+                            </div>
+                        </div>
+                        <div id="pack-browse-pack-info" v-if="ui.packBrowse.selectedPackIndex !== -1">
+
+                            <span id="pack-info-pack-title">
+                                {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].packName}}
+                            </span>
+
+                            <span id="pack-info-pack-author">
+                                By {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].author.name}}
+                            </span>
+
+                            <button id="install-pack-button" :disabled="ui.packView.packs.find(p => p.id === ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].id)"
+                                @click="installPack()">
+                                <span v-if="ui.packView.packs.find(p => p.id === ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].id)">
+                                    Pack Installed
+                                </span>
+                                <span v-else>
+                                    Install Pack
+                                </span>
+                            </button>
+
+                            <span id="pack-info-pack-mod-count">
+                                {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].mods.length}} mods
+                            </span>
+
+                            <span id="pack-info-pack-desc">
+                                {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].description}}
+                            </span>
+
+                            <br>
+                            <span id="pack-info-pack-mod-list-title">Mod List:</span>
+
+                            <div id="pack-info-mod-list">
+                                <span class="pack-info-mod" v-for="mod in ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].mods">
+                                    -{{mod.resolvedName}} ({{mod.resolvedVersion}})
+                                    <br>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else-if="ui.settings.show" id="settings">
+                        <div id="launcher-update" :class="{errored: ui.launcherUpdate.failed, downloading: ui.launcherUpdate.available, downloaded: ui.launcherUpdate.ready,
+                             checking: ui.launcherUpdate.checking, devmode: ui.launcherUpdate.devmode}">
+                            <h3 id="launcher-update-title">
+                                <span v-if="ui.launcherUpdate.failed">
+                                    Update Check Failed (are you offline?)
+                                </span>
+                                <span v-else-if="ui.launcherUpdate.available">
+                                    Downloading Launcher v {{ui.launcherUpdate.versionName}}...
+                                </span>
+                                <span v-else-if="ui.launcherUpdate.ready">
+                                    Ready to Install Update!
+                                </span>
+                                <span v-else-if="ui.launcherUpdate.checking">
+                                    Checking for Launcher Update...
+                                </span>
+                                <span v-else-if="ui.launcherUpdate.devmode">
+                                    Not checking for updates as you're in a development environment
+                                </span>
+                                <span v-else>
+                                    Launcher is up to date
+                                </span>
+                            </h3>
+                            <button id="launcher-update-button" v-if="ui.launcherUpdate.failed" @click="retryUpdate">
+                                Retry
+                            </button>
+                            <button id="launcher-update-button" v-else-if="ui.launcherUpdate.ready" @click="installUpdate">
+                                Install Now
+                            </button>
+                            <div class="progress" id="launcher-download-progress" v-if="ui.launcherUpdate.available">
+                                <div class="bar indeterminate"></div>
+                            </div>
+                        </div>
+                        The rest of the settings are coming Soon&trade;
                     </div>
                 </div>
-                <div v-else>
-                    <nav id="navbar">
-                        <div class="navbar-items">
-                            <div :class="{'navbar-item': true, 'navbar-item-left': true, active: ui.packView.show}"
-                                @click="switchToInstalled">
-                                <div class="navbar-item-content">
-                                    <i class="fas fa-2x fa-list-ul navbar-item-icon"></i>
-                                    <span class="navbar-item-label">
-                                        Installed Packs
-                                    </span>
-                                </div>
-                            </div>
-                            <div :class="{'navbar-item': true, active: ui.packBrowse.show}" @click="switchToBrowse">
-                                <div class="navbar-item-content">
-                                    <i class="fas fa-2x fa-search navbar-item-icon"></i>
-                                    <span class="navbar-item-label">
-                                        Browse Top Packs
-                                    </span>
-                                </div>
-                            </div>
-                            <div :class="{'navbar-item': true, 'navbar-item-right': true, active: ui.settings.show}"
-                                @click="switchToSettings">
-                                <div class="navbar-item-content">
-                                    <i class="fas fa-2x fa-cog navbar-item-icon"></i>
-                                    <span class="navbar-item-label">
-                                        Settings
-                                    </span>
-                                </div>
-                            </div>
+                <div :class="{modal: true, shown: ui.packInstall.show}" id="pack-install-modal">
+                    <div class="modal-content">
+                        <h1 class="modal-title">Installing pack...</h1>
+                        <button class="modal-top-button" id="close-install-modal" v-if="ui.packInstall.vanillaProgress.progress === 1 && ui.packInstall.moddedProgress.progress === 1 || ui.packInstall.failed"
+                            @click="dismissPackInstall">
+                            Done
+                        </button>
+                        <h3 id="pack-install-vanilla-title">
+                            Installing files for Minecraft {{ui.packInstall.gameVersion}}...
+                        </h3>
+                        <label for="pack-install-vanilla-progress">
+                            {{ui.packInstall.vanillaProgress.label}}
+                        </label>
+                        <div class="progress" id="pack-install-vanilla-progress">
+                            <div :class="{bar: true, indeterminate: ui.packInstall.vanillaProgress.progress === -1, red: ui.packInstall.failed && ui.packInstall.vanillaProgress.progress < 1 && ui.packInstall.vanillaProgress.progress !== -1}"
+                                :style="{width: ui.packInstall.vanillaProgress.progress === -1 ? '20%' : (ui.packInstall.vanillaProgress.progress * 100) + '%'}"></div>
                         </div>
-                    </nav>
-                    <div id="below-navbar">
-                        <div v-if="ui.packView.show" id="pack-view">
-                            <div id="pack-view-packs">
-                                <div :class="{'pack-view-pack': true, selected: ui.packView.selectedPackIndex === index}"
-                                    v-for="(pack, index) in ui.packView.packs" @click="ui.packView.selectedPackIndex = index">
-                                    <span class="pack-view-pack-title">{{pack.packName}}</span>
-                                    <span class="pack-view-pack-author">By {{pack.author.name}}</span>
-                                </div>
-                            </div>
-                            <div id="pack-view-pack-info" v-if="ui.packView.selectedPackIndex !== -1">
-                                <button id="installed-pack-uninstall-button" @click="uninstallPack">
-                                    <i class="fas fa-trash-alt"></i>
-                                    Uninstall Pack
-                                </button>
-                                <button id="installed-pack-launch-game-button" @click="launchPack">
-                                    <i class="fas fa-play"></i>
-                                    Launch Pack
-                                </button>
-                                <span class="installed-pack-info-pack-title">
-                                    {{ui.packView.packs[ui.packView.selectedPackIndex].packName}}
-                                </span>
 
-                                <span class="installed-pack-info-pack-author">
-                                    By {{ui.packView.packs[ui.packView.selectedPackIndex].author.name}}
-                                </span>
-
-                                <span class="installed-pack-info-pack-version">
-                                    <span v-if="ui.packView.packs[ui.packView.selectedPackIndex].latestVersion">
-                                        <span v-if="ui.packView.packs[ui.packView.selectedPackIndex].update" id="pack-view-update-available">
-                                            Update available! Current:
-                                            {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}},
-                                            latest:
-                                            {{ui.packView.packs[ui.packView.selectedPackIndex].latestVersion}}
-                                        </span>
-                                        <span v-else>
-                                            No update available. (Version
-                                            {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}} is
-                                            installed)
-                                        </span>
-                                    </span>
-                                    <span v-else>
-                                        Checking for updates... (current version is
-                                        {{ui.packView.packs[ui.packView.selectedPackIndex].installedVersion}})
-                                    </span>
-                                </span>
-
-                                <span class="installed-pack-info-pack-desc">
-                                    {{ui.packView.packs[ui.packView.selectedPackIndex].desc ?
-                                    ui.packView.packs[ui.packView.selectedPackIndex].desc : "Loading Description..."}}
-                                </span>
-
-                                <br><br>
-                                <span id="installed-pack-info-pack-mod-list-title" v-if="ui.packView.packs[ui.packView.selectedPackIndex].installedMods.length">
-                                    Currently Installed Mods:
-                                </span>
-                                <span id="installed-pack-info-pack-mod-list-title" v-else>
-                                    [Pack is Unmodded]
-                                </span>
-
-                                <ul id="installed-pack-info-mod-list">
-                                    <li class="installed-pack-info-mod" v-for="mod in ui.packView.packs[ui.packView.selectedPackIndex].installedMods">
-                                        {{mod.resolvedName}} ({{mod.resolvedVersion}})
-                                        <br>
-                                    </li>
-                                </ul>
-                            </div>
+                        <h3 id="pack-install-vanilla-title">
+                            Installing modded game files...
+                        </h3>
+                        <label for="pack-install-pack-progress">
+                            {{ui.packInstall.moddedProgress.label}}
+                        </label>
+                        <div class="progress" id="pack-installed-pack-progress">
+                            <div :class="{bar: true, indeterminate: ui.packInstall.moddedProgress.progress === -1, red: ui.packInstall.failed && ui.packInstall.moddedProgress.progress < 1 && ui.packInstall.moddedProgress.progress !== -1}"
+                                :style="{width: ui.packInstall.moddedProgress.progress === -1 ? '20%' : (ui.packInstall.moddedProgress.progress * 100) + '%'}"></div>
                         </div>
-                        <div v-else-if="ui.packBrowse.show" id="pack-browse">
-                            <div id="pack-browse-packs">
-                                <div :class="{'pack-browse-pack': true, selected: ui.packBrowse.selectedPackIndex === index}"
-                                    v-for="(pack, index) in ui.packBrowse.packs" @click="ui.packBrowse.selectedPackIndex = index">
-                                    <span class="pack-browse-pack-title">{{pack.packName}}</span>
-                                    <span class="pack-browse-pack-author">By {{pack.author.name}}</span>
-                                    <span class="pack-browse-pack-mod-count">{{pack.mods.length}} mods</span>
-                                    <span class="pack-browse-pack-desc">{{pack.description}}</span>
-                                </div>
-                            </div>
-                            <div id="pack-browse-pack-info" v-if="ui.packBrowse.selectedPackIndex !== -1">
 
-                                <span id="pack-info-pack-title">
-                                    {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].packName}}
-                                </span>
-
-                                <span id="pack-info-pack-author">
-                                    By {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].author.name}}
-                                </span>
-
-                                <button id="install-pack-button" :disabled="ui.packView.packs.find(p => p.id === ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].id)"
-                                    @click="installPack()">
-                                    <span v-if="ui.packView.packs.find(p => p.id === ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].id)">
-                                        Pack Installed
-                                    </span>
-                                    <span v-else>
-                                        Install Pack
-                                    </span>
-                                </button>
-
-                                <span id="pack-info-pack-mod-count">
-                                    {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].mods.length}} mods
-                                </span>
-
-                                <span id="pack-info-pack-desc">
-                                    {{ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].description}}
-                                </span>
-
-                                <br>
-                                <span id="pack-info-pack-mod-list-title">Mod List:</span>
-
-                                <div id="pack-info-mod-list">
-                                    <span class="pack-info-mod" v-for="mod in ui.packBrowse.packs[ui.packBrowse.selectedPackIndex].mods">
-                                        -{{mod.resolvedName}} ({{mod.resolvedVersion}})
-                                        <br>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div v-else-if="ui.settings.show" id="settings">
-                            Settings Coming Soon&trade;
-                        </div>
-                    </div>
-                    <div :class="{modal: true, shown: ui.packInstall.show}" id="pack-install-modal">
-                        <div class="modal-content">
-                            <h1 class="modal-title">Installing pack...</h1>
-                            <button class="modal-top-button" id="close-install-modal" v-if="ui.packInstall.vanillaProgress.progress === 1 && ui.packInstall.moddedProgress.progress === 1 || ui.packInstall.failed"
-                                @click="ui.packInstall.show = false">
-                                Done
-                            </button>
-                            <h3 id="pack-install-vanilla-title">
-                                Installing files for Minecraft {{ui.packInstall.gameVersion}}...
-                            </h3>
-                            <label for="pack-install-vanilla-progress">
-                                {{ui.packInstall.vanillaProgress.label}}
-                            </label>
-                            <div class="progress" id="pack-install-vanilla-progress">
-                                <div :class="{bar: true, indeterminate: ui.packInstall.vanillaProgress.progress === -1, red: ui.packInstall.failed && ui.packInstall.vanillaProgress.progress < 1 && ui.packInstall.vanillaProgress.progress !== -1}"
-                                    :style="{width: ui.packInstall.vanillaProgress.progress === -1 ? '20%' : (ui.packInstall.vanillaProgress.progress * 100) + '%'}"></div>
-                            </div>
-
-                            <h3 id="pack-install-vanilla-title">
-                                Installing modded game files...
-                            </h3>
-                            <label for="pack-install-pack-progress">
-                                {{ui.packInstall.moddedProgress.label}}
-                            </label>
-                            <div class="progress" id="pack-installed-pack-progress">
-                                <div :class="{bar: true, indeterminate: ui.packInstall.moddedProgress.progress === -1, red: ui.packInstall.failed && ui.packInstall.moddedProgress.progress < 1 && ui.packInstall.moddedProgress.progress !== -1}"
-                                    :style="{width: ui.packInstall.moddedProgress.progress === -1 ? '20%' : (ui.packInstall.moddedProgress.progress * 100) + '%'}"></div>
-                            </div>
-
-                            <pre id="pack-install-log">
+                        <pre id="pack-install-log">
                                 <code>
                                     <span v-for="logEntry in ui.packInstall.log">{{logEntry}}<br></span>
                                 </code>
                             </pre>
-                        </div>
                     </div>
+                </div>
 
-                    <div :class="{modal: true, shown: ui.gameRun.show}" id="game-running-modal">
-                        <div class="modal-content">
-                            <h1 class="modal-title">Game is running...</h1>
-                            <button class="modal-top-button" id="close-install-modal" v-if="!ui.gameRun.running" @click="ui.gameRun.show = false">
-                                Done
-                            </button>
-                            <table id="game-output-log">
-                                <thead>
-                                    <tr>
-                                        <th>Level</th>
-                                        <th>Time</th>
-                                        <th>Thread</th>
-                                        <th>Message</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="logEntry in ui.gameRun.log" :class="{error: logEntry.type === 'error' || logEntry.level === 'error',
+                <div :class="{modal: true, shown: ui.gameRun.show}" id="game-running-modal">
+                    <div class="modal-content">
+                        <h1 class="modal-title">Game is running...</h1>
+                        <button class="modal-top-button" id="close-install-modal" v-if="!ui.gameRun.running" @click="ui.gameRun.show = false">
+                            Done
+                        </button>
+                        <table id="game-output-log">
+                            <thead>
+                                <tr>
+                                    <th>Level</th>
+                                    <th>Time</th>
+                                    <th>Thread</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="logEntry in ui.gameRun.log" :class="{error: logEntry.type === 'error' || logEntry.level === 'error',
                                                                     warning: logEntry.level === 'warn', info: logEntry.type === 'info' || logEntry.level === 'info'}">
-                                        <td>
-                                            <span v-if="logEntry.level">
-                                                {{logEntry.level}}
-                                            </span>
-                                            <span v-else>
-                                                {{logEntry.type}}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span v-if="logEntry.time">
-                                                {{logEntry.time}}
-                                            </span>
-                                            <span v-else>
-                                                --:--:--
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span v-if="logEntry.thread">
-                                                {{logEntry.thread}}
-                                            </span>
-                                            <span v-else>
-                                                [Game Client]
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span v-if="logEntry.message">
-                                                {{logEntry.message}}
-                                            </span>
-                                            <span v-else>
-                                                {{logEntry.content}}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                                    <td>
+                                        <span v-if="logEntry.level">
+                                            {{logEntry.level}}
+                                        </span>
+                                        <span v-else>
+                                            {{logEntry.type}}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span v-if="logEntry.time">
+                                            {{logEntry.time}}
+                                        </span>
+                                        <span v-else>
+                                            --:--:--
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span v-if="logEntry.thread">
+                                            {{logEntry.thread}}
+                                        </span>
+                                        <span v-else>
+                                            [Game Client]
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span v-if="logEntry.message">
+                                            {{logEntry.message}}
+                                        </span>
+                                        <span v-else>
+                                            {{logEntry.content}}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div :class="{modal: true, shown: ui.packUninstall.show}" id="pack-uninstalling-modal">
+                    <div class="modal-content">
+                        <h1 class="modal-title">Uninstalling Pack...</h1>
                     </div>
                 </div>
             </div>
         </div>
-        </div>
-        <script src="../../../node_modules/vue/dist/vue.js"></script>
-        <script src="../js/app.js"></script>
-    </body>
+    </div>
+    </div>
+    <script src="../../../node_modules/vue/dist/vue.js"></script>
+    <script src="../js/app.js"></script>
+</body>
 
 </html>

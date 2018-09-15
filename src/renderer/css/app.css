@@ -363,6 +363,18 @@ body,
   background: #8cc1d9;
 }
 
+#below-navbar #pack-view #pack-view-packs.no-packs {
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+
 #below-navbar #pack-view #pack-view-pack-info {
   width: 69%;
   display: inline-block;
@@ -581,6 +593,48 @@ body,
 
 #below-navbar #settings {
   padding: 1rem;
+}
+
+#below-navbar #settings #launcher-update {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+#below-navbar #settings #launcher-update #launcher-update-button {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+#below-navbar #settings #launcher-update.downloading {
+  background: #C0FFB7;
+  border: 1px solid #74D76B;
+}
+
+#below-navbar #settings #launcher-update.downloaded {
+  background: #C0FFB7;
+  border: 1px solid #74D76B;
+}
+
+#below-navbar #settings #launcher-update.downloaded #launcher-update-button {
+  background: #278A1E;
+  border: 1px solid #278A1E;
+  color: white;
+}
+
+#below-navbar #settings #launcher-update.errored {
+  background: #FFD1D1;
+  border: 1px solid #D76B6B;
+}
+
+#below-navbar #settings #launcher-update.errored #launcher-update-button {
+  background: #8d1111;
+  color: #fff;
+  border: 1px solid #8d1111;
 }
 
 .modal {

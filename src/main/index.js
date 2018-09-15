@@ -50,7 +50,16 @@ var download = require("download");
 var child_process = require("child_process");
 var unzipper_1 = require("unzipper");
 var asar = require("asar");
+var electron_updater_1 = require("electron-updater");
+var rmfr = require("rmfr");
 var os = require("os");
+var logger_1 = require("./logger");
+var isDev = require("electron-is-dev");
+electron_updater_1.autoUpdater.autoDownload = true;
+electron_updater_1.autoUpdater.logger = logger_1.Logger;
+electron_updater_1.autoUpdater.on("update-download", function () {
+    win.webContents.send("update downloaded");
+});
 var fetch = web["default"];
 var launcherDir = path.join(process.platform === "win32" ?
     process.env.APPDATA : (process.platform === "darwin" ?
@@ -1120,5 +1129,43 @@ electron_1.ipcMain.on("launch pack", function (event, pack) {
     gameProcess.on('close', function (code) {
         event.sender.send("game closed", code);
     });
+});
+electron_1.ipcMain.on("uninstall pack", function (event, pack) { return __awaiter(_this, void 0, void 0, function () {
+    var packDir;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                packDir = path.join(launcherDir, "packs", pack.packName);
+                if (!fs.existsSync(packDir))
+                    return [2];
+                event.sender.send("uninstalling pack");
+                return [4, rmfr(packDir)];
+            case 1:
+                _a.sent();
+                event.sender.send("uninstalled pack");
+                return [2];
+        }
+    });
+}); });
+electron_1.ipcMain.on("check updates", function (event) {
+    if (!isDev) {
+        electron_updater_1.autoUpdater.checkForUpdatesAndNotify().then(function (update) {
+            if (update) {
+                event.sender.send("update available", update.updateInfo.releaseName);
+            }
+            else {
+                event.sender.send("no update");
+            }
+        })["catch"](function (e) {
+            logger_1.Logger.warn("Error checking for updates: " + e);
+            event.sender.send("update error");
+        });
+    }
+    else {
+        event.sender.send("update devmode");
+    }
+});
+electron_1.ipcMain.on("install update", function (event) {
+    electron_updater_1.autoUpdater.quitAndInstall();
 });
 //# sourceMappingURL=index.js.map

@@ -47,11 +47,22 @@ const app = new Vue({
                     progress: -1
                 }
             },
+            packUninstall: {
+                show: false
+            },
             gameRun: {
                 show: false,
                 log: [],
                 exitCode: undefined,
                 running: false
+            },
+            launcherUpdate: {
+                checking: false,
+                available: false,
+                ready: false,
+                devmode: false,
+                failed: false,
+                versionName: ""
             }
         }
     },
@@ -108,6 +119,24 @@ const app = new Vue({
             app.ui.gameRun.exitCode = undefined;
             app.ui.gameRun.show = true;
             ipcRenderer.send("launch pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex]);
+        },
+        dismissPackInstall: function () {
+            app.ui.packInstall.show = false;
+            ipcRenderer.send("get top packs");
+            ipcRenderer.send("get installed packs");
+        },
+        retryUpdate: function () {
+            app.ui.launcherUpdate.checking = true;
+            app.ui.launcherUpdate.available = false;
+            app.ui.launcherUpdate.versionName = "";
+            app.ui.launcherUpdate.devmode = false;
+            app.ui.launcherUpdate.failed = false;
+            app.ui.launcherUpdate.ready = false;
+
+            ipcRenderer.send("check updates");
+        },
+        installUpdate: function () {
+            ipcRenderer.send("install update"); //Will close launcher
         }
     }
 });
@@ -124,16 +153,6 @@ function adjustScroll(oldPos) {
 
     let elem = document.querySelector("#game-running-modal .modal-content");
     elem.scrollTop = (elem.scrollHeight - elem.clientHeight);
-}
-
-function getCaptureGroup(string, regex, index) {
-    index || (index = 1); // default to the first capturing group
-    var matches = [];
-    var match;
-    while ((match = regex.exec(string))) {
-        matches.push(match[index]);
-    }
-    return matches;
 }
 
 document.body.onload = function () {
@@ -162,6 +181,8 @@ ipcRenderer.on("profile", (event, username, uuid) => {
 
     ipcRenderer.send("get top packs");
     ipcRenderer.send("get installed packs");
+    app.ui.launcherUpdate.checking = true;
+    ipcRenderer.send("check updates");
 });
 
 ipcRenderer.on("no profile", (event) => {
@@ -283,4 +304,57 @@ ipcRenderer.on("game error", (event, line) => {
 ipcRenderer.on("game closed", (event, code) => {
     app.ui.gameRun.running = false;
     app.ui.gameRun.exitCode = code;
+});
+
+ipcRenderer.on("uninstalling pack", event => {
+    app.ui.packUninstall.show = true;
+});
+
+ipcRenderer.on("uninstalled pack", event => {
+    app.ui.packUninstall.show = false;
+    ipcRenderer.send("get top packs");
+    ipcRenderer.send("get installed packs");
+});
+
+ipcRenderer.on("update available", (event, name) => {
+    app.ui.launcherUpdate.checking = false;
+    app.ui.launcherUpdate.available = true;
+    app.ui.launcherUpdate.versionName = name;
+    app.ui.launcherUpdate.devmode = false;
+    app.ui.launcherUpdate.failed = false;
+    app.ui.launcherUpdate.ready = false;
+});
+
+ipcRenderer.on("no update", (event) => {
+    app.ui.launcherUpdate.checking = false;
+    app.ui.launcherUpdate.available = false;
+    app.ui.launcherUpdate.failed = false;
+    app.ui.launcherUpdate.devmode = false;
+    app.ui.launcherUpdate.versionName = "";
+    app.ui.launcherUpdate.ready = false;
+});
+
+ipcRenderer.on("update error", (event) => {
+    app.ui.launcherUpdate.checking = false;
+    app.ui.launcherUpdate.available = false;
+    app.ui.launcherUpdate.failed = true;
+    app.ui.launcherUpdate.devmode = false;
+    app.ui.launcherUpdate.versionName = "";
+    app.ui.launcherUpdate.ready = false;
+});
+
+ipcRenderer.on("update devmode", (event) => {
+    app.ui.launcherUpdate.checking = false;
+    app.ui.launcherUpdate.available = false;
+    app.ui.launcherUpdate.failed = false;
+    app.ui.launcherUpdate.devmode = true;
+    app.ui.launcherUpdate.versionName = "";
+    app.ui.launcherUpdate.ready = false;
+});
+
+ipcRenderer.on("update downloaded", (event) => {
+    app.ui.launcherUpdate.checking = false;
+    app.ui.launcherUpdate.failed = false;
+    app.ui.launcherUpdate.devmode = false;
+    app.ui.launcherUpdate.ready = true;
 });
