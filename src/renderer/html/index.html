@@ -198,14 +198,14 @@
                         <div id="launcher-update" :class="{errored: ui.launcherUpdate.failed, downloading: ui.launcherUpdate.available, downloaded: ui.launcherUpdate.ready,
                              checking: ui.launcherUpdate.checking, devmode: ui.launcherUpdate.devmode}">
                             <h3 id="launcher-update-title">
-                                <span v-if="ui.launcherUpdate.failed">
+                                <span v-if="ui.launcherUpdate.ready">
+                                    Ready to Install Update!
+                                </span>
+                                <span v-else-if="ui.launcherUpdate.failed">
                                     Update Check Failed (are you offline?)
                                 </span>
                                 <span v-else-if="ui.launcherUpdate.available">
                                     Downloading Launcher v {{ui.launcherUpdate.versionName}}...
-                                </span>
-                                <span v-else-if="ui.launcherUpdate.ready">
-                                    Ready to Install Update!
                                 </span>
                                 <span v-else-if="ui.launcherUpdate.checking">
                                     Checking for Launcher Update...

@@ -357,4 +357,5 @@ ipcRenderer.on("update downloaded", (event) => {
     app.ui.launcherUpdate.failed = false;
     app.ui.launcherUpdate.devmode = false;
     app.ui.launcherUpdate.ready = true;
+    app.ui.launcherUpdate.available = false;
 });
