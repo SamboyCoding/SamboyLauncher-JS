@@ -1,6 +1,6 @@
 {
-    "name": "launcher-client",
-    "version": "1.0.0-rc3",
+    "name": "samboylauncher",
+    "version": "1.0.0-rc4",
     "description": "Minecraft Launcher - see https://launcher.samboycoding.me",
     "main": "src/main/index.js",
     "scripts": {

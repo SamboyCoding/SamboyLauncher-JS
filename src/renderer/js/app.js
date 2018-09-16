@@ -140,6 +140,9 @@ const app = new Vue({
         },
         installUpdate: function () {
             ipcRenderer.send("install update"); //Will close launcher
+        },
+        signOut: function () {
+            ipcRenderer.send("logout");
         }
     }
 });
@@ -186,6 +189,7 @@ ipcRenderer.on("profile", (event, username, uuid) => {
     ipcRenderer.send("get installed packs");
     app.ui.launcherUpdate.checking = true;
     ipcRenderer.send("check updates");
+    ipcRenderer.send("validate session");
 });
 
 ipcRenderer.on("no profile", (event) => {
@@ -361,4 +365,42 @@ ipcRenderer.on("update downloaded", (event) => {
     app.ui.launcherUpdate.devmode = false;
     app.ui.launcherUpdate.ready = true;
     app.ui.launcherUpdate.available = false;
+});
+
+ipcRenderer.on("logged out", (event) => {
+    app.ui.login.processing = false;
+    app.ui.login.email = "";
+    app.ui.login.password = "";
+    app.ui.login.error = "";
+
+    app.ui.profile.name = "";
+    app.ui.profile.uuid = "";
+    app.ui.profile.image = "";
+
+    app.ui.login.show = true;
+    app.ui.packView.show = false;
+    app.ui.packBrowse.show = false;
+    app.ui.settings.show = false;
+    app.ui.gameRun.show = false;
+    app.ui.packInstall.show = false;
+    app.ui.packUninstall.show = false;
+});
+
+ipcRenderer.on("session invalid", (event) => {
+    app.ui.login.processing = false;
+    app.ui.login.email = "";
+    app.ui.login.password = "";
+    app.ui.login.error = "Your session is invalid. Please sign in again. If you choose 'Remember my password' we can sign you back in if this happens again.";
+
+    app.ui.profile.name = "";
+    app.ui.profile.uuid = "";
+    app.ui.profile.image = "";
+
+    app.ui.login.show = true;
+    app.ui.packView.show = false;
+    app.ui.packBrowse.show = false;
+    app.ui.settings.show = false;
+    app.ui.gameRun.show = false;
+    app.ui.packInstall.show = false;
+    app.ui.packUninstall.show = false;
 });

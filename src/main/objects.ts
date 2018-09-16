@@ -3,6 +3,7 @@ export class AuthData {
     public accessToken: string;
     public uuid: string;
     public username: string;
+    public email: string;
     public password: string;
 }
 

@@ -18,6 +18,13 @@ import * as os from "os";
 import { Logger } from "./logger";
 import * as isDev from "electron-is-dev";
 
+//TODO: List is here because I feel like it
+//  -Analytics - send a request when a pack is installed and when it is run
+//  -Pack updating
+//  -Dark theme
+//  -Custom game resolutions
+//  -Custom/Reworked memory allocation
+//  -Custom JVM Args?
 
 autoUpdater.autoDownload = true;
 autoUpdater.logger = Logger;
@@ -49,6 +56,36 @@ async function downloadFile(url: string, localPath: string): Promise<any> {
     return download(url, path.dirname(localPath), { filename: path.basename(localPath) });
 }
 
+function saveAuthdata() {
+    const content: any = {};
+
+    if (authData.accessToken) {
+        content.accessToken = authData.accessToken;
+    }
+
+    if (authData.clientToken) {
+        content.clientToken = authData.clientToken;
+    }
+
+    if (authData.password) {
+        content.hash = btoa(authData.password);
+    }
+
+    if (authData.username) {
+        content.username = authData.username;
+    }
+
+    if (authData.uuid) {
+        content.uuid = authData.uuid;
+    }
+
+    if (authData.email) {
+        content.email = authData.email;
+    }
+
+    jsonfile.writeFileSync(path.join(launcherDir, "authdata"), content);
+}
+
 async function mkdirpPromise(path: string): Promise<any> {
     return new Promise((ff, rj) => {
         mkdirp(path, (err, made) => {
@@ -70,13 +107,15 @@ function createWindow(): void {
 
     const menu: Menu = new Menu();
 
-    menu.append(new MenuItem({
-        accelerator: "CmdOrCtrl+R",
-        click: () => {
-            win.webContents.reload();
-        },
-        label: "Reload",
-    }));
+    if (isDev) {
+        menu.append(new MenuItem({
+            accelerator: "CmdOrCtrl+R",
+            click: () => {
+                win.webContents.reload();
+            },
+            label: "Reload",
+        }));
+    }
 
     menu.append(new MenuItem({
         accelerator: "CmdOrCtrl+Shift+I",
@@ -140,6 +179,10 @@ async function onReady() {
             if (content.uuid) {
                 authData.uuid = content.uuid;
             }
+
+            if (content.email) {
+                authData.email = content.email;
+            }
         } catch (e) {
             jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
         }
@@ -183,75 +226,104 @@ ipcMain.on("get installed packs", (event: IpcMessageEvent) => {
     })
 });
 
-ipcMain.on("login", (event: IpcMessageEvent, username: string, password: string, remember: boolean) => {
-    fetch("https://authserver.mojang.com/authenticate", {
-        body: JSON.stringify({
-            agent: {
-                name: "Minecraft",
-                version: 1,
+async function login(email: string, password: string, remember: boolean) {
+    return new Promise((ff, rj) => {
+        fetch("https://authserver.mojang.com/authenticate", {
+            body: JSON.stringify({
+                agent: {
+                    name: "Minecraft",
+                    version: 1,
+                },
+                clientToken: authData.clientToken ? authData.clientToken : undefined,
+                password,
+                requestUser: true,
+                username: email,
+            }),
+            headers: {
+                "Content-Type": "application/json",
             },
-            clientToken: authData.clientToken ? authData.clientToken : undefined,
-            password,
-            requestUser: true,
-            username,
+            method: "POST",
+        }).then((resp) => {
+            return resp.json();
+        }).then((json) => {
+            try {
+                if (json.error) {
+                    rj(json.errorMessage);
+                } else {
+                    const at: string = json.accessToken;
+                    const ct: string = json.clientToken;
+                    const uid: string = json.selectedProfile.id;
+                    const un: string = json.selectedProfile.name;
+
+                    authData.accessToken = at;
+                    authData.clientToken = ct;
+                    authData.uuid = uid;
+                    authData.username = un;
+                    authData.email = email;
+                    if (remember) {
+                        authData.password = password;
+                    } else {
+                        authData.password = "";
+                    }
+
+                    saveAuthdata();
+
+                    ff();
+                }
+            } catch (e) {
+                rj(e);
+            }
+        });
+    });
+}
+
+ipcMain.on("login", async (event: IpcMessageEvent, email: string, password: string, remember: boolean) => {
+    try {
+        await login(email, password, remember);
+
+        event.sender.send("profile", authData.username, authData.uuid);
+    } catch (e) {
+        event.sender.send("login error", e);
+    }
+});
+
+ipcMain.on("logout", (event: IpcMessageEvent) => {
+    authData.accessToken = undefined;
+    authData.password = undefined;
+    authData.username = undefined;
+    authData.uuid = undefined;
+
+    saveAuthdata();
+
+    event.sender.send("logged out");
+});
+
+ipcMain.on("validate session", (event: IpcMessageEvent) => {
+    if (!authData.accessToken) return;
+
+    fetch("https://authserver.mojang.com/validate", {
+        body: JSON.stringify({
+            accessToken: authData.accessToken,
+            clientToken: authData.clientToken
         }),
         headers: {
             "Content-Type": "application/json",
         },
         method: "POST",
-    }).then((resp) => {
-        return resp.json();
-    }).then((json) => {
-        try {
-            if (json.error) {
-                event.sender.send("login error", json.errorMessage);
-            } else {
-                const at: string = json.accessToken;
-                const ct: string = json.clientToken;
-                const uid: string = json.selectedProfile.id;
-                const un: string = json.selectedProfile.name;
+    }).then(async (resp) => {
+        if (resp.status === 204) return; //Session valid
 
-                authData.accessToken = at;
-                authData.clientToken = ct;
-                authData.uuid = uid;
-                authData.username = un;
-                if (remember) {
-                    authData.password = password;
-                } else {
-                    authData.password = "";
-                }
-
-                const content: any = {};
-
-                if (authData.accessToken) {
-                    content.accessToken = authData.accessToken;
-                }
-
-                if (authData.clientToken) {
-                    content.clientToken = authData.clientToken;
-                }
-
-                if (authData.password) {
-                    content.hash = btoa(authData.password);
-                }
-
-                if (authData.username) {
-                    content.username = authData.username;
-                }
-
-                if (authData.uuid) {
-                    content.uuid = authData.uuid;
-                }
-
-                jsonfile.writeFileSync(path.join(launcherDir, "authdata"), content);
-
-                event.sender.send("profile", authData.username, authData.uuid);
+        if (authData.email && authData.password) {
+            try {
+                await login(authData.email, authData.password, true); //Already set to remember, so remember again
+            } catch (e) {
+                event.sender.send("session invalid");
             }
-        } catch (e) {
-            event.sender.send("login error", e);
+        } else {
+            event.sender.send("session invalid");
         }
     });
-});
+})
 
 ipcMain.on("get top packs", (event: IpcMessageEvent) => {
     fetch("https://launcher.samboycoding.me/api/mostPopularPacks").then((resp) => {

@@ -80,6 +80,28 @@ function downloadFile(url, localPath) {
         });
     });
 }
+function saveAuthdata() {
+    var content = {};
+    if (authData.accessToken) {
+        content.accessToken = authData.accessToken;
+    }
+    if (authData.clientToken) {
+        content.clientToken = authData.clientToken;
+    }
+    if (authData.password) {
+        content.hash = btoa(authData.password);
+    }
+    if (authData.username) {
+        content.username = authData.username;
+    }
+    if (authData.uuid) {
+        content.uuid = authData.uuid;
+    }
+    if (authData.email) {
+        content.email = authData.email;
+    }
+    jsonfile.writeFileSync(path.join(launcherDir, "authdata"), content);
+}
 function mkdirpPromise(path) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -101,13 +123,15 @@ function createWindow() {
         width: 1280
     });
     var menu = new electron_1.Menu();
-    menu.append(new electron_1.MenuItem({
-        accelerator: "CmdOrCtrl+R",
-        click: function () {
-            win.webContents.reload();
-        },
-        label: "Reload"
-    }));
+    if (isDev) {
+        menu.append(new electron_1.MenuItem({
+            accelerator: "CmdOrCtrl+R",
+            click: function () {
+                win.webContents.reload();
+            },
+            label: "Reload"
+        }));
+    }
     menu.append(new electron_1.MenuItem({
         accelerator: "CmdOrCtrl+Shift+I",
         click: function () {
@@ -172,6 +196,9 @@ function onReady() {
                             if (content.uuid) {
                                 authData.uuid = content.uuid;
                             }
+                            if (content.email) {
+                                authData.email = content.email;
+                            }
                         }
                         catch (e) {
                             jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
@@ -217,68 +244,126 @@ electron_1.ipcMain.on("get installed packs", function (event) {
         event.sender.send("installed packs", packData);
     });
 });
-electron_1.ipcMain.on("login", function (event, username, password, remember) {
-    fetch("https://authserver.mojang.com/authenticate", {
+function login(email, password, remember) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            return [2, new Promise(function (ff, rj) {
+                    fetch("https://authserver.mojang.com/authenticate", {
+                        body: JSON.stringify({
+                            agent: {
+                                name: "Minecraft",
+                                version: 1
+                            },
+                            clientToken: authData.clientToken ? authData.clientToken : undefined,
+                            password: password,
+                            requestUser: true,
+                            username: email
+                        }),
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        method: "POST"
+                    }).then(function (resp) {
+                        return resp.json();
+                    }).then(function (json) {
+                        try {
+                            if (json.error) {
+                                rj(json.errorMessage);
+                            }
+                            else {
+                                var at = json.accessToken;
+                                var ct = json.clientToken;
+                                var uid = json.selectedProfile.id;
+                                var un = json.selectedProfile.name;
+                                authData.accessToken = at;
+                                authData.clientToken = ct;
+                                authData.uuid = uid;
+                                authData.username = un;
+                                authData.email = email;
+                                if (remember) {
+                                    authData.password = password;
+                                }
+                                else {
+                                    authData.password = "";
+                                }
+                                saveAuthdata();
+                                ff();
+                            }
+                        }
+                        catch (e) {
+                            rj(e);
+                        }
+                    });
+                })];
+        });
+    });
+}
+electron_1.ipcMain.on("login", function (event, email, password, remember) { return __awaiter(_this, void 0, void 0, function () {
+    var e_1;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4, login(email, password, remember)];
+            case 1:
+                _a.sent();
+                event.sender.send("profile", authData.username, authData.uuid);
+                return [3, 3];
+            case 2:
+                e_1 = _a.sent();
+                event.sender.send("login error", e_1);
+                return [3, 3];
+            case 3: return [2];
+        }
+    });
+}); });
+electron_1.ipcMain.on("logout", function (event) {
+    authData.accessToken = undefined;
+    authData.password = undefined;
+    authData.username = undefined;
+    authData.uuid = undefined;
+    saveAuthdata();
+    event.sender.send("logged out");
+});
+electron_1.ipcMain.on("validate session", function (event) {
+    if (!authData.accessToken)
+        return;
+    fetch("https://authserver.mojang.com/validate", {
         body: JSON.stringify({
-            agent: {
-                name: "Minecraft",
-                version: 1
-            },
-            clientToken: authData.clientToken ? authData.clientToken : undefined,
-            password: password,
-            requestUser: true,
-            username: username
+            accessToken: authData.accessToken,
+            clientToken: authData.clientToken
         }),
         headers: {
             "Content-Type": "application/json"
         },
         method: "POST"
-    }).then(function (resp) {
-        return resp.json();
-    }).then(function (json) {
-        try {
-            if (json.error) {
-                event.sender.send("login error", json.errorMessage);
+    }).then(function (resp) { return __awaiter(_this, void 0, void 0, function () {
+        var e_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (resp.status === 204)
+                        return [2];
+                    if (!(authData.email && authData.password)) return [3, 5];
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4, login(authData.email, authData.password, true)];
+                case 2:
+                    _a.sent();
+                    return [3, 4];
+                case 3:
+                    e_2 = _a.sent();
+                    event.sender.send("session invalid");
+                    return [3, 4];
+                case 4: return [3, 6];
+                case 5:
+                    event.sender.send("session invalid");
+                    _a.label = 6;
+                case 6: return [2];
             }
-            else {
-                var at = json.accessToken;
-                var ct = json.clientToken;
-                var uid = json.selectedProfile.id;
-                var un = json.selectedProfile.name;
-                authData.accessToken = at;
-                authData.clientToken = ct;
-                authData.uuid = uid;
-                authData.username = un;
-                if (remember) {
-                    authData.password = password;
-                }
-                else {
-                    authData.password = "";
-                }
-                var content = {};
-                if (authData.accessToken) {
-                    content.accessToken = authData.accessToken;
-                }
-                if (authData.clientToken) {
-                    content.clientToken = authData.clientToken;
-                }
-                if (authData.password) {
-                    content.hash = btoa(authData.password);
-                }
-                if (authData.username) {
-                    content.username = authData.username;
-                }
-                if (authData.uuid) {
-                    content.uuid = authData.uuid;
-                }
-                jsonfile.writeFileSync(path.join(launcherDir, "authdata"), content);
-                event.sender.send("profile", authData.username, authData.uuid);
-            }
-        }
-        catch (e) {
-            event.sender.send("login error", e);
-        }
-    });
+        });
+    }); });
 });
 electron_1.ipcMain.on("get top packs", function (event) {
     fetch("https://launcher.samboycoding.me/api/mostPopularPacks").then(function (resp) {
@@ -288,7 +373,7 @@ electron_1.ipcMain.on("get top packs", function (event) {
     });
 });
 electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(_this, void 0, void 0, function () {
-    var unpack200, java, files, installation, versions, version, versionData, libraries, natives, currentPercent, percentPer, _a, _b, _i, index, library, dest, directory, success_1, correctHash, fileHash, ourOs_1, arch, nativesFolder_1, _loop_1, _c, _d, _e, index, assetIndexFolder, assetIndexFile, success, correctChecksum, actual, assets, count, current, _f, _g, _h, index, asset, hash, url, directory, success_2, filePath_1, downloaded, actualSha1, filePath, downloaded, actualSha1, forgeVersionFolder_1, forgeJarURL, e_1, buf, zip_1, versionJSON, libs, percentPer, current, _j, _k, _l, index, lib, libnameSplit, filePath, url, localPath, e_2, tempFolder, decompressed, end, checkString, length, checksumLength, actualContent, packDir_1, modsDir, installedMods, percentPer, current, _loop_2, _m, _o, _p, index, resp, e_3;
+    var unpack200, java, files, installation, versions, version, versionData, libraries, natives, currentPercent, percentPer, _a, _b, _i, index, library, dest, directory, success_1, correctHash, fileHash, ourOs_1, arch, nativesFolder_1, _loop_1, _c, _d, _e, index, assetIndexFolder, assetIndexFile, success, correctChecksum, actual, assets, count, current, _f, _g, _h, index, asset, hash, url, directory, success_2, filePath_1, downloaded, actualSha1, filePath, downloaded, actualSha1, forgeVersionFolder_1, forgeJarURL, e_3, buf, zip_1, versionJSON, libs, percentPer, current, _j, _k, _l, index, lib, libnameSplit, filePath, url, localPath, e_4, tempFolder, decompressed, end, checkString, length, checksumLength, actualContent, packDir_1, modsDir, installedMods, percentPer, current, _loop_2, _m, _o, _p, index, resp, e_5;
     return __generator(this, function (_q) {
         switch (_q.label) {
             case 0:
@@ -644,7 +729,7 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 _q.sent();
                 return [3, 45];
             case 44:
-                e_1 = _q.sent();
+                e_3 = _q.sent();
                 return [3, 45];
             case 45:
                 if (!!fs.existsSync(path.join(forgeVersionFolder_1, "forge_temp.jar"))) return [3, 47];
@@ -707,7 +792,7 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 _q.sent();
                 return [3, 55];
             case 54:
-                e_2 = _q.sent();
+                e_4 = _q.sent();
                 return [3, 55];
             case 55:
                 if (!!fs.existsSync(localPath)) return [3, 63];
@@ -875,9 +960,9 @@ electron_1.ipcMain.on("install pack", function (event, pack) { return __awaiter(
                 event.sender.send("install complete");
                 return [3, 78];
             case 77:
-                e_3 = _q.sent();
-                event.sender.send("install failed", "An exception occurred: " + e_3);
-                event.sender.send("install log", "[Error] An Exception occurred: " + e_3);
+                e_5 = _q.sent();
+                event.sender.send("install failed", "An exception occurred: " + e_5);
+                event.sender.send("install log", "[Error] An Exception occurred: " + e_5);
                 return [3, 78];
             case 78: return [2];
         }
