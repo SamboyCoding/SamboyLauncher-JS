@@ -22,7 +22,7 @@ import * as isDev from "electron-is-dev";
 autoUpdater.autoDownload = true;
 autoUpdater.logger = Logger;
 
-autoUpdater.on("update-download", () => {
+autoUpdater.on("update-downloaded", () => {
     win.webContents.send("update downloaded");
 });
 
@@ -1083,11 +1083,14 @@ ipcMain.on("uninstall pack", async (event: IpcMessageEvent, pack: Pack) => {
 });
 
 ipcMain.on("check updates", (event: IpcMessageEvent) => {
+    Logger.info("Checking for updates...");
     if (!isDev) {
         autoUpdater.checkForUpdatesAndNotify().then((update) => {
             if (update) {
+                Logger.info("Update found! " + update.updateInfo.releaseName);
                 event.sender.send("update available", update.updateInfo.releaseName);
             } else {
+                Logger.info("No update found.");
                 event.sender.send("no update");
             }
         }).catch(e => {

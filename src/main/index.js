@@ -57,7 +57,7 @@ var logger_1 = require("./logger");
 var isDev = require("electron-is-dev");
 electron_updater_1.autoUpdater.autoDownload = true;
 electron_updater_1.autoUpdater.logger = logger_1.Logger;
-electron_updater_1.autoUpdater.on("update-download", function () {
+electron_updater_1.autoUpdater.on("update-downloaded", function () {
     win.webContents.send("update downloaded");
 });
 var fetch = web["default"];
@@ -1148,12 +1148,15 @@ electron_1.ipcMain.on("uninstall pack", function (event, pack) { return __awaite
     });
 }); });
 electron_1.ipcMain.on("check updates", function (event) {
+    logger_1.Logger.info("Checking for updates...");
     if (!isDev) {
         electron_updater_1.autoUpdater.checkForUpdatesAndNotify().then(function (update) {
             if (update) {
+                logger_1.Logger.info("Update found! " + update.updateInfo.releaseName);
                 event.sender.send("update available", update.updateInfo.releaseName);
             }
             else {
+                logger_1.Logger.info("No update found.");
                 event.sender.send("no update");
             }
         })["catch"](function (e) {
