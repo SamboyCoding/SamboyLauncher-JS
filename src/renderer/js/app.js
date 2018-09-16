@@ -2,6 +2,9 @@ const {
     ipcRenderer
 } = require("electron");
 
+const semver = require("semver");
+const packageData = require("../../../package");
+
 const app = new Vue({
     el: "#app",
     data: {
@@ -318,7 +321,7 @@ ipcRenderer.on("uninstalled pack", event => {
 
 ipcRenderer.on("update available", (event, name) => {
     app.ui.launcherUpdate.checking = false;
-    app.ui.launcherUpdate.available = true;
+    app.ui.launcherUpdate.available = semver.gt(name, packageData.version);
     app.ui.launcherUpdate.versionName = name;
     app.ui.launcherUpdate.devmode = false;
     app.ui.launcherUpdate.failed = false;

@@ -1087,8 +1087,8 @@ ipcMain.on("check updates", (event: IpcMessageEvent) => {
     if (!isDev) {
         autoUpdater.checkForUpdatesAndNotify().then((update) => {
             if (update) {
-                Logger.info("Update found! " + update.updateInfo.releaseName);
-                event.sender.send("update available", update.updateInfo.releaseName);
+                Logger.info("Update found! " + JSON.stringify(update.updateInfo));
+                event.sender.send("update available", update.updateInfo.version);
             } else {
                 Logger.info("No update found.");
                 event.sender.send("no update");

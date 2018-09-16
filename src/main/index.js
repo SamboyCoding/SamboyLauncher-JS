@@ -1152,8 +1152,8 @@ electron_1.ipcMain.on("check updates", function (event) {
     if (!isDev) {
         electron_updater_1.autoUpdater.checkForUpdatesAndNotify().then(function (update) {
             if (update) {
-                logger_1.Logger.info("Update found! " + update.updateInfo.releaseName);
-                event.sender.send("update available", update.updateInfo.releaseName);
+                logger_1.Logger.info("Update found! " + JSON.stringify(update.updateInfo));
+                event.sender.send("update available", update.updateInfo.version);
             }
             else {
                 logger_1.Logger.info("No update found.");
