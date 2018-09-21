@@ -16,9 +16,11 @@
         "max-classes-per-file": false,
         "await-promise": true,
         "no-unsafe-any": false,
-        "no-any": false
+        "no-any": false,
+        "forin": false,
+        "no-bitwise": false
     },
     "rulesDirectory": [
         "node_modules/tslint-eslint-rules/dist/rules"
-    ],
+    ]
 }

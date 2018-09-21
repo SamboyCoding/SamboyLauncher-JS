@@ -57,6 +57,7 @@ export class GameDownloadInfo {
 export class DownloadOptions {
     public client: GameDownloadInfo;
     public server: GameDownloadInfo;
+    // tslint:disable-next-line:variable-name
     public windows_server: GameDownloadInfo;
 }
 
@@ -100,7 +101,7 @@ export class OSRule {
 
 export class ConditionalAllow {
     public action: string;
-    public os: OSRule
+    public os: OSRule;
     public features: any;
 }
 
@@ -117,8 +118,8 @@ export class ConditionalArgument {
 }
 
 export class VanillaVersionArguments {
-    public game: (string | ConditionalArgument)[];
-    public jvm: (string | ConditionalArgument)[];
+    public game: Array<string | ConditionalArgument>;
+    public jvm: Array<string | ConditionalArgument>;
 }
 
 export class VanillaVersionData {
