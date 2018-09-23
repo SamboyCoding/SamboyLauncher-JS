@@ -415,12 +415,12 @@ electron_1.ipcMain.on("get update actions", function (event, pack) { return __aw
     });
 }); });
 electron_1.ipcMain.on("update pack", function (event, pack, updateData) { return __awaiter(_this, void 0, void 0, function () {
-    var currentPercent, percentPer, unpack200, files, installation, forgeVersionFolder, versionJSON, libs, modsDir, i, modToRemove, modPath, _a, _b, _i, i, modToRemove, modToAdd, modPath, url, _c, _d, _e, i, modToAdd, url;
+    var currentPercent, percentPer, unpack200, files, installation, forgeVersionFolder, versionJSON, libs, modsDir, i, modToRemove, modPath, _a, _b, _i, i, modToRemove, modToAdd, modPath, url, _c, _d, _e, i, modToAdd, url, resp;
     return __generator(this, function (_f) {
         switch (_f.label) {
             case 0:
                 currentPercent = 0;
-                percentPer = 97 / ((updateData.forge.to ? 1 : 0) + updateData.addMods.length + updateData.updateMods.length + updateData.removeMods.length);
+                percentPer = 97 / ((updateData.forge.to ? 1 : 0) + updateData.addMods.length + updateData.updateMods.length + updateData.removeMods.length + 1);
                 event.sender.send("pack update progress", -1, "Starting upgrade...");
                 if (!updateData.forge.to) return [3, 3];
                 currentPercent += percentPer;
@@ -510,6 +510,26 @@ electron_1.ipcMain.on("update pack", function (event, pack, updateData) { return
                 _e++;
                 return [3, 10];
             case 13:
+                currentPercent += percentPer;
+                event.sender.send("pack update progress", currentPercent / 100, "Applying updated overrides...");
+                return [4, fetch("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, {
+                        method: "HEAD"
+                    })];
+            case 14:
+                resp = _f.sent();
+                if (!(resp.status === 200)) return [3, 17];
+                return [4, downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(launcherDir, "packs", pack.packName, "overrides.zip"))];
+            case 15:
+                _f.sent();
+                return [4, new Promise(function (ff, rj) {
+                        fs.createReadStream(path.join(path.join(launcherDir, "packs", pack.packName), "overrides.zip")).pipe(unzipper_1.Extract({ path: path.join(launcherDir, "packs", pack.packName) })).on("close", function () {
+                            ff();
+                        });
+                    })];
+            case 16:
+                _f.sent();
+                _f.label = 17;
+            case 17:
                 event.sender.send("pack update progress", 0.98, "Finishing up");
                 jsonfile.writeFileSync(path.join(launcherDir, "packs", pack.packName, "install.json"), {
                     author: pack.author,

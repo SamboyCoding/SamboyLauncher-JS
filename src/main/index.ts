@@ -399,7 +399,7 @@ ipcMain.on("get update actions", async (event: IpcMessageEvent, pack: Pack) => {
 
 ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData: any) => {
     let currentPercent = 0;
-    const percentPer = 97 / ((updateData.forge.to ? 1 : 0) + updateData.addMods.length + updateData.updateMods.length + updateData.removeMods.length);
+    const percentPer = 97 / ((updateData.forge.to ? 1 : 0) + updateData.addMods.length + updateData.updateMods.length + updateData.removeMods.length + 1);
 
     event.sender.send("pack update progress", -1, `Starting upgrade...`);
 
@@ -490,6 +490,26 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
         await downloadFile(url, path.join(modsDir, modToAdd.resolvedVersion));
     }
 
+    // Finally get the overrides
+    currentPercent += percentPer;
+
+    event.sender.send("pack update progress", currentPercent / 100, `Applying updated overrides...`);
+
+    const resp = await fetch("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, {
+        method: "HEAD",
+    });
+
+    if (resp.status === 200) {
+        await downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(launcherDir, "packs", pack.packName, "overrides.zip"));
+
+        await new Promise((ff, rj) => {
+            fs.createReadStream(path.join(path.join(launcherDir, "packs", pack.packName), "overrides.zip")).pipe(Extract({ path: path.join(launcherDir, "packs", pack.packName) })).on("close", () => {
+                ff();
+            });
+        });
+    }
+
+    // Save the updated data to the install JSON
     event.sender.send("pack update progress", 0.98, `Finishing up`);
 
     jsonfile.writeFileSync(path.join(launcherDir, "packs", pack.packName, "install.json"), {
@@ -502,8 +522,8 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
         packName: pack.packName,
     });
 
+    // And we're done!
     event.sender.send("pack update progress", 1, `Finished.`);
-
     event.sender.send("pack update complete");
 });
 
