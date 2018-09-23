@@ -88,14 +88,21 @@
                             No Packs
                         </div>
                         <div id="pack-view-pack-info" v-if="ui.packView.selectedPackIndex !== -1">
-                            <button id="installed-pack-uninstall-button" @click="uninstallPack">
-                                <i class="fas fa-trash-alt"></i>
-                                Uninstall Pack
-                            </button>
-                            <button id="installed-pack-launch-game-button" @click="launchPack">
-                                <i class="fas fa-play"></i>
-                                Launch Pack
-                            </button>
+                            <div class="pack-action-buttons">
+                                <button id="installed-pack-uninstall-button" @click="uninstallPack">
+                                    <i class="fas fa-trash-alt"></i>
+                                    Uninstall Pack
+                                </button>
+                                <button id="installed-pack-launch-game-button" @click="launchPack">
+                                    <i class="fas fa-play"></i>
+                                    Launch Pack
+                                </button>
+                                <button id="installed-pack-update-button" v-if="ui.packView.packs[ui.packView.selectedPackIndex].update"
+                                    @click="getPackUpdateDetails">
+                                    <i class="fas fa-download"></i>
+                                    Update Pack
+                                </button>
+                            </div>
                             <span class="installed-pack-info-pack-title">
                                 {{ui.packView.packs[ui.packView.selectedPackIndex].packName}}
                             </span>
@@ -330,6 +337,62 @@
                 <div :class="{modal: true, shown: ui.packUninstall.show}" id="pack-uninstalling-modal">
                     <div class="modal-content">
                         <h1 class="modal-title">Uninstalling Pack...</h1>
+                    </div>
+                </div>
+                <div :class="{modal: true, shown: ui.packUpdate.show}" id="pack-update-modal">
+                    <div class="modal-content">
+                        <h1 class="modal-title" v-if="ui.packUpdate.pre&& ui.packUpdate.previewiew">Update Pack?</h1>
+                        <h1 class="modal-title" v-else>Updating pack...</h1>
+                        <div v-if="ui.packUpdate.show && ui.packUpdate.preview">
+                            <button id="pack-update-yes" @click="doUpdatePack">Yes</button>
+                            <button id="pack-update-no" @click="ui.packUpdate.show = false">No</button>
+                            <p>
+                                The owner of this pack has updated it from version
+                                {{ui.packUpdate.data.version.from}} to version
+                                {{ui.packUpdate.data.version.to}}. Do you wish to update?
+                            </p>
+                            <div v-if="ui.packUpdate.data.addMods.length">
+                                <h2>Mods to be added:</h2>
+                                <ul>
+                                    <li v-for="mod in ui.packUpdate.data.addMods">
+                                        {{mod.resolvedName}} ({{mod.resolvedVersion}})
+                                    </li>
+                                </ul>
+                            </div>
+                            <div v-if="ui.packUpdate.data.removeMods.length">
+                                <h2>Mods to be removed:</h2>
+                                <ul>
+                                    <li v-for="mod in ui.packUpdate.data.removeMods">
+                                        {{mod.resolvedName}} ({{mod.resolvedVersion}})
+                                    </li>
+                                </ul>
+                            </div>
+                            <div v-if="ui.packUpdate.data.updateMods.length">
+                                <h2>Mods to be updated:</h2>
+                                <ul>
+                                    <li v-for="mod in ui.packUpdate.data.updateMods">
+                                        {{mod.to.resolvedName}}: {{mod.from.resolvedVersion}} =>
+                                        {{mod.to.resolvedVersion}}
+                                    </li>
+                                </ul>
+                            </div>
+                            <div v-if="ui.packUpdate.data.forge.to">
+                                <h2>Forge Update</h2>
+                                <span>
+                                    Will update forge from version {{ui.packUpdate.data.forge.from}}
+                                    to version {{ui.packUpdate.data.forge.to}}
+                                </span>
+                            </div>
+                        </div>
+                        <div v-else-if="ui.packUpdate.show">
+                            <label for="pack-update-progress">
+                                {{ui.packUpdate.label}}
+                            </label>
+                            <div class="progress" id="pack-update-progress">
+                                <div :class="{bar: true, indeterminate: ui.packUpdate.progress === -1, red: ui.packUpdate.failed}"
+                                    :style="{width: ui.packUpdate.progress === -1 ? '20%' : (ui.packUpdate.progress * 100) + '%'}"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

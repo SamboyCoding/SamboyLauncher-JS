@@ -30,6 +30,9 @@ export class Pack {
     public numRuns: number;
     public packName: string;
     public version: string;
+    public updatedForgeVersion: string;
+    public latestMods: Mod[];
+    public latestVersion: string;
 }
 
 export class VanillaManifestVersion {

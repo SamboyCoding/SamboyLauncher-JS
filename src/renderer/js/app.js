@@ -66,6 +66,14 @@ const app = new Vue({
                 devmode: false,
                 failed: false,
                 versionName: ""
+            },
+            packUpdate: {
+                show: false,
+                preview: true,
+                data: null,
+                progress: -1,
+                failed: false,
+                label: "Starting update..."
             }
         }
     },
@@ -143,6 +151,17 @@ const app = new Vue({
         },
         signOut: function () {
             ipcRenderer.send("logout");
+        },
+        getPackUpdateDetails: function () {
+            ipcRenderer.send("get update actions", app.ui.packView.packs[app.ui.packView.selectedPackIndex]);
+        },
+        doUpdatePack: function () {
+            app.ui.packUpdate.progress = -1;
+            app.ui.packUpdate.label = "Starting update...";
+            app.ui.packUpdate.failed = false;
+            app.ui.packUpdate.preview = false;
+
+            ipcRenderer.send("update pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex], app.ui.packUpdate.data);
         }
     }
 });
@@ -211,8 +230,11 @@ ipcRenderer.on("installed packs", (event, packData) => {
         pack.update = false;
         pack.latestMods = [];
         pack.desc = "";
-        pack.gameVersion = "";
-        pack.forgeVersion = "";
+        if (!pack.gameVersion)
+            pack.gameVersion = "";
+        if (!pack.forgeVersion)
+            pack.forgeVersion = "";
+        pack.updatedForgeVersion = "";
     });
 
     app.ui.packView.packs = packData;
@@ -226,7 +248,10 @@ ipcRenderer.on("installed packs", (event, packData) => {
         pack.latestMods = json.mods;
         pack.desc = json.description;
         pack.gameVersion = json.gameVersion;
-        pack.forgeVersion = json.forgeVersion;
+        if (!pack.forgeVersion)
+            pack.forgeVersion = json.forgeVersion;
+        pack.updatedForgeVersion = json.forgeVersion;
+        pack.mods = pack.installedMods;
     });
 });
 
@@ -403,4 +428,20 @@ ipcRenderer.on("session invalid", (event) => {
     app.ui.gameRun.show = false;
     app.ui.packInstall.show = false;
     app.ui.packUninstall.show = false;
+});
+
+ipcRenderer.on("update actions", (event, actions) => {
+    app.ui.packUpdate.data = actions;
+    app.ui.packUpdate.show = true;
+});
+
+ipcRenderer.on("pack update progress", (event, progress, label) => {
+    app.ui.packUpdate.progress = progress;
+    app.ui.packUpdate.label = label;
+});
+
+ipcRenderer.on("pack update complete", (event) => {
+    app.ui.packUpdate.show = false;
+    ipcRenderer.send("get top packs");
+    ipcRenderer.send("get installed packs");
 });

@@ -1,5 +1,5 @@
 @font-face {
-  font-family: 'Roboto Thin';
+  font-family: "Roboto Thin";
   font-style: normal;
   font-weight: 200;
   src: url(../resources/Roboto-Thin.ttf) format("truetype");
@@ -7,7 +7,7 @@
 }
 
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   font-style: normal;
   font-weight: normal;
   src: url(../resources/Roboto-Regular.ttf) format("truetype");
@@ -15,7 +15,7 @@
 }
 
 @font-face {
-  font-family: 'Roboto Bold';
+  font-family: "Roboto Bold";
   font-style: normal;
   font-weight: bold;
   src: url(../resources/Roboto-Bold.ttf) format("truetype");
@@ -90,7 +90,7 @@ body,
   left: 0;
   top: 0;
   width: 100%;
-  background: #0A0A0A;
+  background: #0a0a0a;
   color: #fff;
 }
 
@@ -209,7 +209,7 @@ body,
   background: none;
   outline: none;
   border: none;
-  border-top: 1px solid #A1BBC7;
+  border-top: 1px solid #a1bbc7;
   color: #000;
   position: absolute;
   bottom: 0;
@@ -224,7 +224,7 @@ body,
 }
 
 #login-wrapper #login-form #login-button:not(:disabled):hover {
-  background: #A1BBC7;
+  background: #a1bbc7;
 }
 
 #login-wrapper #login-form #login-button:not(:disabled):active {
@@ -416,55 +416,101 @@ body,
   font-weight: 200;
 }
 
-#below-navbar #pack-view #pack-view-pack-info #installed-pack-launch-game-button {
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons {
   position: absolute;
-  top: 2rem;
   right: 2rem;
+  top: 2rem;
+  height: 8rem;
+  width: 100%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: right;
+      -ms-flex-align: right;
+          align-items: right;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons button {
   background: none;
   outline: none;
-  border: 1px solid #0bc139;
   padding: 1.2rem;
-  border-top-right-radius: 2rem;
-  border-bottom-right-radius: 2rem;
-  color: #0bc139;
   cursor: pointer;
   font-size: 14px;
-  border-left: none;
+  border: 1px solid #ccc;
 }
 
-#below-navbar #pack-view #pack-view-pack-info #installed-pack-launch-game-button:hover {
-  background: #0bc139;
-  color: #fff;
-}
-
-#below-navbar #pack-view #pack-view-pack-info #installed-pack-launch-game-button:active {
-  background: #099a2d;
-  color: #fff;
-}
-
-#below-navbar #pack-view #pack-view-pack-info #installed-pack-uninstall-button {
-  position: absolute;
-  top: 2rem;
-  right: 10.5rem;
-  background: none;
-  outline: none;
-  border: 1px solid #9a0909;
-  padding: 1.2rem;
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons button:first-of-type {
   border-top-left-radius: 2rem;
   border-bottom-left-radius: 2rem;
-  color: #9a0909;
-  cursor: pointer;
-  font-size: 14px;
-  border-right: 1px solid #ccc;
 }
 
-#below-navbar #pack-view #pack-view-pack-info #installed-pack-uninstall-button:hover {
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons button:last-of-type {
+  border-top-right-radius: 2rem;
+  border-bottom-right-radius: 2rem;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button {
+  border-color: #9a0909;
+  color: #9a0909;
+  border-right: 1px solid #ccc;
+  margin-left: auto;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button:hover {
   background: #9a0909;
   color: #fff;
 }
 
-#below-navbar #pack-view #pack-view-pack-info #installed-pack-uninstall-button:active {
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button:active {
   background: #7d0707;
+  color: #fff;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button {
+  border-left: none;
+  color: #c8bc14;
+  border-color: #c8bc14;
+  border-left: none;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:hover {
+  background: #c8bc14;
+  color: #fff;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:active {
+  background: #a29910;
+  color: #fff;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:last-of-type {
+  color: #0bc139;
+  border-color: #0bc139;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:last-of-type:hover {
+  background: #0bc139;
+  color: #fff;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:last-of-type:active {
+  background: #099a2d;
+  color: #fff;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-update-button {
+  color: #0bc139;
+  border-color: #0bc139;
+  border-left: none;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-update-button:hover {
+  background: #0bc139;
+  color: #fff;
+}
+
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-update-button:active {
+  background: #099a2d;
   color: #fff;
 }
 
@@ -588,7 +634,7 @@ body,
 }
 
 #below-navbar #pack-browse #pack-browse-pack-info #install-pack-button:not([disabled]):active {
-  background: #004F07;
+  background: #004f07;
 }
 
 #below-navbar #settings {
@@ -611,24 +657,24 @@ body,
 }
 
 #below-navbar #settings #launcher-update.downloading {
-  background: #C0FFB7;
-  border: 1px solid #74D76B;
+  background: #c0ffb7;
+  border: 1px solid #74d76b;
 }
 
 #below-navbar #settings #launcher-update.downloaded {
-  background: #C0FFB7;
-  border: 1px solid #74D76B;
+  background: #c0ffb7;
+  border: 1px solid #74d76b;
 }
 
 #below-navbar #settings #launcher-update.downloaded #launcher-update-button {
-  background: #278A1E;
-  border: 1px solid #278A1E;
+  background: #278a1e;
+  border: 1px solid #278a1e;
   color: white;
 }
 
 #below-navbar #settings #launcher-update.errored {
-  background: #FFD1D1;
-  border: 1px solid #D76B6B;
+  background: #ffd1d1;
+  border: 1px solid #d76b6b;
 }
 
 #below-navbar #settings #launcher-update.errored #launcher-update-button {
@@ -775,5 +821,47 @@ body,
 
 #game-running-modal .modal-content #game-output-log .warning {
   color: #e4a744;
+}
+
+#pack-update-modal button#pack-update-yes {
+  outline: none;
+  border: none;
+  background: #2b823a;
+  border-radius: 3px;
+  color: #fff;
+  padding: 0.7rem 1.8rem;
+  cursor: pointer;
+  position: absolute;
+  top: 3rem;
+  right: 3rem;
+}
+
+#pack-update-modal button#pack-update-yes:hover {
+  background: #126921;
+}
+
+#pack-update-modal button#pack-update-yes:active {
+  background: #004f07;
+}
+
+#pack-update-modal button#pack-update-no {
+  outline: none;
+  border: none;
+  background: #bb161b;
+  border-radius: 3px;
+  color: #fff;
+  padding: 0.7rem 1.8rem;
+  cursor: pointer;
+  position: absolute;
+  top: 3rem;
+  right: 8.5rem;
+}
+
+#pack-update-modal button#pack-update-no:hover {
+  background: #9b1217;
+}
+
+#pack-update-modal button#pack-update-no:active {
+  background: #891014;
 }
 /*# sourceMappingURL=app.css.map */

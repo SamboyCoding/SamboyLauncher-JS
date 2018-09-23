@@ -10,15 +10,22 @@
             "spaces"
         ],
         "no-constant-condition": true,
-        "ter-indent": [true, 4],
+        "ter-indent": [
+            true,
+            4
+        ],
         "no-console": false,
         "max-line-length": false,
         "max-classes-per-file": false,
-        "await-promise": true,
+        "await-promise": [
+            true
+        ],
         "no-unsafe-any": false,
         "no-any": false,
         "forin": false,
-        "no-bitwise": false
+        "no-bitwise": false,
+        "arrow-parens": false,
+        "curly": false
     },
     "rulesDirectory": [
         "node_modules/tslint-eslint-rules/dist/rules"
