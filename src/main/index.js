@@ -533,7 +533,7 @@ electron_1.ipcMain.on("update pack", function (event, pack, updateData) { return
                 event.sender.send("pack update progress", 0.98, "Finishing up");
                 jsonfile.writeFileSync(path.join(launcherDir, "packs", pack.packName, "install.json"), {
                     author: pack.author,
-                    forgeVersion: updateData.forge.to,
+                    forgeVersion: updateData.forge.to ? updateData.forge.to : updateData.forge.from,
                     gameVersion: pack.gameVersion,
                     id: pack.id,
                     installedMods: pack.latestMods,
