@@ -25,7 +25,8 @@
         "forin": false,
         "no-bitwise": false,
         "arrow-parens": false,
-        "curly": false
+        "curly": false,
+        "one-variable-per-declaration": false
     },
     "rulesDirectory": [
         "node_modules/tslint-eslint-rules/dist/rules"

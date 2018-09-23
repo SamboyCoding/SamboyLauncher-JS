@@ -379,6 +379,9 @@ body,
                     border-color: #c8bc14;
                     border-left: none;
                 }
+                #installed-pack-launch-game-button:not(:last-of-type) {
+                    border-right-color: #ccc;
+                }
                 #installed-pack-launch-game-button:hover {
                     background: #c8bc14;
                     color: #fff;
@@ -708,5 +711,70 @@ body,
     }
     button#pack-update-no:active {
         background: #891014;
+    }
+}
+
+#app.darkTheme {
+    background: #1e1e1e;
+    color: #eee;
+    #cover {
+        background: #1e1e1e;
+        color: #eee;
+    }
+    #navbar {
+        background: #111;
+        .navbar-item:hover {
+            background: #1e1e1e;
+        }
+        .navbar-item:active,
+        .navbar-item.active {
+            background: #222;
+        }
+    }
+    #below-navbar {
+        #pack-view {
+            #pack-view-packs {
+                border-right-color: #555;
+                .pack-view-pack {
+                    background: #232323;
+                    border-bottom-color: #555;
+                }
+                .pack-view-pack:hover {
+                    background: #222;
+                }
+                .pack-view-pack.selected {
+                    background: #333;
+                }
+            }
+            #pack-view-pack-info {
+                .pack-action-buttons {
+                    #installed-pack-uninstall-button {
+                        border-right-color: #555;
+                    }
+                    #installed-pack-launch-game-button:not(:last-of-type) {
+                        border-right-color: #555;
+                    }
+                }
+            }
+        }
+        #pack-browse {
+            #pack-browse-packs {
+                .pack-browse-pack {
+                    background: #262626;
+                }
+                .pack-browse-pack.selected {
+                    background: #333;
+                }
+            }
+        }
+    }
+    .modal {
+        .modal-content {
+            background: #1e1e1e;
+            color: #ccc;
+        }
+    }
+    .progress {
+        background: #333;
     }
 }

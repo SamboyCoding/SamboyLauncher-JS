@@ -14,6 +14,8 @@ import * as os from "os";
 import * as path from "path";
 import * as rmfr from "rmfr";
 import { Extract } from "unzipper";
+import { Config } from "./config";
+import * as config from "./config";
 import { downloadAssetManifest, downloadAssets, downloadForgeJarAndGetJSON, downloadForgeLibraries, downloadGameClient, downloadVanillaLibraries, downloadVanillaNatives, getVanillaVersionList, getVanillaVersionManifest } from "./gameInstaller";
 import { Logger } from "./logger";
 import { AuthData, LibraryArtifact, LibraryMetadata, Mod, Pack, VanillaManifestVersion, VanillaVersionData } from "./objects";
@@ -21,8 +23,6 @@ import { AuthData, LibraryArtifact, LibraryMetadata, Mod, Pack, VanillaManifestV
 
 // TODO: List is here because I feel like it
 //  -Analytics - send a request when a pack is installed and when it is run
-//  -Pack updating
-//  -Dark theme
 //  -Custom game resolutions
 //  -Custom/Reworked memory allocation
 //  -Custom JVM Args?
@@ -33,6 +33,8 @@ const launcherDir: string = path.join(process.platform === "win32" ?
         path.join(process.env.HOME, "Library", "Preferences")
         : path.join(process.env.HOME, ".SamboyLauncher/")),
     "SamboyLauncher_JS");
+
+const configuration: Config = config.load(launcherDir);
 
 const packsDir = path.join(launcherDir, "packs");
 
@@ -98,6 +100,10 @@ function createWindow(): void {
     win.setMenu(menu);
 
     win.loadFile("src/renderer/html/index.html");
+
+    win.webContents.on("did-finish-load", () => {
+        win.webContents.send("dark theme", configuration.darkTheme);
+    });
 
     win.on("closed", () => {
         win = null;
@@ -197,6 +203,12 @@ ipcMain.on("get top packs", (event: IpcMessageEvent) => {
     }).then((json) => {
         event.sender.send("top packs", json);
     });
+});
+
+ipcMain.on("set dark", (event: IpcMessageEvent, dark: boolean) => {
+    configuration.darkTheme = dark;
+    config.save(launcherDir, configuration);
+    event.sender.send("dark theme", configuration.darkTheme);
 });
 
 // ---------------------
@@ -978,9 +990,24 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
             .replace("${classpath}", classPath.join(process.platform === "win32" ? ";" : ":"));
     });
 
-    const memFreeGigs = Math.floor(os.freemem() / 1000 / // KB
+    let memFreeGigs = Math.floor(os.freemem() / 1000 / // KB
         1000 / // MB
         1000); // GB
+
+    if (process.platform === "linux") {
+        // Free memory is done differently (because of course) on linux.
+        const result = child_process.spawnSync("free", ["-b"], {
+            encoding: "utf8",
+            stdio: "pipe",
+        });
+        const lines = result.stdout.split("\n");
+        const line = lines[1].split(/\s+/);
+        const free = parseInt(line[3], 10),
+            buffers = parseInt(line[5], 10),
+            actualFree = free + buffers;
+
+        memFreeGigs = actualFree / 1024 / 1024 / 1024;
+    }
 
     const memGigs = memFreeGigs > 6 ? 6 : memFreeGigs;
 

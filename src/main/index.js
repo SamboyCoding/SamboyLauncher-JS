@@ -50,6 +50,7 @@ var os = require("os");
 var path = require("path");
 var rmfr = require("rmfr");
 var unzipper_1 = require("unzipper");
+var config = require("./config");
 var gameInstaller_1 = require("./gameInstaller");
 var logger_1 = require("./logger");
 var objects_1 = require("./objects");
@@ -58,6 +59,7 @@ var launcherDir = path.join(process.platform === "win32" ?
     process.env.APPDATA : (process.platform === "darwin" ?
     path.join(process.env.HOME, "Library", "Preferences")
     : path.join(process.env.HOME, ".SamboyLauncher/")), "SamboyLauncher_JS");
+var configuration = config.load(launcherDir);
 var packsDir = path.join(launcherDir, "packs");
 var authData = new objects_1.AuthData();
 function btoa(str) {
@@ -113,6 +115,9 @@ function createWindow() {
     }));
     win.setMenu(menu);
     win.loadFile("src/renderer/html/index.html");
+    win.webContents.on("did-finish-load", function () {
+        win.webContents.send("dark theme", configuration.darkTheme);
+    });
     win.on("closed", function () {
         win = null;
     });
@@ -216,6 +221,11 @@ electron_1.ipcMain.on("get top packs", function (event) {
     }).then(function (json) {
         event.sender.send("top packs", json);
     });
+});
+electron_1.ipcMain.on("set dark", function (event, dark) {
+    configuration.darkTheme = dark;
+    config.save(launcherDir, configuration);
+    event.sender.send("dark theme", configuration.darkTheme);
 });
 function saveAuthdata() {
     var content = {};
@@ -973,6 +983,16 @@ electron_1.ipcMain.on("launch pack", function (event, pack) {
     var memFreeGigs = Math.floor(os.freemem() / 1000 /
         1000 /
         1000);
+    if (process.platform === "linux") {
+        var result = child_process.spawnSync("free", ["-b"], {
+            encoding: "utf8",
+            stdio: "pipe"
+        });
+        var lines = result.stdout.split("\n");
+        var line = lines[1].split(/\s+/);
+        var free = parseInt(line[3], 10), buffers = parseInt(line[5], 10), actualFree = free + buffers;
+        memFreeGigs = actualFree / 1024 / 1024 / 1024;
+    }
     var memGigs = memFreeGigs > 6 ? 6 : memFreeGigs;
     jvmArgs = jvmArgs.concat(["-Xmx" + memGigs + "G", "-Xms" + (memGigs - 1) + "G", "-Djava.net.preferIPv4Stack=true"]);
     var java = "java";

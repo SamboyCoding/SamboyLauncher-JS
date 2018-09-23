@@ -74,7 +74,8 @@ const app = new Vue({
                 progress: -1,
                 failed: false,
                 label: "Starting update..."
-            }
+            },
+            dark: false,
         }
     },
     methods: {
@@ -162,6 +163,9 @@ const app = new Vue({
             app.ui.packUpdate.preview = false;
 
             ipcRenderer.send("update pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex], app.ui.packUpdate.data);
+        },
+        toggleDarkTheme: function () {
+            ipcRenderer.send("set dark", document.querySelector("#darkThemeToggle").checked);
         }
     }
 });
@@ -444,4 +448,9 @@ ipcRenderer.on("pack update complete", (event) => {
     app.ui.packUpdate.show = false;
     ipcRenderer.send("get top packs");
     ipcRenderer.send("get installed packs");
+});
+
+ipcRenderer.on("dark theme", (event, enabled) => {
+    app.ui.dark = enabled;
+    document.querySelector("#darkThemeToggle").checked = enabled;
 });

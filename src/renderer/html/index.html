@@ -9,10 +9,10 @@
 </head>
 
 <body>
-    <div id="cover">
-        <h1>Loading, please wait...</h1>
-    </div>
-    <div id="app">
+    <div id="app" :class="{darkTheme: ui.dark}">
+        <div id="cover">
+            <h1>Loading, please wait...</h1>
+        </div>
         <div id="top-bar">
             <span>SamboyLauncher</span>
             <button id="close-window" @click="close"><i class="fas fa-times"></i></button>
@@ -238,6 +238,9 @@
                             Signed in as {{ui.profile.name}}
                             (<a href="#" @click="signOut">Sign Out</a>)
                         </span>
+                        <br><br>
+                        <input type="checkbox" id="darkThemeToggle" v-model="ui.dark" @click="toggleDarkTheme">
+                        <label for="darkThemeToggle">Use Dark Theme</label>
                         <br><br>
                         The rest of the settings are coming Soon&trade;
                     </div>

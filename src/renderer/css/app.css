@@ -473,6 +473,10 @@ body,
   border-left: none;
 }
 
+#below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:not(:last-of-type) {
+  border-right-color: #ccc;
+}
+
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:hover {
   background: #c8bc14;
   color: #fff;
@@ -863,5 +867,70 @@ body,
 
 #pack-update-modal button#pack-update-no:active {
   background: #891014;
+}
+
+#app.darkTheme {
+  background: #1e1e1e;
+  color: #eee;
+}
+
+#app.darkTheme #cover {
+  background: #1e1e1e;
+  color: #eee;
+}
+
+#app.darkTheme #navbar {
+  background: #111;
+}
+
+#app.darkTheme #navbar .navbar-item:hover {
+  background: #1e1e1e;
+}
+
+#app.darkTheme #navbar .navbar-item:active,
+#app.darkTheme #navbar .navbar-item.active {
+  background: #222;
+}
+
+#app.darkTheme #below-navbar #pack-view #pack-view-packs {
+  border-right-color: #555;
+}
+
+#app.darkTheme #below-navbar #pack-view #pack-view-packs .pack-view-pack {
+  background: #232323;
+  border-bottom-color: #555;
+}
+
+#app.darkTheme #below-navbar #pack-view #pack-view-packs .pack-view-pack:hover {
+  background: #222;
+}
+
+#app.darkTheme #below-navbar #pack-view #pack-view-packs .pack-view-pack.selected {
+  background: #333;
+}
+
+#app.darkTheme #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button {
+  border-right-color: #555;
+}
+
+#app.darkTheme #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:not(:last-of-type) {
+  border-right-color: #555;
+}
+
+#app.darkTheme #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack {
+  background: #262626;
+}
+
+#app.darkTheme #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack.selected {
+  background: #333;
+}
+
+#app.darkTheme .modal .modal-content {
+  background: #1e1e1e;
+  color: #ccc;
+}
+
+#app.darkTheme .progress {
+  background: #333;
 }
 /*# sourceMappingURL=app.css.map */
