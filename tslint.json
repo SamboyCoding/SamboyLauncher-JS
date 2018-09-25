@@ -11,7 +11,7 @@
         ],
         "no-constant-condition": true,
         "ter-indent": [
-            true,
+            false,
             4
         ],
         "no-console": false,

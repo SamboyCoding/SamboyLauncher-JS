@@ -33,6 +33,7 @@ export class Pack {
     public updatedForgeVersion: string;
     public latestMods: Mod[];
     public latestVersion: string;
+    public installedVersion: any;
 }
 
 export class VanillaManifestVersion {
