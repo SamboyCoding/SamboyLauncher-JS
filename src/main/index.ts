@@ -856,7 +856,7 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
         const version = os.release();
 
         // Some versions (pre-1.13) don't have a complex args system like this, just a simple `minecraftArguments` string
-        // That needs to be split on spaces
+        // that needs to be split on spaces
         if (vanillaManifest.arguments) {
             gameArgs = [];
             for (const index in vanillaManifest.arguments.game) {
@@ -1009,6 +1009,24 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
             .replace("${game_directory}", path.join(launcherDir, "packs", pack.packName))
             .replace("${classpath}", classPath.join(process.platform === "win32" ? ";" : ":"));
     });
+
+    jvmArgs.push("-XX:+UseG1GC"); // Use Garbage-First GC
+
+    // Disable manual GC
+    jvmArgs.push("-XX:+UnlockExperimentalVMOptions");
+    jvmArgs.push("-Dsun.rmi.dgc.server.gcInterval=2147483646");
+    jvmArgs.push("-XX:+DisableExplicitGC ");
+
+    // Don't run the GC for more than one tick
+    jvmArgs.push("-XX:MaxGCPauseMillis=50");
+
+    // Increase the heap size because chunks are massive
+    jvmArgs.push("-XX:G1HeapRegionSize=32M");
+
+    // Some custom GC settings recommended by forge
+    jvmArgs.push("-XX:G1NewSizePercent=20");
+    jvmArgs.push("-XX:G1ReservePercent=20");
+    jvmArgs.push("-XX:SurvivorRatio=2");
 
     let memFreeGigs = Math.floor(os.freemem() / 1000 / // KB
         1000 / // MB
