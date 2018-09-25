@@ -6,7 +6,9 @@ $ui-button-color: #a1bbc7;
     font-style: normal;
     font-weight: 200;
     src: url(../resources/Roboto-Thin.ttf) format("truetype");
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212,
+        U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
@@ -14,7 +16,9 @@ $ui-button-color: #a1bbc7;
     font-style: normal;
     font-weight: normal;
     src: url(../resources/Roboto-Regular.ttf) format("truetype");
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212,
+        U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
@@ -22,7 +26,9 @@ $ui-button-color: #a1bbc7;
     font-style: normal;
     font-weight: bold;
     src: url(../resources/Roboto-Bold.ttf) format("truetype");
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212,
+        U+2215, U+FEFF, U+FFFD;
 }
 
 * {
@@ -721,60 +727,63 @@ body,
         background: #1e1e1e;
         color: #eee;
     }
-    #navbar {
-        background: #111;
-        .navbar-item:hover {
-            background: #1e1e1e;
-        }
-        .navbar-item:active,
-        .navbar-item.active {
-            background: #222;
-        }
-    }
-    #below-navbar {
-        #pack-view {
-            #pack-view-packs {
-                border-right-color: #555;
-                .pack-view-pack {
-                    background: #232323;
-                    border-bottom-color: #555;
-                }
-                .pack-view-pack:hover {
-                    background: #222;
-                }
-                .pack-view-pack.selected {
-                    background: #333;
-                }
+    #content {
+        background: #1e1e1e;
+        #navbar {
+            background: #111;
+            .navbar-item:hover {
+                background: #1e1e1e;
             }
-            #pack-view-pack-info {
-                .pack-action-buttons {
-                    #installed-pack-uninstall-button {
-                        border-right-color: #555;
+            .navbar-item:active,
+            .navbar-item.active {
+                background: #222;
+            }
+        }
+        #below-navbar {
+            #pack-view {
+                #pack-view-packs {
+                    border-right-color: #555;
+                    .pack-view-pack {
+                        background: #232323;
+                        border-bottom-color: #555;
                     }
-                    #installed-pack-launch-game-button:not(:last-of-type) {
-                        border-right-color: #555;
+                    .pack-view-pack:hover {
+                        background: #222;
+                    }
+                    .pack-view-pack.selected {
+                        background: #333;
                     }
                 }
+                #pack-view-pack-info {
+                    .pack-action-buttons {
+                        #installed-pack-uninstall-button {
+                            border-right-color: #555;
+                        }
+                        #installed-pack-launch-game-button:not(:last-of-type) {
+                            border-right-color: #555;
+                        }
+                    }
+                }
+            }
+            #pack-browse {
+                #pack-browse-packs {
+                    .pack-browse-pack {
+                        background: #262626;
+                    }
+                    .pack-browse-pack.selected {
+                        background: #333;
+                    }
+                }
             }
         }
-        #pack-browse {
-            #pack-browse-packs {
-                .pack-browse-pack {
-                    background: #262626;
-                }
-                .pack-browse-pack.selected {
-                    background: #333;
-                }
+        .modal {
+            .modal-content {
+                background: #1e1e1e;
+                color: #ccc;
             }
         }
-    }
-    .modal {
-        .modal-content {
-            background: #1e1e1e;
-            color: #ccc;
+        .progress {
+            background: #333;
         }
-    }
-    .progress {
-        background: #333;
     }
 }

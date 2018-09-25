@@ -3,7 +3,7 @@
   font-style: normal;
   font-weight: 200;
   src: url(../resources/Roboto-Thin.ttf) format("truetype");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
@@ -11,7 +11,7 @@
   font-style: normal;
   font-weight: normal;
   src: url(../resources/Roboto-Regular.ttf) format("truetype");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
@@ -19,7 +19,7 @@
   font-style: normal;
   font-weight: bold;
   src: url(../resources/Roboto-Bold.ttf) format("truetype");
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 * {
@@ -879,58 +879,62 @@ body,
   color: #eee;
 }
 
-#app.darkTheme #navbar {
-  background: #111;
-}
-
-#app.darkTheme #navbar .navbar-item:hover {
+#app.darkTheme #content {
   background: #1e1e1e;
 }
 
-#app.darkTheme #navbar .navbar-item:active,
-#app.darkTheme #navbar .navbar-item.active {
+#app.darkTheme #content #navbar {
+  background: #111;
+}
+
+#app.darkTheme #content #navbar .navbar-item:hover {
+  background: #1e1e1e;
+}
+
+#app.darkTheme #content #navbar .navbar-item:active,
+#app.darkTheme #content #navbar .navbar-item.active {
   background: #222;
 }
 
-#app.darkTheme #below-navbar #pack-view #pack-view-packs {
+#app.darkTheme #content #below-navbar #pack-view #pack-view-packs {
   border-right-color: #555;
 }
 
-#app.darkTheme #below-navbar #pack-view #pack-view-packs .pack-view-pack {
+#app.darkTheme #content #below-navbar #pack-view #pack-view-packs .pack-view-pack {
   background: #232323;
   border-bottom-color: #555;
 }
 
-#app.darkTheme #below-navbar #pack-view #pack-view-packs .pack-view-pack:hover {
+#app.darkTheme #content #below-navbar #pack-view #pack-view-packs .pack-view-pack:hover {
   background: #222;
 }
 
-#app.darkTheme #below-navbar #pack-view #pack-view-packs .pack-view-pack.selected {
+#app.darkTheme #content #below-navbar #pack-view #pack-view-packs .pack-view-pack.selected {
   background: #333;
 }
 
-#app.darkTheme #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button {
+#app.darkTheme #content #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button {
   border-right-color: #555;
 }
 
-#app.darkTheme #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:not(:last-of-type) {
+#app.darkTheme #content #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:not(:last-of-type) {
   border-right-color: #555;
 }
 
-#app.darkTheme #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack {
+#app.darkTheme #content #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack {
   background: #262626;
 }
 
-#app.darkTheme #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack.selected {
+#app.darkTheme #content #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack.selected {
   background: #333;
 }
 
-#app.darkTheme .modal .modal-content {
+#app.darkTheme #content .modal .modal-content {
   background: #1e1e1e;
   color: #ccc;
 }
 
-#app.darkTheme .progress {
+#app.darkTheme #content .progress {
   background: #333;
 }
 /*# sourceMappingURL=app.css.map */
