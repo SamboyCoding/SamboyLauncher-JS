@@ -1015,7 +1015,11 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
     // Disable manual GC
     jvmArgs.push("-XX:+UnlockExperimentalVMOptions");
     jvmArgs.push("-Dsun.rmi.dgc.server.gcInterval=2147483646");
-    jvmArgs.push("-XX:+DisableExplicitGC ");
+
+    // Bugfix: "Unknown VM Option 'DisableExplicitGC' Did you mean '(+/-)DisableExplicitGC'"
+    // Blame whoever broke this on windows, not me.
+    if (process.platform !== "win32")
+        jvmArgs.push("-XX:+DisableExplicitGC");
 
     // Don't run the GC for more than one tick
     jvmArgs.push("-XX:MaxGCPauseMillis=50");

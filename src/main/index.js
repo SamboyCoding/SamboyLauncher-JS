@@ -1003,7 +1003,8 @@ electron_1.ipcMain.on("launch pack", function (event, pack) {
     jvmArgs.push("-XX:+UseG1GC");
     jvmArgs.push("-XX:+UnlockExperimentalVMOptions");
     jvmArgs.push("-Dsun.rmi.dgc.server.gcInterval=2147483646");
-    jvmArgs.push("-XX:+DisableExplicitGC ");
+    if (process.platform !== "win32")
+        jvmArgs.push("-XX:+DisableExplicitGC");
     jvmArgs.push("-XX:MaxGCPauseMillis=50");
     jvmArgs.push("-XX:G1HeapRegionSize=32M");
     jvmArgs.push("-XX:G1NewSizePercent=20");
