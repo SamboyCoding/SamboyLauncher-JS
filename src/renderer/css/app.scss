@@ -1,6 +1,6 @@
 $ui-background: #fff;
 $ui-text-colour: #000;
-$ui-button-color: #a1bbc7;
+$ui-button-colour: #a1bbc7;
 @font-face {
     font-family: "Roboto Thin";
     font-style: normal;
@@ -184,7 +184,7 @@ body,
             background: none;
             outline: none;
             border: none;
-            border-top: 1px solid $ui-button-color;
+            border-top: 1px solid $ui-button-colour;
             color: $ui-text-colour;
             position: absolute;
             bottom: 0;
@@ -197,10 +197,10 @@ body,
             cursor: default;
         }
         #login-button:not(:disabled):hover {
-            background: $ui-button-color;
+            background: $ui-button-colour;
         }
         #login-button:not(:disabled):active {
-            background: darken($ui-button-color, 10%);
+            background: darken($ui-button-colour, 10%);
         }
         #login-error {
             color: red;
