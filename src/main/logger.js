@@ -16,8 +16,8 @@ var Logger = (function () {
     Logger.error = function (msg) {
         Logger.log(msg, chalk_1["default"].red, "Error");
     };
-    Logger.log = function (msg, colour, type) {
-        console.log(colour("[" + type + "] " + msg));
+    Logger.log = function (msg, color, type) {
+        console.log(color("[" + type + "] " + msg));
     };
     return Logger;
 }());

@@ -18,7 +18,7 @@ export class Logger {
         Logger.log(msg, chalk.red, "Error");
     }
 
-    private static log(msg: string, colour: Chalk, type: string) {
-        console.log(colour("[" + type + "] " + msg));
+    private static log(msg: string, color: Chalk, type: string) {
+        console.log(color("[" + type + "] " + msg));
     }
 }

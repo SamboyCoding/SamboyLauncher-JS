@@ -1,14 +1,12 @@
 $ui-background: #fff;
-$ui-text-colour: #000;
+$ui-text-color: #000;
 $ui-button-color: #a1bbc7;
 @font-face {
     font-family: "Roboto Thin";
     font-style: normal;
     font-weight: 200;
     src: url(../resources/Roboto-Thin.ttf) format("truetype");
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
-        U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212,
-        U+2215, U+FEFF, U+FFFD;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
@@ -16,9 +14,7 @@ $ui-button-color: #a1bbc7;
     font-style: normal;
     font-weight: normal;
     src: url(../resources/Roboto-Regular.ttf) format("truetype");
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
-        U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212,
-        U+2215, U+FEFF, U+FFFD;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
@@ -26,9 +22,7 @@ $ui-button-color: #a1bbc7;
     font-style: normal;
     font-weight: bold;
     src: url(../resources/Roboto-Bold.ttf) format("truetype");
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
-        U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212,
-        U+2215, U+FEFF, U+FFFD;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 * {
@@ -52,7 +46,7 @@ body,
 
 #app {
     background: $ui-background;
-    color: $ui-text-colour;
+    color: $ui-text-color;
     position: absolute;
     top: 0;
     left: 0;
@@ -63,7 +57,7 @@ body,
     height: 100%;
     z-index: 999;
     background: $ui-background;
-    color: $ui-text-colour;
+    color: $ui-text-color;
     display: flex;
     align-items: center;
     opacity: 1;
@@ -168,8 +162,8 @@ body,
             background: none;
             outline: none;
             border: none;
-            border-bottom: 1px solid darken($ui-text-colour, 40%);
-            color: $ui-text-colour;
+            border-bottom: 1px solid darken($ui-text-color, 40%);
+            color: $ui-text-color;
             font-family: inherit;
             font-size: 16px;
             width: 100%;
@@ -178,14 +172,14 @@ body,
             text-align: left;
         }
         #mojang-email:focus {
-            border-bottom: 1px solid $ui-text-colour;
+            border-bottom: 1px solid $ui-text-color;
         }
         #login-button {
             background: none;
             outline: none;
             border: none;
             border-top: 1px solid $ui-button-color;
-            color: $ui-text-colour;
+            color: $ui-text-color;
             position: absolute;
             bottom: 0;
             left: 0;
