@@ -22,6 +22,7 @@ import { AuthData, LibraryArtifact, LibraryMetadata, Mod, Pack, VanillaManifestV
 //#endregion
 
 // TODO: List is here because I feel like it
+//  -Fix website so that forge versions don't end in -gameVersion
 //  -Analytics - send a request when a pack is installed and when it is run
 //  -Custom game resolutions
 //  -Custom/Reworked memory allocation
@@ -441,6 +442,9 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
             event.sender.send("pack update progress", currentPercent / 100, `Updating forge libraries, this may take a minute...`);
 
             await downloadForgeLibraries(launcherDir, libs, unpack200, event.sender);
+
+            fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
+            fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
         }
     }
 

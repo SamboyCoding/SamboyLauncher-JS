@@ -350,6 +350,8 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
             const libs = versionJSON.libraries.filter((lib) => lib.name.indexOf("net.minecraftforge:forge:") === -1);
             event.sender.send("pack update progress", currentPercent / 100, `Updating forge libraries, this may take a minute...`);
             await gameInstaller_1.downloadForgeLibraries(launcherDir, libs, unpack200, event.sender);
+            fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
+            fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
         }
     }
     const modsDir = path.join(launcherDir, "packs", pack.packName, "mods");
