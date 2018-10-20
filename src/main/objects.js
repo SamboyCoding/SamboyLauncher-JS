@@ -1,111 +1,57 @@
 "use strict";
-exports.__esModule = true;
-var AuthData = (function () {
-    function AuthData() {
-    }
-    return AuthData;
-}());
+Object.defineProperty(exports, "__esModule", { value: true });
+class AuthData {
+}
 exports.AuthData = AuthData;
-var Author = (function () {
-    function Author() {
-    }
-    return Author;
-}());
+class Author {
+}
 exports.Author = Author;
-var Mod = (function () {
-    function Mod() {
-    }
-    return Mod;
-}());
+class Mod {
+}
 exports.Mod = Mod;
-var Pack = (function () {
-    function Pack() {
-    }
-    return Pack;
-}());
+class Pack {
+}
 exports.Pack = Pack;
-var VanillaManifestVersion = (function () {
-    function VanillaManifestVersion() {
-    }
-    return VanillaManifestVersion;
-}());
+class VanillaManifestVersion {
+}
 exports.VanillaManifestVersion = VanillaManifestVersion;
-var AssetIndexMetadata = (function () {
-    function AssetIndexMetadata() {
-    }
-    return AssetIndexMetadata;
-}());
+class AssetIndexMetadata {
+}
 exports.AssetIndexMetadata = AssetIndexMetadata;
-var GameDownloadInfo = (function () {
-    function GameDownloadInfo() {
-    }
-    return GameDownloadInfo;
-}());
+class GameDownloadInfo {
+}
 exports.GameDownloadInfo = GameDownloadInfo;
-var DownloadOptions = (function () {
-    function DownloadOptions() {
-    }
-    return DownloadOptions;
-}());
+class DownloadOptions {
+}
 exports.DownloadOptions = DownloadOptions;
-var LibraryArtifact = (function () {
-    function LibraryArtifact() {
-    }
-    return LibraryArtifact;
-}());
+class LibraryArtifact {
+}
 exports.LibraryArtifact = LibraryArtifact;
-var LibraryClassifiers = (function () {
-    function LibraryClassifiers() {
-    }
-    return LibraryClassifiers;
-}());
+class LibraryClassifiers {
+}
 exports.LibraryClassifiers = LibraryClassifiers;
-var LibraryDownloads = (function () {
-    function LibraryDownloads() {
-    }
-    return LibraryDownloads;
-}());
+class LibraryDownloads {
+}
 exports.LibraryDownloads = LibraryDownloads;
-var LibraryNativesInfo = (function () {
-    function LibraryNativesInfo() {
-    }
-    return LibraryNativesInfo;
-}());
+class LibraryNativesInfo {
+}
 exports.LibraryNativesInfo = LibraryNativesInfo;
-var OSRule = (function () {
-    function OSRule() {
-    }
-    return OSRule;
-}());
+class OSRule {
+}
 exports.OSRule = OSRule;
-var ConditionalAllow = (function () {
-    function ConditionalAllow() {
-    }
-    return ConditionalAllow;
-}());
+class ConditionalAllow {
+}
 exports.ConditionalAllow = ConditionalAllow;
-var LibraryMetadata = (function () {
-    function LibraryMetadata() {
-    }
-    return LibraryMetadata;
-}());
+class LibraryMetadata {
+}
 exports.LibraryMetadata = LibraryMetadata;
-var ConditionalArgument = (function () {
-    function ConditionalArgument() {
-    }
-    return ConditionalArgument;
-}());
+class ConditionalArgument {
+}
 exports.ConditionalArgument = ConditionalArgument;
-var VanillaVersionArguments = (function () {
-    function VanillaVersionArguments() {
-    }
-    return VanillaVersionArguments;
-}());
+class VanillaVersionArguments {
+}
 exports.VanillaVersionArguments = VanillaVersionArguments;
-var VanillaVersionData = (function () {
-    function VanillaVersionData() {
-    }
-    return VanillaVersionData;
-}());
+class VanillaVersionData {
+}
 exports.VanillaVersionData = VanillaVersionData;
 //# sourceMappingURL=objects.js.map

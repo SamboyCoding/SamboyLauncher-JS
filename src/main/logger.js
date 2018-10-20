@@ -1,25 +1,22 @@
 "use strict";
-exports.__esModule = true;
-var chalk_1 = require("chalk");
-var Logger = (function () {
-    function Logger() {
+Object.defineProperty(exports, "__esModule", { value: true });
+const chalk_1 = require("chalk");
+class Logger {
+    static debug(msg) {
+        Logger.log(msg, chalk_1.default.white, "Debug");
     }
-    Logger.debug = function (msg) {
-        Logger.log(msg, chalk_1["default"].white, "Debug");
-    };
-    Logger.info = function (msg) {
-        Logger.log(msg, chalk_1["default"].blue, "Info");
-    };
-    Logger.warn = function (msg) {
-        Logger.log(msg, chalk_1["default"].yellow, "Warning");
-    };
-    Logger.error = function (msg) {
-        Logger.log(msg, chalk_1["default"].red, "Error");
-    };
-    Logger.log = function (msg, color, type) {
+    static info(msg) {
+        Logger.log(msg, chalk_1.default.blue, "Info");
+    }
+    static warn(msg) {
+        Logger.log(msg, chalk_1.default.yellow, "Warning");
+    }
+    static error(msg) {
+        Logger.log(msg, chalk_1.default.red, "Error");
+    }
+    static log(msg, color, type) {
         console.log(color("[" + type + "] " + msg));
-    };
-    return Logger;
-}());
+    }
+}
 exports.Logger = Logger;
 //# sourceMappingURL=logger.js.map

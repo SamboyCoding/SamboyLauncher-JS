@@ -997,6 +997,8 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
                 return "1280"; // TODO: Change once resolution controls in
             case "${resolution_height}":
                 return "720"; // TODO: And this
+            case "${user_properties}":
+                return "{}";
             default:
                 return arg;
         }
