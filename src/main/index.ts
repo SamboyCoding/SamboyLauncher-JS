@@ -816,22 +816,30 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
 
         jvmArgs = jvmArgs.concat(["-Djava.library.path=${natives_directory}", "-Dminecraft.launcher.brand=${launcher_name}", "-Dminecraft.launcher.version=${launcher_version}", "-cp", "${classpath}"]);
 
-        for (const index in vanillaManifest.libraries) {
-            const library = vanillaManifest.libraries[index];
-            if (library.downloads && library.downloads.artifact) {
-                classPath.push(path.join(launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
-            }
-        }
-
         for (const index in forgeManifest.libraries) {
             const library: any = forgeManifest.libraries[index];
             if (library.name.indexOf("net.minecraftforge:forge") === -1) { // Skip forge itself, we add it later
-                const libnameSplit: string = library.name.split(":");
+                const libnameSplit: string[] = (library.name as string).split(":");
 
                 const filePath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
                 const localPath = [launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
 
                 classPath.push(localPath);
+            }
+        }
+
+        for (const index in vanillaManifest.libraries) {
+            const library = vanillaManifest.libraries[index];
+
+            const libnameSplit: string[] = (library.name as string).split(":");
+
+            const searchTerm = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/";
+
+            if (classPath.find(cpEntry => cpEntry.indexOf(searchTerm) > 0))
+                continue;
+
+            if (library.downloads && library.downloads.artifact) {
+                classPath.push(path.join(launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
             }
         }
 

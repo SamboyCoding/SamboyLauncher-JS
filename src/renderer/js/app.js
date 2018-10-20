@@ -452,5 +452,4 @@ ipcRenderer.on("pack update complete", (event) => {
 
 ipcRenderer.on("dark theme", (event, enabled) => {
     app.ui.dark = enabled;
-    document.querySelector("#darkThemeToggle").checked = enabled;
 });
