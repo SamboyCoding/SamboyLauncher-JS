@@ -51,7 +51,7 @@ exports.ConditionalArgument = ConditionalArgument;
 class VanillaVersionArguments {
 }
 exports.VanillaVersionArguments = VanillaVersionArguments;
-class VanillaVersionData {
+class GameVersionData {
 }
-exports.VanillaVersionData = VanillaVersionData;
+exports.GameVersionData = GameVersionData;
 //# sourceMappingURL=objects.js.map

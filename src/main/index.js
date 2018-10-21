@@ -299,6 +299,10 @@ electron_1.ipcMain.on("get update actions", async (event, pack) => {
             to: pack.updatedForgeVersion !== pack.forgeVersion ? pack.updatedForgeVersion : null,
         },
         removeMods: new Array(),
+        rift: {
+            from: pack.riftVersion,
+            to: pack.updatedRiftVersion !== pack.riftVersion ? pack.updatedRiftVersion : null,
+        },
         updateMods: new Array(),
         version: {
             from: pack.installedVersion,
@@ -323,7 +327,7 @@ electron_1.ipcMain.on("get update actions", async (event, pack) => {
 });
 electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
     let currentPercent = 0;
-    const percentPer = 97 / ((updateData.forge.to ? 1 : 0) + updateData.addMods.length + updateData.updateMods.length + updateData.removeMods.length + 1);
+    const percentPer = 97 / ((updateData.forge.to ? 1 : 0) + (updateData.rift.to ? 1 : 0) + updateData.addMods.length + updateData.updateMods.length + updateData.removeMods.length + 1);
     event.sender.send("pack update progress", -1, `Starting upgrade...`);
     if (updateData.forge.to) {
         currentPercent += percentPer;
@@ -352,6 +356,28 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
             await gameInstaller_1.downloadForgeLibraries(launcherDir, libs, unpack200, event.sender);
             fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
             fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
+        }
+    }
+    if (updateData.rift.to) {
+        currentPercent += percentPer;
+        event.sender.send("pack update progress", currentPercent / 100, `Updating rift from ${updateData.rift.from} to ${updateData.rift.to}...`);
+        const riftVersionFolder = path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + updateData.rift.to);
+        if (!fs.existsSync(path.join(riftVersionFolder, ".installed"))) {
+            if (!fs.existsSync(riftVersionFolder)) {
+                await mkdirpPromise(riftVersionFolder);
+            }
+            await gameInstaller_1.downloadRiftJarAndGetJSON(riftVersionFolder, updateData.rift.to, pack.gameVersion, event.sender);
+            const profileJSON = jsonfile.readFileSync(path.join(riftVersionFolder, "profile.json"));
+            const riftLibraryData = profileJSON.libraries.find(l => l.name.startsWith("org.dimdev:rift"));
+            const riftVersion = riftLibraryData.name.split(":")[2];
+            const correctRiftFolder = path.join(launcherDir, "libraries", "org", "dimdev", "rift", riftVersion);
+            if (!fs.existsSync(correctRiftFolder))
+                await mkdirpPromise(correctRiftFolder);
+            fs.copyFileSync(path.join(riftVersionFolder, "rift_temp.jar"), path.join(correctRiftFolder, "rift-" + riftVersion + ".jar"));
+            fs.unlinkSync(path.join(riftVersionFolder, "rift_temp.jar"));
+            const libsToDownload = profileJSON.libraries.filter(l => !l.name.startsWith("org.dimdev:rift"));
+            await gameInstaller_1.downloadRiftLibraries(launcherDir, libsToDownload, event.sender);
+            fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
         }
     }
     const modsDir = path.join(launcherDir, "packs", pack.packName, "mods");
@@ -403,6 +429,7 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
         installedMods: pack.latestMods,
         installedVersion: updateData.version.to,
         packName: pack.packName,
+        riftVersion: updateData.rift.to ? updateData.rift.to : updateData.rift.from,
     });
     event.sender.send("pack update progress", 1, `Finished.`);
     event.sender.send("pack update complete");
@@ -510,6 +537,29 @@ electron_1.ipcMain.on("install pack", async (event, pack) => {
             fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
             fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
         }
+        const riftVersionFolder = path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion);
+        if (pack.riftVersion && !fs.existsSync(path.join(riftVersionFolder, ".installed"))) {
+            if (!fs.existsSync(riftVersionFolder)) {
+                await mkdirpPromise(riftVersionFolder);
+            }
+            await gameInstaller_1.downloadRiftJarAndGetJSON(riftVersionFolder, pack.riftVersion, pack.gameVersion, event.sender);
+            event.sender.send("modded progress", `Reading rift profile data...`, 3 / 100);
+            const profileJSON = jsonfile.readFileSync(path.join(riftVersionFolder, "profile.json"));
+            const riftLibraryData = profileJSON.libraries.find(l => l.name.startsWith("org.dimdev:rift"));
+            const riftVersion = riftLibraryData.name.split(":")[2];
+            event.sender.send("install log", "[Modpack] \tRift version identified as " + riftVersion);
+            const correctRiftFolder = path.join(launcherDir, "libraries", "org", "dimdev", "rift", riftVersion);
+            if (!fs.existsSync(correctRiftFolder))
+                await mkdirpPromise(correctRiftFolder);
+            event.sender.send("modded progress", `Installing Rift jar in correct location...`, 4 / 100);
+            fs.copyFileSync(path.join(riftVersionFolder, "rift_temp.jar"), path.join(correctRiftFolder, "rift-" + riftVersion + ".jar"));
+            event.sender.send("install log", "[Modpack] \tCopied file " + path.join(riftVersionFolder, "rift_temp.jar") + " => " + path.join(correctRiftFolder, "rift-" + riftVersion + ".jar"));
+            fs.unlinkSync(path.join(riftVersionFolder, "rift_temp.jar"));
+            event.sender.send("install log", "[Modpack] \tDeleted file: " + path.join(riftVersionFolder, "rift_temp.jar"));
+            const libsToDownload = profileJSON.libraries.filter(l => !l.name.startsWith("org.dimdev:rift"));
+            await gameInstaller_1.downloadRiftLibraries(launcherDir, libsToDownload, event.sender);
+            fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
+        }
         const packDir = path.join(packsDir, pack.packName);
         const modsDir = path.join(packDir, "mods");
         if (!fs.existsSync(modsDir)) {
@@ -556,12 +606,13 @@ electron_1.ipcMain.on("install pack", async (event, pack) => {
         event.sender.send("modded progress", `Finishing up`, 0.98);
         jsonfile.writeFileSync(path.join(packDir, "install.json"), {
             author: pack.author,
-            forgeVersion: pack.forgeVersion,
+            forgeVersion: pack.forgeVersion ? pack.forgeVersion : undefined,
             gameVersion: pack.gameVersion,
             id: pack.id,
             installedMods: pack.mods,
             installedVersion: pack.version,
             packName: pack.packName,
+            riftVersion: pack.riftVersion ? pack.riftVersion : undefined,
         });
         event.sender.send("modded progress", `Finished.`, 1);
         event.sender.send("install complete");
@@ -756,6 +807,26 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
         }
         classPath.push(path.join(launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"));
         mainClass = vanillaManifest.mainClass;
+    }
+    if (pack.riftVersion) {
+        if (!fs.existsSync(path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, ".installed"))
+            || !fs.existsSync(path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, "profile.json"))) {
+            return event.sender.send("launch failed", "Rift version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
+            || !fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
+            return event.sender.send("launch failed", "Base game version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+        const riftManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, "profile.json"));
+        gameArgs = gameArgs.concat(riftManifest.arguments.game);
+        for (const index in riftManifest.libraries) {
+            const library = riftManifest.libraries[index];
+            const libnameSplit = library.name.split(":");
+            const filePath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
+            const localPath = [launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
+            classPath.push(localPath);
+        }
+        mainClass = riftManifest.mainClass;
     }
     gameArgs = gameArgs.map((arg) => {
         switch (arg) {

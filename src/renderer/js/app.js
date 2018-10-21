@@ -239,6 +239,7 @@ ipcRenderer.on("installed packs", (event, packData) => {
         if (!pack.forgeVersion)
             pack.forgeVersion = "";
         pack.updatedForgeVersion = "";
+        pack.updatedRiftVersion = "";
     });
 
     app.ui.packView.packs = packData;
@@ -255,6 +256,7 @@ ipcRenderer.on("installed packs", (event, packData) => {
         if (!pack.forgeVersion)
             pack.forgeVersion = json.forgeVersion;
         pack.updatedForgeVersion = json.forgeVersion;
+        pack.updatedRiftVersion = json.riftVersion;
         pack.mods = pack.installedMods;
     });
 });

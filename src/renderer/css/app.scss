@@ -769,6 +769,21 @@ body,
                     }
                 }
             }
+            #settings {
+                #launcher-update.downloading {
+                    background: #084700;
+                    border: 1px solid #084700;
+                }
+                #launcher-update.downloaded {
+                    background: #084700;
+                    border: 1px solid #084700;
+                    #launcher-update-button {
+                        background: #278a1e;
+                        border: 1px solid #278a1e;
+                        color: white;
+                    }
+                }
+            }
         }
         .modal {
             .modal-content {

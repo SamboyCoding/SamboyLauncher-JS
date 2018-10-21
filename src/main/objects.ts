@@ -23,6 +23,7 @@ export class Pack {
     public author: Author;
     public description: string;
     public forgeVersion: string;
+    public riftVersion: string;
     public gameVersion: string;
     public id: number;
     public mods: Mod[];
@@ -34,6 +35,7 @@ export class Pack {
     public latestMods: Mod[];
     public latestVersion: string;
     public installedVersion: any;
+    updatedRiftVersion: string;
 }
 
 export class VanillaManifestVersion {
@@ -112,6 +114,10 @@ export class ConditionalAllow {
 export class LibraryMetadata {
     public downloads: LibraryDownloads;
     public name: string;
+    /**
+     * Only for modded libs
+     */
+    public url: string;
     public natives: LibraryNativesInfo;
     public rules: ConditionalAllow[];
 }
@@ -126,7 +132,7 @@ export class VanillaVersionArguments {
     public jvm: Array<string | ConditionalArgument>;
 }
 
-export class VanillaVersionData {
+export class GameVersionData {
     /**
      * For pre-1.13 versions, just a string
      */

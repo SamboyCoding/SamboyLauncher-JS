@@ -358,4 +358,41 @@ async function downloadForgeLibraries(launcherDir, libs, unpack200, webContents)
     }
 }
 exports.downloadForgeLibraries = downloadForgeLibraries;
+async function downloadRiftJarAndGetJSON(riftVersionFolder, riftVersion, gameVersion, webContents) {
+    webContents.send("modded progress", `Commencing rift mod loader download...`, 0 / 100);
+    const url = `https://minecraft.curseforge.com/projects/rift/files/${riftVersion}/download`;
+    webContents.send("modded progress", `Downloading rift ${riftVersion}`, 1 / 100);
+    webContents.send("install log", "[Modpack] \tDownloading " + url);
+    await downloadFile(url, path.join(riftVersionFolder, "rift_temp.jar"));
+    const buf = fs.readFileSync(path.join(riftVersionFolder, "rift_temp.jar"));
+    const zip = await JSZip.loadAsync(buf);
+    webContents.send("modded progress", `Extracting rift profile info...`, 2 / 100);
+    await new Promise((ff, rj) => {
+        zip.file("profile.json")
+            .nodeStream()
+            .pipe(fs.createWriteStream(path.join(riftVersionFolder, "profile.json")))
+            .on("finish", () => {
+            ff();
+        });
+    });
+}
+exports.downloadRiftJarAndGetJSON = downloadRiftJarAndGetJSON;
+async function downloadRiftLibraries(launcherDir, libs, webContents) {
+    const libsDir = path.join(launcherDir, "libraries");
+    const percPer = 45 / libs.length;
+    let currentPerc = 0;
+    for (const index in libs) {
+        const lib = libs[index];
+        currentPerc += percPer;
+        const libnameSplit = lib.name.split(":");
+        const localPath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
+        const url = (lib.url ? lib.url : "https://libraries.minecraft.net/") + localPath;
+        if (!fs.existsSync(path.join(libsDir, path.dirname(localPath))))
+            await mkdirpPromise(path.join(libsDir, path.dirname(localPath)));
+        webContents.send("modded progress", `Downloading library ${(Number(index) + 1)}/${libs.length}: ${lib.name}`, (5 + currentPerc) / 100);
+        webContents.send("install log", "[Modpack] \tDownloading " + url);
+        await downloadFile(url, path.join(libsDir, localPath));
+    }
+}
+exports.downloadRiftLibraries = downloadRiftLibraries;
 //# sourceMappingURL=gameInstaller.js.map

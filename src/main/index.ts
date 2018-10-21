@@ -16,9 +16,9 @@ import * as rmfr from "rmfr";
 import { Extract } from "unzipper";
 import { Config } from "./config";
 import * as config from "./config";
-import { downloadAssetManifest, downloadAssets, downloadForgeJarAndGetJSON, downloadForgeLibraries, downloadGameClient, downloadVanillaLibraries, downloadVanillaNatives, getVanillaVersionList, getVanillaVersionManifest } from "./gameInstaller";
+import { downloadAssetManifest, downloadAssets, downloadForgeJarAndGetJSON, downloadForgeLibraries, downloadGameClient, downloadRiftJarAndGetJSON, downloadRiftLibraries, downloadVanillaLibraries, downloadVanillaNatives, getVanillaVersionList, getVanillaVersionManifest } from "./gameInstaller";
 import { Logger } from "./logger";
-import { AuthData, LibraryArtifact, LibraryMetadata, Mod, Pack, VanillaManifestVersion, VanillaVersionData } from "./objects";
+import { AuthData, GameVersionData, LibraryArtifact, LibraryMetadata, Mod, Pack, VanillaManifestVersion } from "./objects";
 //#endregion
 
 // TODO: List is here because I feel like it
@@ -367,6 +367,10 @@ ipcMain.on("get update actions", async (event: IpcMessageEvent, pack: Pack) => {
             to: pack.updatedForgeVersion !== pack.forgeVersion ? pack.updatedForgeVersion : null,
         },
         removeMods: new Array<Mod>(),
+        rift: {
+            from: pack.riftVersion,
+            to: pack.updatedRiftVersion !== pack.riftVersion ? pack.updatedRiftVersion : null,
+        },
         updateMods: new Array<any>(),
         version: {
             from: pack.installedVersion,
@@ -400,7 +404,7 @@ ipcMain.on("get update actions", async (event: IpcMessageEvent, pack: Pack) => {
 
 ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData: any) => {
     let currentPercent = 0;
-    const percentPer = 97 / ((updateData.forge.to ? 1 : 0) + updateData.addMods.length + updateData.updateMods.length + updateData.removeMods.length + 1);
+    const percentPer = 97 / ((updateData.forge.to ? 1 : 0) + (updateData.rift.to ? 1 : 0) + updateData.addMods.length + updateData.updateMods.length + updateData.removeMods.length + 1);
 
     event.sender.send("pack update progress", -1, `Starting upgrade...`);
 
@@ -445,6 +449,43 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
 
             fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
             fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
+        }
+    }
+
+    // Also rift
+    if (updateData.rift.to) {
+        currentPercent += percentPer;
+        event.sender.send("pack update progress", currentPercent / 100, `Updating rift from ${updateData.rift.from} to ${updateData.rift.to}...`);
+
+        const riftVersionFolder = path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + updateData.rift.to);
+
+        if (!fs.existsSync(path.join(riftVersionFolder, ".installed"))) {
+            if (!fs.existsSync(riftVersionFolder)) {
+                await mkdirpPromise(riftVersionFolder);
+            }
+
+            // It's put in the versions folder for now.
+            await downloadRiftJarAndGetJSON(riftVersionFolder, updateData.rift.to, pack.gameVersion, event.sender);
+
+            const profileJSON: GameVersionData = jsonfile.readFileSync(path.join(riftVersionFolder, "profile.json"));
+
+            // Now let's move rift to its correct path in the libraries directory.
+            const riftLibraryData = profileJSON.libraries.find(l => l.name.startsWith("org.dimdev:rift"));
+            const riftVersion = riftLibraryData.name.split(":")[2];
+
+            const correctRiftFolder = path.join(launcherDir, "libraries", "org", "dimdev", "rift", riftVersion);
+            if (!fs.existsSync(correctRiftFolder))
+                await mkdirpPromise(correctRiftFolder);
+
+            // Move the rift jar to the correct place
+            fs.copyFileSync(path.join(riftVersionFolder, "rift_temp.jar"), path.join(correctRiftFolder, "rift-" + riftVersion + ".jar"));
+            fs.unlinkSync(path.join(riftVersionFolder, "rift_temp.jar"));
+
+            // Remove the rift jar itself from the libraries list and download libraries
+            const libsToDownload = profileJSON.libraries.filter(l => !l.name.startsWith("org.dimdev:rift"));
+            await downloadRiftLibraries(launcherDir, libsToDownload, event.sender);
+
+            fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
         }
     }
 
@@ -524,6 +565,7 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
         installedMods: pack.latestMods,
         installedVersion: updateData.version.to,
         packName: pack.packName,
+        riftVersion: updateData.rift.to ? updateData.rift.to : updateData.rift.from,
     });
 
     // And we're done!
@@ -615,7 +657,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
 
             event.sender.send("vanilla progress", `Fetching version information for ${version.id}...`, 2 / 100);
 
-            const versionData: VanillaVersionData = await getVanillaVersionManifest(launcherDir, version);
+            const versionData: GameVersionData = await getVanillaVersionManifest(launcherDir, version);
 
             const libraries: LibraryMetadata[] = versionData.libraries.filter((lib) => lib.downloads.artifact && lib.downloads.artifact.url);
             const natives: LibraryMetadata[] = versionData.libraries.filter((lib) => lib.natives);
@@ -662,6 +704,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             event.sender.send("vanilla progress", `Game client is already installed.`, 1);
         }
 
+        //#region Forge
         const forgeVersionFolder = path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion);
 
         if (pack.forgeVersion && !fs.existsSync(path.join(forgeVersionFolder, "forge.jar"))) {
@@ -692,6 +735,51 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
             fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
         }
+
+        //#endregion
+
+        //#region Rift Mod Loader
+
+        const riftVersionFolder = path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion);
+
+        if (pack.riftVersion && !fs.existsSync(path.join(riftVersionFolder, ".installed"))) {
+            if (!fs.existsSync(riftVersionFolder)) {
+                await mkdirpPromise(riftVersionFolder);
+            }
+
+            // It's put in the temp folder for now.
+            await downloadRiftJarAndGetJSON(riftVersionFolder, pack.riftVersion, pack.gameVersion, event.sender);
+
+            event.sender.send("modded progress", `Reading rift profile data...`, 3 / 100);
+            const profileJSON: GameVersionData = jsonfile.readFileSync(path.join(riftVersionFolder, "profile.json"));
+
+            // Now let's move rift to its correct path in the libraries directory.
+            const riftLibraryData = profileJSON.libraries.find(l => l.name.startsWith("org.dimdev:rift"));
+            const riftVersion = riftLibraryData.name.split(":")[2];
+
+            event.sender.send("install log", "[Modpack] \tRift version identified as " + riftVersion);
+
+            const correctRiftFolder = path.join(launcherDir, "libraries", "org", "dimdev", "rift", riftVersion);
+            if (!fs.existsSync(correctRiftFolder))
+                await mkdirpPromise(correctRiftFolder);
+
+            // Move the rift jar to the correct place
+            event.sender.send("modded progress", `Installing Rift jar in correct location...`, 4 / 100);
+
+            fs.copyFileSync(path.join(riftVersionFolder, "rift_temp.jar"), path.join(correctRiftFolder, "rift-" + riftVersion + ".jar"));
+            event.sender.send("install log", "[Modpack] \tCopied file " + path.join(riftVersionFolder, "rift_temp.jar") + " => " + path.join(correctRiftFolder, "rift-" + riftVersion + ".jar"));
+
+            fs.unlinkSync(path.join(riftVersionFolder, "rift_temp.jar"));
+            event.sender.send("install log", "[Modpack] \tDeleted file: " + path.join(riftVersionFolder, "rift_temp.jar"));
+
+            // Remove the rift jar itself from the libraries list and download libraries
+            const libsToDownload = profileJSON.libraries.filter(l => !l.name.startsWith("org.dimdev:rift"));
+            await downloadRiftLibraries(launcherDir, libsToDownload, event.sender);
+
+            fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
+        }
+
+        //#endregion
 
         const packDir = path.join(packsDir, pack.packName);
         const modsDir = path.join(packDir, "mods");
@@ -754,12 +842,13 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
 
         jsonfile.writeFileSync(path.join(packDir, "install.json"), {
             author: pack.author,
-            forgeVersion: pack.forgeVersion,
+            forgeVersion: pack.forgeVersion ? pack.forgeVersion : undefined,
             gameVersion: pack.gameVersion,
             id: pack.id,
             installedMods: pack.mods,
             installedVersion: pack.version,
             packName: pack.packName,
+            riftVersion: pack.riftVersion ? pack.riftVersion : undefined,
         });
 
         event.sender.send("modded progress", `Finished.`, 1);
@@ -783,7 +872,7 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
     const classPath: string[] = [];
     let mainClass: string;
 
-    let vanillaManifest: VanillaVersionData;
+    let vanillaManifest: GameVersionData;
     let forgeManifest: any;
 
     if (pack.forgeVersion) {
@@ -983,6 +1072,34 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
         classPath.push(path.join(launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"));
 
         mainClass = vanillaManifest.mainClass;
+    }
+
+    if (pack.riftVersion) {
+        // Run this post-vanilla args as it inherits from vanilla
+        if (!fs.existsSync(path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, ".installed"))
+            || !fs.existsSync(path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, "profile.json"))) {
+            return event.sender.send("launch failed", "Rift version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+
+        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
+            || !fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
+            return event.sender.send("launch failed", "Base game version is no longer installed or installation corrupt. Please reinstall the pack.");
+        }
+
+        const riftManifest: GameVersionData = jsonfile.readFileSync(path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, "profile.json"));
+        gameArgs = gameArgs.concat(riftManifest.arguments.game as string[]);
+
+        for (const index in riftManifest.libraries) {
+            const library = riftManifest.libraries[index];
+            const libnameSplit: string[] = (library.name as string).split(":");
+
+            const filePath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
+            const localPath = [launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
+
+            classPath.push(localPath);
+        }
+
+        mainClass = riftManifest.mainClass;
     }
 
     gameArgs = gameArgs.map((arg) => {

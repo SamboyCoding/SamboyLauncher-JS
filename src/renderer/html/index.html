@@ -386,6 +386,13 @@
                                     to version {{ui.packUpdate.data.forge.to}}
                                 </span>
                             </div>
+                            <div v-if="ui.packUpdate.data.rift.to">
+                                <h2>Rift Modloader Update</h2>
+                                <span>
+                                    Will update rift from version {{ui.packUpdate.data.rift.from}}
+                                    to version {{ui.packUpdate.data.rift.to}}
+                                </span>
+                            </div>
                         </div>
                         <div v-else-if="ui.packUpdate.show">
                             <label for="pack-update-progress">

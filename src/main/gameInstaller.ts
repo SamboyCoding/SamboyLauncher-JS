@@ -8,7 +8,7 @@ import * as mkdirp from "mkdirp";
 import * as web from "node-fetch";
 import * as path from "path";
 import { Extract } from "unzipper";
-import { AssetIndexMetadata, LibraryArtifact, LibraryMetadata, VanillaManifestVersion, VanillaVersionData } from "./objects";
+import { AssetIndexMetadata, GameVersionData, LibraryArtifact, LibraryMetadata, VanillaManifestVersion } from "./objects";
 
 const fetch = web.default;
 
@@ -33,7 +33,7 @@ export async function getVanillaVersionList(): Promise<VanillaManifestVersion[]>
     return json.versions;
 }
 
-export async function getVanillaVersionManifest(launcherDir: string, version: VanillaManifestVersion): Promise<VanillaVersionData> {
+export async function getVanillaVersionManifest(launcherDir: string, version: VanillaManifestVersion): Promise<GameVersionData> {
     const resp = await fetch(version.url);
     const json = await resp.json();
 
@@ -264,7 +264,7 @@ export async function downloadAssets(launcherDir: string, index: AssetIndexMetad
     }
 }
 
-export async function downloadGameClient(launcherDir: string, versionData: VanillaVersionData, webContents: Electron.WebContents) {
+export async function downloadGameClient(launcherDir: string, versionData: GameVersionData, webContents: Electron.WebContents) {
     webContents.send("vanilla progress", `Downloading game client...`, 98 / 100);
     let success = false;
     const filePath = path.join(launcherDir, "versions", versionData.id, versionData.id + ".jar");
@@ -440,5 +440,55 @@ export async function downloadForgeLibraries(launcherDir: string, libs: any, unp
 
             fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
         }
+    }
+}
+
+export async function downloadRiftJarAndGetJSON(riftVersionFolder: string, riftVersion: string, gameVersion: string, webContents: Electron.WebContents) {
+    // First off, let's grab rift.
+    webContents.send("modded progress", `Commencing rift mod loader download...`, 0 / 100);
+
+    const url = `https://minecraft.curseforge.com/projects/rift/files/${riftVersion}/download`;
+
+    webContents.send("modded progress", `Downloading rift ${riftVersion}`, 1 / 100);
+    webContents.send("install log", "[Modpack] \tDownloading " + url);
+
+    await downloadFile(url, path.join(riftVersionFolder, "rift_temp.jar"));
+
+    // Now we need to grab the version JSON from inside our jar
+    // It's called profile.json
+
+    const buf = fs.readFileSync(path.join(riftVersionFolder, "rift_temp.jar"));
+    const zip = await JSZip.loadAsync(buf);
+
+    webContents.send("modded progress", `Extracting rift profile info...`, 2 / 100);
+
+    await new Promise((ff, rj) => {
+        zip.file("profile.json")
+            .nodeStream()
+            .pipe(fs.createWriteStream(path.join(riftVersionFolder, "profile.json")))
+            .on("finish", () => {
+                ff();
+            });
+    });
+}
+
+export async function downloadRiftLibraries(launcherDir: string, libs: LibraryMetadata[], webContents: Electron.WebContents) {
+    const libsDir = path.join(launcherDir, "libraries");
+    const percPer = 45 / libs.length;
+    let currentPerc = 0;
+    for (const index in libs) {
+        const lib = libs[index];
+        currentPerc += percPer;
+        const libnameSplit = lib.name.split(":");
+        const localPath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
+        const url = (lib.url ? lib.url : "https://libraries.minecraft.net/") + localPath;
+
+        if (!fs.existsSync(path.join(libsDir, path.dirname(localPath))))
+            await mkdirpPromise(path.join(libsDir, path.dirname(localPath)));
+
+        webContents.send("modded progress", `Downloading library ${(Number(index) + 1)}/${libs.length}: ${lib.name}`, (5 + currentPerc) / 100);
+        webContents.send("install log", "[Modpack] \tDownloading " + url);
+
+        await downloadFile(url, path.join(libsDir, localPath));
     }
 }
