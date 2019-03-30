@@ -1,10 +1,11 @@
 {
     "name": "samboylauncher",
-    "version": "1.0.0-rc9-4",
+    "version": "1.0.1",
     "description": "Minecraft Launcher - see https://launcher.samboycoding.me",
     "main": "src/main/index.js",
     "scripts": {
-        "release": "electron-builder"
+        "release": "electron-builder",
+        "dev": "electron ."
     },
     "keywords": [],
     "author": "",
@@ -20,8 +21,7 @@
         "@types/node-fetch": "^2.1.2",
         "@types/rmfr": "^2.0.0",
         "@types/unzipper": "^0.9.0",
-        "babel-eslint": "^9.0.0",
-        "electron": "^2.0.8",
+        "electron": "^4.1.3",
         "electron-builder": "^20.28.4",
         "eslint": "^5.5.0",
         "eslint-config-standard": "^12.0.0",

@@ -47,6 +47,7 @@ async function mkdirpPromise(location) {
 }
 let win;
 function createWindow() {
+    console.log("[Info] Initializing window...");
     win = new electron_1.BrowserWindow({
         frame: false,
         height: 720,
@@ -78,6 +79,7 @@ function createWindow() {
         win = null;
     });
 }
+console.log("[Info] Electron Init");
 electron_1.app.on("ready", async () => {
     await onReady();
     createWindow();
@@ -380,7 +382,7 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
             fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
         }
     }
-    const modsDir = path.join(launcherDir, "packs", pack.packName, "mods");
+    const modsDir = path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "mods");
     if (!fs.existsSync(modsDir))
         await mkdirpPromise(modsDir);
     for (const i in updateData.removeMods) {
@@ -435,7 +437,7 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
     event.sender.send("pack update complete");
 });
 electron_1.ipcMain.on("uninstall pack", async (event, pack) => {
-    const packDir = path.join(launcherDir, "packs", pack.packName);
+    const packDir = path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
     if (!fs.existsSync(packDir)) {
         return;
     }
@@ -560,7 +562,7 @@ electron_1.ipcMain.on("install pack", async (event, pack) => {
             await gameInstaller_1.downloadRiftLibraries(launcherDir, libsToDownload, event.sender);
             fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
         }
-        const packDir = path.join(packsDir, pack.packName);
+        const packDir = path.join(packsDir, pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
         const modsDir = path.join(packDir, "mods");
         if (!fs.existsSync(modsDir)) {
             await mkdirpPromise(modsDir);

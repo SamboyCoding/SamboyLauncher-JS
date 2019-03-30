@@ -2,7 +2,7 @@ $ui-background: #fff;
 $ui-text-color: #000;
 $ui-button-color: #a1bbc7;
 @font-face {
-    font-family: "Roboto Thin";
+    font-family: "Roboto";
     font-style: normal;
     font-weight: 200;
     src: url(../resources/Roboto-Thin.ttf) format("truetype");
@@ -18,7 +18,7 @@ $ui-button-color: #a1bbc7;
 }
 
 @font-face {
-    font-family: "Roboto Bold";
+    font-family: "Roboto";
     font-style: normal;
     font-weight: bold;
     src: url(../resources/Roboto-Bold.ttf) format("truetype");
@@ -65,6 +65,7 @@ body,
     position: absolute;
     top: 0;
     left: 0;
+
     h1 {
         margin: 0 auto;
     }
@@ -85,10 +86,12 @@ body,
     width: 100%;
     background: #0a0a0a;
     color: #fff;
+
     span {
         padding: 3px;
         font-size: 14px;
     }
+
     #close-window {
         position: absolute;
         top: 0;
@@ -101,6 +104,7 @@ body,
         -webkit-app-region: no-drag;
         height: 100%;
     }
+
     #close-window:hover {
         background: #f04747;
     }
@@ -120,6 +124,7 @@ body,
     height: 100%;
     display: flex;
     align-items: center;
+
     #login-background {
         position: absolute;
         left: 0;
@@ -128,6 +133,7 @@ body,
         height: 100%;
         z-index: 0;
     }
+
     #login-form {
         width: 30%;
         margin: 0 auto;
@@ -139,9 +145,11 @@ body,
         position: relative;
         z-index: 10;
         background: $ui-background;
+
         #login-form-title {
             margin-top: 0;
         }
+
         label {
             display: block;
             text-align: left;
@@ -149,14 +157,17 @@ body,
             padding-left: 0.3rem;
             color: #333;
         }
+
         #rememberme-label {
             display: inline-block;
             width: 90%;
             margin: 0;
         }
+
         #login-rememberme {
             margin: 0;
         }
+
         #mojang-email,
         #mojang-password {
             background: none;
@@ -171,9 +182,11 @@ body,
             margin-bottom: 1rem;
             text-align: left;
         }
+
         #mojang-email:focus {
             border-bottom: 1px solid $ui-text-color;
         }
+
         #login-button {
             background: none;
             outline: none;
@@ -187,15 +200,19 @@ body,
             height: 3rem;
             cursor: pointer;
         }
+
         #login-button:disabled {
             cursor: default;
         }
+
         #login-button:not(:disabled):hover {
             background: $ui-button-color;
         }
+
         #login-button:not(:disabled):active {
             background: darken($ui-button-color, 10%);
         }
+
         #login-error {
             color: red;
             width: 100%;
@@ -212,6 +229,7 @@ body,
     position: fixed;
     width: 100%;
     z-index: 99;
+
     .navbar-items {
         margin: 0 auto;
         width: 100%;
@@ -219,6 +237,7 @@ body,
         justify-content: space-between;
         height: 100%;
     }
+
     .navbar-item {
         display: inline-flex;
         flex-direction: column;
@@ -229,21 +248,26 @@ body,
         height: 100%;
         width: 12rem;
         text-align: center;
+
         .navbar-item-content {
             display: flex;
             flex-direction: column;
             margin: auto 0;
+
             .navbar-item-icon {
                 text-align: center;
             }
+
             .navbar-item-label {
                 margin-top: 10px;
             }
         }
     }
+
     .navbar-item:hover {
         background: #ccc;
     }
+
     .navbar-item:active,
     .navbar-item.active {
         background: #bbb;
@@ -255,17 +279,21 @@ body,
     top: 6rem;
     width: 100%;
     height: calc(100% - 6rem);
+
     #pack-view {
         height: 100%;
+
         #pack-view-packs {
             width: 30%;
             display: inline-block;
             border-right: 1px solid #ccc;
             height: 100%;
+
             .pack-view-pack {
                 background: #eee;
                 padding: 1rem;
                 cursor: pointer;
+
                 .pack-view-pack-title {
                     margin-top: 0;
                     font-family: "Roboto";
@@ -274,75 +302,88 @@ body,
                     display: inline-block;
                     margin: 0 auto;
                 }
+
                 .pack-view-pack-author {
                     display: inline-block;
-                    font-family: "Roboto Thin";
+                    font-family: "Roboto";
                     font-size: 16px;
                     padding-left: 0.4rem;
                 }
+
                 .pack-view-pack-mod-count {
                     text-align: center;
                     display: block;
-                    font-family: "Roboto Thin";
+                    font-family: "Roboto";
                     font-weight: 200;
                     font-size: 18px;
                     margin-bottom: 1rem;
                 }
             }
+
             .pack-view-pack:not(:last-of-type) {
                 border-bottom: 1px solid #ccc;
             }
+
             .pack-view-pack.selected {
                 background: #8cc1d9;
             }
         }
+
         #pack-view-packs.no-packs {
             justify-content: center;
             align-items: center;
             display: flex;
         }
+
         #pack-view-pack-info {
             width: 69%;
             display: inline-block;
             position: absolute;
             padding: 1rem;
+
             .installed-pack-info-pack-version {
                 display: block;
-                font-family: "Roboto Thin";
+                font-family: "Roboto";
                 font-weight: 200;
                 margin-top: 5px;
             }
+
             .installed-pack-info-pack-title {
                 margin-top: 0;
-                font-family: "Roboto Thin";
+                font-family: "Roboto";
                 font-weight: 200;
                 font-size: 36px;
                 display: block;
                 margin: 0 auto;
             }
+
             .installed-pack-info-pack-author {
                 display: block;
-                font-family: "Roboto Thin";
+                font-family: "Roboto";
                 font-weight: 200;
                 font-size: 24px;
             }
+
             .installed-pack-info-pack-desc {
                 margin-top: 1rem;
                 display: block;
             }
+
             #installed-pack-info-pack-mod-list-title {
                 font-size: 30px;
-                font-family: "Roboto Thin";
+                font-family: "Roboto";
                 font-weight: 200;
             }
+
             .pack-action-buttons {
                 position: absolute;
                 right: 2rem;
+
                 top: 2rem;
-                height: 8rem;
                 width: 100%;
                 display: flex;
-                align-items: right;
+                align-items: flex-end;
+
                 button {
                     background: none;
                     outline: none;
@@ -351,66 +392,81 @@ body,
                     font-size: 14px;
                     border: 1px solid #ccc;
                 }
+
                 button:first-of-type {
                     border-top-left-radius: 2rem;
                     border-bottom-left-radius: 2rem;
                 }
+
                 button:last-of-type {
                     border-top-right-radius: 2rem;
                     border-bottom-right-radius: 2rem;
                 }
+
                 #installed-pack-uninstall-button {
                     border-color: #9a0909;
                     color: #9a0909;
                     border-right: 1px solid #ccc;
                     margin-left: auto;
                 }
+
                 #installed-pack-uninstall-button:hover {
                     background: #9a0909;
                     color: #fff;
                 }
+
                 #installed-pack-uninstall-button:active {
                     background: #7d0707;
                     color: #fff;
                 }
+
                 #installed-pack-launch-game-button {
                     border-left: none;
                     color: #c8bc14;
                     border-color: #c8bc14;
                     border-left: none;
                 }
+
                 #installed-pack-launch-game-button:not(:last-of-type) {
                     border-right-color: #ccc;
                 }
+
                 #installed-pack-launch-game-button:hover {
                     background: #c8bc14;
                     color: #fff;
                 }
+
                 #installed-pack-launch-game-button:active {
                     background: #a29910;
                     color: #fff;
                 }
+
                 #installed-pack-launch-game-button:last-of-type {
                     color: #0bc139;
                     border-color: #0bc139;
                 }
+
                 #installed-pack-launch-game-button:last-of-type:hover {
                     background: #0bc139;
                     color: #fff;
                 }
+
                 #installed-pack-launch-game-button:last-of-type:active {
                     background: #099a2d;
                     color: #fff;
                 }
+
                 #installed-pack-update-button {
                     color: #0bc139;
                     border-color: #0bc139;
                     border-left: none;
                 }
+
                 #installed-pack-update-button:hover {
                     background: #0bc139;
                     color: #fff;
                 }
+
                 #installed-pack-update-button:active {
                     background: #099a2d;
                     color: #fff;
@@ -418,86 +474,101 @@ body,
             }
         }
     }
+
     #pack-browse {
         padding: 1rem;
+
         #pack-browse-packs {
             width: 40%;
             display: inline-block;
+
             .pack-browse-pack {
                 background: #eee;
                 border-radius: 1rem;
                 padding: 2rem;
                 margin-bottom: 2rem;
                 cursor: pointer;
+
                 .pack-browse-pack-title {
                     text-align: center;
                     margin-top: 0;
-                    font-family: "Roboto Thin";
+                    font-family: "Roboto";
                     font-weight: 200;
                     font-size: 36px;
                     display: block;
                     margin: 0 auto;
                 }
+
                 .pack-browse-pack-author {
                     text-align: center;
                     display: block;
-                    font-family: "Roboto Thin";
+                    font-family: "Roboto";
                     font-weight: 200;
                     font-size: 24px;
                 }
+
                 .pack-browse-pack-mod-count {
                     text-align: center;
                     display: block;
-                    font-family: "Roboto Thin";
+                    font-family: "Roboto";
                     font-weight: 200;
                     font-size: 18px;
                     margin-bottom: 1rem;
                 }
+
                 .pack-browse-pack-desc {
                     text-align: center;
                     display: block;
                 }
             }
+
             .pack-browse-pack.selected {
                 background: #8cc1d9;
             }
         }
+
         #pack-browse-pack-info {
             width: 59%;
             display: inline-block;
             position: absolute;
             padding: 1rem;
+
             #pack-info-pack-title {
                 margin-top: 0;
-                font-family: "Roboto Thin";
+                font-family: "Roboto";
                 font-weight: 200;
                 font-size: 36px;
                 display: block;
                 margin: 0 auto;
             }
+
             #pack-info-pack-author {
                 display: block;
-                font-family: "Roboto Thin";
+                font-family: "Roboto";
                 font-weight: 200;
                 font-size: 24px;
             }
+
             #pack-info-pack-mod-count {
                 display: block;
-                font-family: "Roboto Thin";
+                font-family: "Roboto";
                 font-weight: 200;
                 font-size: 18px;
                 margin-bottom: 1rem;
             }
+
             #pack-info-pack-desc {
                 display: block;
             }
+
             #pack-info-pack-mod-list-title {
                 display: block;
-                font-family: "Roboto Bold";
+                font-family: "Roboto";
                 font-weight: 700;
                 font-size: 24px;
                 margin-bottom: 1rem;
             }
+
             #install-pack-button {
                 outline: none;
                 border: none;
@@ -510,26 +581,32 @@ body,
                 top: 1.5rem;
                 right: 1rem;
             }
+
             #install-pack-button[disabled] {
                 background: #a0e4ab;
                 color: #777;
                 cursor: not-allowed;
             }
+
             #install-pack-button:not([disabled]):hover {
                 background: #126921;
             }
+
             #install-pack-button:not([disabled]):active {
                 background: #004f07;
             }
         }
     }
+
     #settings {
         padding: 1rem;
+
         #launcher-update {
             border: 1px solid #ccc;
             border-radius: 5px;
             padding: 1rem;
             margin-bottom: 2rem;
+
             #launcher-update-button {
                 padding: 0.5rem 1rem;
                 cursor: pointer;
@@ -538,22 +615,27 @@ body,
                 border-radius: 5px;
             }
         }
+
         #launcher-update.downloading {
             background: #c0ffb7;
             border: 1px solid #74d76b;
         }
+
         #launcher-update.downloaded {
             background: #c0ffb7;
             border: 1px solid #74d76b;
+
             #launcher-update-button {
                 background: #278a1e;
                 border: 1px solid #278a1e;
                 color: white;
             }
         }
+
         #launcher-update.errored {
             background: #ffd1d1;
             border: 1px solid #d76b6b;
+
             #launcher-update-button {
                 background: #8d1111;
                 color: #fff;
@@ -572,6 +654,7 @@ body,
     background: rgba(0, 0, 0, 0.6);
     z-index: 300;
     display: none;
+
     .modal-content {
         width: 40%;
         margin: 0 auto;
@@ -584,11 +667,13 @@ body,
         max-height: calc(100% - 12rem);
         overflow-y: scroll;
         position: relative;
+
         .modal-title {
             margin-top: 0;
             padding-bottom: 1rem;
             border-bottom: 1px solid #ccc;
         }
+
         #close-install-modal {
             position: absolute;
             right: 3rem;
@@ -601,6 +686,7 @@ body,
             border-radius: 5px;
             cursor: pointer;
         }
+
         #close-install-modal:hover {
             background: #117e27;
         }
@@ -618,6 +704,7 @@ body,
     background: #ccc;
     border-radius: 3px;
     margin-bottom: 1rem;
+
     .bar {
         background: #00aaff;
         border-radius: 3px;
@@ -625,15 +712,19 @@ body,
         height: 20px;
         transition: width 0.5s, margin 0.5s;
     }
+
     .bar.red {
         background: #c02626;
     }
+
     .bar.indeterminate {
         position: relative;
         margin-left: 0;
         width: 20%;
         animation: indeterminate 2s ease-in-out infinite alternate;
-    } //Thanks to Zudo for this
+    }
+
+    //Thanks to Zudo for this
     @keyframes indeterminate {
         from {
             margin-left: 0;
@@ -648,6 +739,7 @@ body,
     overflow-x: scroll;
     margin-top: 1rem;
     user-select: text;
+
     span {
         display: block;
     }
@@ -658,16 +750,20 @@ body,
         width: 85%;
         margin-top: 3rem;
         max-height: calc(100% - 6rem);
+
         #game-output-log {
             overflow-x: scroll;
             margin-top: 1rem;
             user-select: text;
+
             span {
                 display: block;
             }
+
             .error {
                 color: red;
             }
+
             .warning {
                 color: #e4a744;
             }
@@ -688,12 +784,15 @@ body,
         top: 3rem;
         right: 3rem;
     }
+
     button#pack-update-yes:hover {
         background: #126921;
     }
+
     button#pack-update-yes:active {
         background: #004f07;
     }
+
     button#pack-update-no {
         outline: none;
         border: none;
@@ -706,9 +805,11 @@ body,
         top: 3rem;
         right: 8.5rem;
     }
+
     button#pack-update-no:hover {
         background: #9b1217;
     }
+
     button#pack-update-no:active {
         background: #891014;
     }
@@ -717,66 +818,82 @@ body,
 #app.darkTheme {
     background: #1e1e1e;
     color: #eee;
+
     #cover {
         background: #1e1e1e;
         color: #eee;
     }
+
     #content {
         background: #1e1e1e;
+
         #navbar {
             background: #111;
+
             .navbar-item:hover {
                 background: #1e1e1e;
             }
+
             .navbar-item:active,
             .navbar-item.active {
                 background: #222;
             }
         }
+
         #below-navbar {
             #pack-view {
                 #pack-view-packs {
                     border-right-color: #555;
+
                     .pack-view-pack {
                         background: #232323;
                         border-bottom-color: #555;
                     }
+
                     .pack-view-pack:hover {
                         background: #222;
                     }
+
                     .pack-view-pack.selected {
                         background: #333;
                     }
                 }
+
                 #pack-view-pack-info {
                     .pack-action-buttons {
                         #installed-pack-uninstall-button {
                             border-right-color: #555;
                         }
+
                         #installed-pack-launch-game-button:not(:last-of-type) {
                             border-right-color: #555;
                         }
                     }
                 }
             }
+
             #pack-browse {
                 #pack-browse-packs {
                     .pack-browse-pack {
                         background: #262626;
                     }
+
                     .pack-browse-pack.selected {
                         background: #333;
                     }
                 }
             }
+
             #settings {
                 #launcher-update.downloading {
                     background: #084700;
                     border: 1px solid #084700;
                 }
+
                 #launcher-update.downloaded {
                     background: #084700;
                     border: 1px solid #084700;
+
                     #launcher-update-button {
                         background: #278a1e;
                         border: 1px solid #278a1e;
@@ -785,12 +902,14 @@ body,
                 }
             }
         }
+
         .modal {
             .modal-content {
                 background: #1e1e1e;
                 color: #ccc;
             }
         }
+
         .progress {
             background: #333;
         }

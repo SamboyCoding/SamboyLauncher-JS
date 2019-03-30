@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "target": "esnext",
         "module": "commonjs",
         "noImplicitAny": false,
         "removeComments": true,
@@ -10,8 +11,7 @@
             "es2015",
             "dom",
             "es2018"
-        ],
-        "target": "es2018"
+        ]
     },
     "include": [
         "./src/main/"

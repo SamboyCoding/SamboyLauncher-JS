@@ -1,108 +1,107 @@
 const {
-    ipcRenderer
+    ipcRenderer,
 } = require("electron");
 
 const semver = require("semver");
 const packageData = require("../../../package");
 
 const app = new Vue({
-    el: "#app",
     data: {
         ui: {
+            dark: false,
+            gameRun: {
+                exitCode: undefined,
+                log: [],
+                running: false,
+                show: false,
+            },
+            launcherUpdate: {
+                available: false,
+                checking: false,
+                devmode: false,
+                failed: false,
+                ready: false,
+                versionName: "",
+            },
             login: {
-                show: true,
-                processing: false,
                 backgroundImg: "../resources/backgrounds/1.jpg",
                 email: "",
+                error: "",
                 password: "",
+                processing: false,
                 remember: false,
-                error: ""
+                show: true,
+            },
+            packBrowse: {
+                packs: [],
+                selectedPackIndex: -1,
+                show: false,
+            },
+            packInstall: {
+                failed: false,
+                gameVersion: "1.12.2",
+                log: [],
+                moddedProgress: {
+                    label: "Starting installation...",
+                    progress: -1,
+                },
+                show: false,
+                vanillaProgress: {
+                    label: "Starting installation...",
+                    progress: -1,
+                },
+            },
+            packUninstall: {
+                show: false,
+            },
+            packUpdate: {
+                data: null,
+                failed: false,
+                label: "Starting update...",
+                preview: true,
+                progress: -1,
+                show: false,
             },
             packView: {
                 packs: [],
+                selectedPackIndex: -1,
                 show: false,
-                selectedPackIndex: -1
             },
             profile: {
-                name: "",
                 image: "",
-                uuid: ""
+                name: "",
+                uuid: "",
             },
             settings: {
                 show: false,
             },
-            packBrowse: {
-                show: false,
-                packs: [],
-                selectedPackIndex: -1,
-            },
-            packInstall: {
-                show: false,
-                gameVersion: "1.12.2",
-                log: [],
-                failed: false,
-                vanillaProgress: {
-                    label: "Starting installation...",
-                    progress: -1
-                },
-                moddedProgress: {
-                    label: "Starting installation...",
-                    progress: -1
-                }
-            },
-            packUninstall: {
-                show: false
-            },
-            gameRun: {
-                show: false,
-                log: [],
-                exitCode: undefined,
-                running: false
-            },
-            launcherUpdate: {
-                checking: false,
-                available: false,
-                ready: false,
-                devmode: false,
-                failed: false,
-                versionName: ""
-            },
-            packUpdate: {
-                show: false,
-                preview: true,
-                data: null,
-                progress: -1,
-                failed: false,
-                label: "Starting update..."
-            },
-            dark: false,
-        }
-    },
-    methods: {
-        login: function (evt) {
-            ipcRenderer.send("login", app.ui.login.email, app.ui.login.password, app.ui.login.remember);
-            app.ui.login.processing = true;
         },
-        close: function (evt) {
+    },
+    el: "#app",
+    methods: {
+        close: function () {
             window.close();
         },
-        switchToInstalled: function (evt) {
-            app.ui.packView.show = true;
-            app.ui.settings.show = false;
-            app.ui.packBrowse.show = false;
+        dismissPackInstall: function () {
+            app.ui.packInstall.show = false;
+            ipcRenderer.send("get top packs");
+            ipcRenderer.send("get installed packs");
         },
-        switchToBrowse: function (evt) {
-            app.ui.packView.show = false;
-            app.ui.settings.show = false;
-            app.ui.packBrowse.show = true;
+        doUpdatePack: function () {
+            app.ui.packUpdate.progress = -1;
+            app.ui.packUpdate.label = "Starting update...";
+            app.ui.packUpdate.failed = false;
+            app.ui.packUpdate.preview = false;
+
+            ipcRenderer.send("update pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex], app.ui.packUpdate.data);
         },
-        switchToSettings: function (evt) {
-            app.ui.packView.show = false;
-            app.ui.settings.show = true;
-            app.ui.packBrowse.show = false;
+        getPackUpdateDetails: function () {
+            ipcRenderer.send("get update actions", app.ui.packView.packs[app.ui.packView.selectedPackIndex]);
         },
         installPack: function () {
-            if (app.ui.packBrowse.selectedPackIndex === -1) return;
+            if (app.ui.packBrowse.selectedPackIndex === -1) {
+                return;
+            }
 
             ipcRenderer.send("install pack", app.ui.packBrowse.packs[app.ui.packBrowse.selectedPackIndex]);
 
@@ -118,13 +117,13 @@ const app = new Vue({
             app.ui.packInstall.gameVersion = app.ui.packBrowse.packs[app.ui.packBrowse.selectedPackIndex].gameVersion;
             app.ui.packInstall.show = true;
         },
-        uninstallPack: function () {
-            if (app.ui.packView.selectedPackIndex === -1) return;
-
-            ipcRenderer.send("uninstall pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex]);
+        installUpdate: function () {
+            ipcRenderer.send("install update"); //Will close launcher
         },
         launchPack: function () {
-            if (app.ui.packView.selectedPackIndex === -1) return;
+            if (app.ui.packView.selectedPackIndex === -1) {
+                return;
+            }
 
             app.ui.gameRun.log = [];
             app.ui.gameRun.running = false;
@@ -132,10 +131,9 @@ const app = new Vue({
             app.ui.gameRun.show = true;
             ipcRenderer.send("launch pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex]);
         },
-        dismissPackInstall: function () {
-            app.ui.packInstall.show = false;
-            ipcRenderer.send("get top packs");
-            ipcRenderer.send("get installed packs");
+        login: function () {
+            ipcRenderer.send("login", app.ui.login.email, app.ui.login.password, app.ui.login.remember);
+            app.ui.login.processing = true;
         },
         retryUpdate: function () {
             app.ui.launcherUpdate.checking = true;
@@ -147,27 +145,35 @@ const app = new Vue({
 
             ipcRenderer.send("check updates");
         },
-        installUpdate: function () {
-            ipcRenderer.send("install update"); //Will close launcher
-        },
         signOut: function () {
             ipcRenderer.send("logout");
         },
-        getPackUpdateDetails: function () {
-            ipcRenderer.send("get update actions", app.ui.packView.packs[app.ui.packView.selectedPackIndex]);
+        switchToBrowse: function () {
+            app.ui.packView.show = false;
+            app.ui.settings.show = false;
+            app.ui.packBrowse.show = true;
         },
-        doUpdatePack: function () {
-            app.ui.packUpdate.progress = -1;
-            app.ui.packUpdate.label = "Starting update...";
-            app.ui.packUpdate.failed = false;
-            app.ui.packUpdate.preview = false;
+        switchToInstalled: function () {
+            app.ui.packView.show = true;
+            app.ui.settings.show = false;
+            app.ui.packBrowse.show = false;
+        },
+        switchToSettings: function () {
+            app.ui.packView.show = false;
+            app.ui.settings.show = true;
+            app.ui.packBrowse.show = false;
+        },
+        uninstallPack: function () {
+            if (app.ui.packView.selectedPackIndex === -1) {
+                return;
+            }
 
-            ipcRenderer.send("update pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex], app.ui.packUpdate.data);
+            ipcRenderer.send("uninstall pack", app.ui.packView.packs[app.ui.packView.selectedPackIndex]);
         },
         toggleDarkTheme: function () {
             ipcRenderer.send("set dark", document.querySelector("#darkThemeToggle").checked);
-        }
-    }
+        },
+    },
 });
 
 function hideCover() {
@@ -178,7 +184,9 @@ function hideCover() {
 }
 
 function adjustScroll(oldPos) {
-    if (oldPos !== 0) return;
+    if (oldPos !== 0) {
+        return;
+    }
 
     let elem = document.querySelector("#game-running-modal .modal-content");
     elem.scrollTop = (elem.scrollHeight - elem.clientHeight);
@@ -215,7 +223,7 @@ ipcRenderer.on("profile", (event, username, uuid) => {
     ipcRenderer.send("validate session");
 });
 
-ipcRenderer.on("no profile", (event) => {
+ipcRenderer.on("no profile", () => {
     app.ui.login.show = true;
     ipcRenderer.send("get backgrounds");
 });
@@ -234,10 +242,12 @@ ipcRenderer.on("installed packs", (event, packData) => {
         pack.update = false;
         pack.latestMods = [];
         pack.desc = "";
-        if (!pack.gameVersion)
+        if (!pack.gameVersion) {
             pack.gameVersion = "";
-        if (!pack.forgeVersion)
+        }
+        if (!pack.forgeVersion) {
             pack.forgeVersion = "";
+        }
         pack.updatedForgeVersion = "";
         pack.updatedRiftVersion = "";
     });
@@ -253,8 +263,9 @@ ipcRenderer.on("installed packs", (event, packData) => {
         pack.latestMods = json.mods;
         pack.desc = json.description;
         pack.gameVersion = json.gameVersion;
-        if (!pack.forgeVersion)
+        if (!pack.forgeVersion) {
             pack.forgeVersion = json.forgeVersion;
+        }
         pack.updatedForgeVersion = json.forgeVersion;
         pack.updatedRiftVersion = json.riftVersion;
         pack.mods = pack.installedMods;
@@ -291,7 +302,7 @@ ipcRenderer.on("install failed", (event, reason) => {
     }
 });
 
-ipcRenderer.on("game launched", (event) => {
+ipcRenderer.on("game launched", () => {
     app.ui.gameRun.running = true;
 });
 
@@ -303,11 +314,11 @@ ipcRenderer.on("game output", (event, input) => {
 
     for (let index in lines) {
         let line = lines[index].trim().replace("\r", "").replace("\n", "").replace("\r\n", "");
-        let match = /\s*\[(\d+:\d+:\d+)\] \[([a-zA-Z0-9\s-]+)\/([a-zA-Z]+)\](.+)/g.exec(line);
+        let match = /\s*\[(\d+:\d+:\d+)] \[([a-zA-Z0-9\s-#]+)\/([a-zA-Z]+)](.+)/g.exec(line);
         if (!match) {
             app.ui.gameRun.log.push({
                 type: "info",
-                content: line
+                content: line,
             });
         } else {
             app.ui.gameRun.log.push({
@@ -315,7 +326,7 @@ ipcRenderer.on("game output", (event, input) => {
                 time: match[1],
                 thread: match[2],
                 level: match[3].toLowerCase(),
-                message: match[4]
+                message: match[4],
             });
         }
     }
@@ -331,7 +342,7 @@ ipcRenderer.on("game error", (event, line) => {
 
     app.ui.gameRun.log.push({
         type: "error",
-        content: line
+        content: line,
     });
 
     setTimeout(function () {
@@ -344,11 +355,11 @@ ipcRenderer.on("game closed", (event, code) => {
     app.ui.gameRun.exitCode = code;
 });
 
-ipcRenderer.on("uninstalling pack", event => {
+ipcRenderer.on("uninstalling pack", () => {
     app.ui.packUninstall.show = true;
 });
 
-ipcRenderer.on("uninstalled pack", event => {
+ipcRenderer.on("uninstalled pack", () => {
     app.ui.packUninstall.show = false;
     ipcRenderer.send("get top packs");
     ipcRenderer.send("get installed packs");
@@ -363,7 +374,7 @@ ipcRenderer.on("update available", (event, name) => {
     app.ui.launcherUpdate.ready = false;
 });
 
-ipcRenderer.on("no update", (event) => {
+ipcRenderer.on("no update", () => {
     app.ui.launcherUpdate.checking = false;
     app.ui.launcherUpdate.available = false;
     app.ui.launcherUpdate.failed = false;
@@ -372,7 +383,7 @@ ipcRenderer.on("no update", (event) => {
     app.ui.launcherUpdate.ready = false;
 });
 
-ipcRenderer.on("update error", (event) => {
+ipcRenderer.on("update error", () => {
     app.ui.launcherUpdate.checking = false;
     app.ui.launcherUpdate.available = false;
     app.ui.launcherUpdate.failed = true;
@@ -381,7 +392,7 @@ ipcRenderer.on("update error", (event) => {
     app.ui.launcherUpdate.ready = false;
 });
 
-ipcRenderer.on("update devmode", (event) => {
+ipcRenderer.on("update devmode", () => {
     app.ui.launcherUpdate.checking = false;
     app.ui.launcherUpdate.available = false;
     app.ui.launcherUpdate.failed = false;
@@ -390,7 +401,7 @@ ipcRenderer.on("update devmode", (event) => {
     app.ui.launcherUpdate.ready = false;
 });
 
-ipcRenderer.on("update downloaded", (event) => {
+ipcRenderer.on("update downloaded", () => {
     app.ui.launcherUpdate.checking = false;
     app.ui.launcherUpdate.failed = false;
     app.ui.launcherUpdate.devmode = false;
@@ -398,7 +409,7 @@ ipcRenderer.on("update downloaded", (event) => {
     app.ui.launcherUpdate.available = false;
 });
 
-ipcRenderer.on("logged out", (event) => {
+ipcRenderer.on("logged out", () => {
     app.ui.login.processing = false;
     app.ui.login.email = "";
     app.ui.login.password = "";
@@ -417,7 +428,7 @@ ipcRenderer.on("logged out", (event) => {
     app.ui.packUninstall.show = false;
 });
 
-ipcRenderer.on("session invalid", (event) => {
+ipcRenderer.on("session invalid", () => {
     app.ui.login.processing = false;
     app.ui.login.email = "";
     app.ui.login.password = "";
@@ -446,7 +457,7 @@ ipcRenderer.on("pack update progress", (event, progress, label) => {
     app.ui.packUpdate.label = label;
 });
 
-ipcRenderer.on("pack update complete", (event) => {
+ipcRenderer.on("pack update complete", () => {
     app.ui.packUpdate.show = false;
     ipcRenderer.send("get top packs");
     ipcRenderer.send("get installed packs");

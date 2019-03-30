@@ -1,11 +1,10 @@
 @font-face {
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-style: normal;
   font-weight: 200;
   src: url(../resources/Roboto-Thin.ttf) format("truetype");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-
 @font-face {
   font-family: "Roboto";
   font-style: normal;
@@ -13,18 +12,15 @@
   src: url(../resources/Roboto-Regular.ttf) format("truetype");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-
 @font-face {
-  font-family: "Roboto Bold";
+  font-family: "Roboto";
   font-style: normal;
   font-weight: bold;
   src: url(../resources/Roboto-Bold.ttf) format("truetype");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-
 * {
-  -webkit-box-sizing: border-box;
-          box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 *::-webkit-scrollbar {
@@ -38,10 +34,7 @@ body,
   width: 100%;
   margin: 0;
   font-family: "Roboto";
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
+  user-select: none;
   overflow-y: hidden;
 }
 
@@ -59,20 +52,14 @@ body,
   z-index: 999;
   background: #fff;
   color: #000;
-  display: -webkit-box;
-  display: -ms-flexbox;
   display: flex;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
+  align-items: center;
   opacity: 1;
-  -webkit-transition: opacity 1s;
   transition: opacity 1s;
   position: absolute;
   top: 0;
   left: 0;
 }
-
 #cover h1 {
   margin: 0 auto;
 }
@@ -93,12 +80,10 @@ body,
   background: #0a0a0a;
   color: #fff;
 }
-
 #top-bar span {
   padding: 3px;
   font-size: 14px;
 }
-
 #top-bar #close-window {
   position: absolute;
   top: 0;
@@ -111,7 +96,6 @@ body,
   -webkit-app-region: no-drag;
   height: 100%;
 }
-
 #top-bar #close-window:hover {
   background: #f04747;
 }
@@ -128,14 +112,9 @@ body,
 #login-wrapper {
   width: 100%;
   height: 100%;
-  display: -webkit-box;
-  display: -ms-flexbox;
   display: flex;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
+  align-items: center;
 }
-
 #login-wrapper #login-background {
   position: absolute;
   left: 0;
@@ -144,30 +123,21 @@ body,
   height: 100%;
   z-index: 0;
 }
-
 #login-wrapper #login-form {
   width: 30%;
   margin: 0 auto;
-  -webkit-box-shadow: 2px 2px 5px 0px rgba(50, 50, 50, 0.75);
-          box-shadow: 2px 2px 5px 0px rgba(50, 50, 50, 0.75);
+  box-shadow: 2px 2px 5px 0px rgba(50, 50, 50, 0.75);
   text-align: center;
   padding: 3rem 1rem 8rem 1rem;
-  display: -webkit-box;
-  display: -ms-flexbox;
   display: flex;
-  -webkit-box-orient: vertical;
-  -webkit-box-direction: normal;
-      -ms-flex-direction: column;
-          flex-direction: column;
+  flex-direction: column;
   position: relative;
   z-index: 10;
   background: #fff;
 }
-
 #login-wrapper #login-form #login-form-title {
   margin-top: 0;
 }
-
 #login-wrapper #login-form label {
   display: block;
   text-align: left;
@@ -175,17 +145,14 @@ body,
   padding-left: 0.3rem;
   color: #333;
 }
-
 #login-wrapper #login-form #rememberme-label {
   display: inline-block;
   width: 90%;
   margin: 0;
 }
-
 #login-wrapper #login-form #login-rememberme {
   margin: 0;
 }
-
 #login-wrapper #login-form #mojang-email,
 #login-wrapper #login-form #mojang-password {
   background: none;
@@ -200,11 +167,9 @@ body,
   margin-bottom: 1rem;
   text-align: left;
 }
-
 #login-wrapper #login-form #mojang-email:focus {
   border-bottom: 1px solid #000;
 }
-
 #login-wrapper #login-form #login-button {
   background: none;
   outline: none;
@@ -218,19 +183,15 @@ body,
   height: 3rem;
   cursor: pointer;
 }
-
 #login-wrapper #login-form #login-button:disabled {
   cursor: default;
 }
-
 #login-wrapper #login-form #login-button:not(:disabled):hover {
   background: #a1bbc7;
 }
-
 #login-wrapper #login-form #login-button:not(:disabled):active {
   background: #81a4b4;
 }
-
 #login-wrapper #login-form #login-error {
   color: red;
   width: 100%;
@@ -246,30 +207,17 @@ body,
   width: 100%;
   z-index: 99;
 }
-
 #navbar .navbar-items {
   margin: 0 auto;
   width: 100%;
-  display: -webkit-box;
-  display: -ms-flexbox;
   display: flex;
-  -webkit-box-pack: justify;
-      -ms-flex-pack: justify;
-          justify-content: space-between;
+  justify-content: space-between;
   height: 100%;
 }
-
 #navbar .navbar-item {
-  display: -webkit-inline-box;
-  display: -ms-inline-flexbox;
   display: inline-flex;
-  -webkit-box-orient: vertical;
-  -webkit-box-direction: normal;
-      -ms-flex-direction: column;
-          flex-direction: column;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
+  flex-direction: column;
+  align-items: center;
   vertical-align: middle;
   padding: 1rem;
   cursor: pointer;
@@ -277,30 +225,20 @@ body,
   width: 12rem;
   text-align: center;
 }
-
 #navbar .navbar-item .navbar-item-content {
-  display: -webkit-box;
-  display: -ms-flexbox;
   display: flex;
-  -webkit-box-orient: vertical;
-  -webkit-box-direction: normal;
-      -ms-flex-direction: column;
-          flex-direction: column;
+  flex-direction: column;
   margin: auto 0;
 }
-
 #navbar .navbar-item .navbar-item-content .navbar-item-icon {
   text-align: center;
 }
-
 #navbar .navbar-item .navbar-item-content .navbar-item-label {
   margin-top: 10px;
 }
-
 #navbar .navbar-item:hover {
   background: #ccc;
 }
-
 #navbar .navbar-item:active,
 #navbar .navbar-item.active {
   background: #bbb;
@@ -312,24 +250,20 @@ body,
   width: 100%;
   height: calc(100% - 6rem);
 }
-
 #below-navbar #pack-view {
   height: 100%;
 }
-
 #below-navbar #pack-view #pack-view-packs {
   width: 30%;
   display: inline-block;
   border-right: 1px solid #ccc;
   height: 100%;
 }
-
 #below-navbar #pack-view #pack-view-packs .pack-view-pack {
   background: #eee;
   padding: 1rem;
   cursor: pointer;
 }
-
 #below-navbar #pack-view #pack-view-packs .pack-view-pack .pack-view-pack-title {
   margin-top: 0;
   font-family: "Roboto";
@@ -338,98 +272,74 @@ body,
   display: inline-block;
   margin: 0 auto;
 }
-
 #below-navbar #pack-view #pack-view-packs .pack-view-pack .pack-view-pack-author {
   display: inline-block;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-size: 16px;
   padding-left: 0.4rem;
 }
-
 #below-navbar #pack-view #pack-view-packs .pack-view-pack .pack-view-pack-mod-count {
   text-align: center;
   display: block;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   font-size: 18px;
   margin-bottom: 1rem;
 }
-
 #below-navbar #pack-view #pack-view-packs .pack-view-pack:not(:last-of-type) {
   border-bottom: 1px solid #ccc;
 }
-
 #below-navbar #pack-view #pack-view-packs .pack-view-pack.selected {
   background: #8cc1d9;
 }
-
 #below-navbar #pack-view #pack-view-packs.no-packs {
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
-  display: -webkit-box;
-  display: -ms-flexbox;
+  justify-content: center;
+  align-items: center;
   display: flex;
 }
-
 #below-navbar #pack-view #pack-view-pack-info {
   width: 69%;
   display: inline-block;
   position: absolute;
   padding: 1rem;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .installed-pack-info-pack-version {
   display: block;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   margin-top: 5px;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .installed-pack-info-pack-title {
   margin-top: 0;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   font-size: 36px;
   display: block;
   margin: 0 auto;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .installed-pack-info-pack-author {
   display: block;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   font-size: 24px;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .installed-pack-info-pack-desc {
   margin-top: 1rem;
   display: block;
 }
-
 #below-navbar #pack-view #pack-view-pack-info #installed-pack-info-pack-mod-list-title {
   font-size: 30px;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons {
   position: absolute;
   right: 2rem;
   top: 2rem;
-  height: 8rem;
   width: 100%;
-  display: -webkit-box;
-  display: -ms-flexbox;
   display: flex;
-  -webkit-box-align: right;
-      -ms-flex-align: right;
-          align-items: right;
+  align-items: flex-end;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons button {
   background: none;
   outline: none;
@@ -438,95 +348,77 @@ body,
   font-size: 14px;
   border: 1px solid #ccc;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons button:first-of-type {
   border-top-left-radius: 2rem;
   border-bottom-left-radius: 2rem;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons button:last-of-type {
   border-top-right-radius: 2rem;
   border-bottom-right-radius: 2rem;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button {
   border-color: #9a0909;
   color: #9a0909;
   border-right: 1px solid #ccc;
   margin-left: auto;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button:hover {
   background: #9a0909;
   color: #fff;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button:active {
   background: #7d0707;
   color: #fff;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button {
   border-left: none;
   color: #c8bc14;
   border-color: #c8bc14;
   border-left: none;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:not(:last-of-type) {
   border-right-color: #ccc;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:hover {
   background: #c8bc14;
   color: #fff;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:active {
   background: #a29910;
   color: #fff;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:last-of-type {
   color: #0bc139;
   border-color: #0bc139;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:last-of-type:hover {
   background: #0bc139;
   color: #fff;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:last-of-type:active {
   background: #099a2d;
   color: #fff;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-update-button {
   color: #0bc139;
   border-color: #0bc139;
   border-left: none;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-update-button:hover {
   background: #0bc139;
   color: #fff;
 }
-
 #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-update-button:active {
   background: #099a2d;
   color: #fff;
 }
-
 #below-navbar #pack-browse {
   padding: 1rem;
 }
-
 #below-navbar #pack-browse #pack-browse-packs {
   width: 40%;
   display: inline-block;
 }
-
 #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack {
   background: #eee;
   border-radius: 1rem;
@@ -534,86 +426,74 @@ body,
   margin-bottom: 2rem;
   cursor: pointer;
 }
-
 #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack .pack-browse-pack-title {
   text-align: center;
   margin-top: 0;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   font-size: 36px;
   display: block;
   margin: 0 auto;
 }
-
 #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack .pack-browse-pack-author {
   text-align: center;
   display: block;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   font-size: 24px;
 }
-
 #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack .pack-browse-pack-mod-count {
   text-align: center;
   display: block;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   font-size: 18px;
   margin-bottom: 1rem;
 }
-
 #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack .pack-browse-pack-desc {
   text-align: center;
   display: block;
 }
-
 #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack.selected {
   background: #8cc1d9;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info {
   width: 59%;
   display: inline-block;
   position: absolute;
   padding: 1rem;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-title {
   margin-top: 0;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   font-size: 36px;
   display: block;
   margin: 0 auto;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-author {
   display: block;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   font-size: 24px;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-mod-count {
   display: block;
-  font-family: "Roboto Thin";
+  font-family: "Roboto";
   font-weight: 200;
   font-size: 18px;
   margin-bottom: 1rem;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-desc {
   display: block;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info #pack-info-pack-mod-list-title {
   display: block;
-  font-family: "Roboto Bold";
+  font-family: "Roboto";
   font-weight: 700;
   font-size: 24px;
   margin-bottom: 1rem;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info #install-pack-button {
   outline: none;
   border: none;
@@ -626,32 +506,26 @@ body,
   top: 1.5rem;
   right: 1rem;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info #install-pack-button[disabled] {
   background: #a0e4ab;
   color: #777;
   cursor: not-allowed;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info #install-pack-button:not([disabled]):hover {
   background: #126921;
 }
-
 #below-navbar #pack-browse #pack-browse-pack-info #install-pack-button:not([disabled]):active {
   background: #004f07;
 }
-
 #below-navbar #settings {
   padding: 1rem;
 }
-
 #below-navbar #settings #launcher-update {
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 1rem;
   margin-bottom: 2rem;
 }
-
 #below-navbar #settings #launcher-update #launcher-update-button {
   padding: 0.5rem 1rem;
   cursor: pointer;
@@ -659,28 +533,23 @@ body,
   border: 1px solid #ccc;
   border-radius: 5px;
 }
-
 #below-navbar #settings #launcher-update.downloading {
   background: #c0ffb7;
   border: 1px solid #74d76b;
 }
-
 #below-navbar #settings #launcher-update.downloaded {
   background: #c0ffb7;
   border: 1px solid #74d76b;
 }
-
 #below-navbar #settings #launcher-update.downloaded #launcher-update-button {
   background: #278a1e;
   border: 1px solid #278a1e;
   color: white;
 }
-
 #below-navbar #settings #launcher-update.errored {
   background: #ffd1d1;
   border: 1px solid #d76b6b;
 }
-
 #below-navbar #settings #launcher-update.errored #launcher-update-button {
   background: #8d1111;
   color: #fff;
@@ -697,7 +566,6 @@ body,
   z-index: 300;
   display: none;
 }
-
 .modal .modal-content {
   width: 40%;
   margin: 0 auto;
@@ -711,13 +579,11 @@ body,
   overflow-y: scroll;
   position: relative;
 }
-
 .modal .modal-content .modal-title {
   margin-top: 0;
   padding-bottom: 1rem;
   border-bottom: 1px solid #ccc;
 }
-
 .modal .modal-content #close-install-modal {
   position: absolute;
   right: 3rem;
@@ -730,7 +596,6 @@ body,
   border-radius: 5px;
   cursor: pointer;
 }
-
 .modal .modal-content #close-install-modal:hover {
   background: #117e27;
 }
@@ -747,37 +612,22 @@ body,
   border-radius: 3px;
   margin-bottom: 1rem;
 }
-
 .progress .bar {
   background: #00aaff;
   border-radius: 3px;
   width: 0;
   height: 20px;
-  -webkit-transition: width 0.5s, margin 0.5s;
   transition: width 0.5s, margin 0.5s;
 }
-
 .progress .bar.red {
   background: #c02626;
 }
-
 .progress .bar.indeterminate {
   position: relative;
   margin-left: 0;
   width: 20%;
-  -webkit-animation: indeterminate 2s ease-in-out infinite alternate;
-          animation: indeterminate 2s ease-in-out infinite alternate;
+  animation: indeterminate 2s ease-in-out infinite alternate;
 }
-
-@-webkit-keyframes indeterminate {
-  from {
-    margin-left: 0;
-  }
-  to {
-    margin-left: 80%;
-  }
-}
-
 @keyframes indeterminate {
   from {
     margin-left: 0;
@@ -790,12 +640,8 @@ body,
 #pack-install-log {
   overflow-x: scroll;
   margin-top: 1rem;
-  -webkit-user-select: text;
-     -moz-user-select: text;
-      -ms-user-select: text;
-          user-select: text;
+  user-select: text;
 }
-
 #pack-install-log span {
   display: block;
 }
@@ -805,24 +651,17 @@ body,
   margin-top: 3rem;
   max-height: calc(100% - 6rem);
 }
-
 #game-running-modal .modal-content #game-output-log {
   overflow-x: scroll;
   margin-top: 1rem;
-  -webkit-user-select: text;
-     -moz-user-select: text;
-      -ms-user-select: text;
-          user-select: text;
+  user-select: text;
 }
-
 #game-running-modal .modal-content #game-output-log span {
   display: block;
 }
-
 #game-running-modal .modal-content #game-output-log .error {
   color: red;
 }
-
 #game-running-modal .modal-content #game-output-log .warning {
   color: #e4a744;
 }
@@ -839,15 +678,12 @@ body,
   top: 3rem;
   right: 3rem;
 }
-
 #pack-update-modal button#pack-update-yes:hover {
   background: #126921;
 }
-
 #pack-update-modal button#pack-update-yes:active {
   background: #004f07;
 }
-
 #pack-update-modal button#pack-update-no {
   outline: none;
   border: none;
@@ -860,11 +696,9 @@ body,
   top: 3rem;
   right: 8.5rem;
 }
-
 #pack-update-modal button#pack-update-no:hover {
   background: #9b1217;
 }
-
 #pack-update-modal button#pack-update-no:active {
   background: #891014;
 }
@@ -873,84 +707,67 @@ body,
   background: #1e1e1e;
   color: #eee;
 }
-
 #app.darkTheme #cover {
   background: #1e1e1e;
   color: #eee;
 }
-
 #app.darkTheme #content {
   background: #1e1e1e;
 }
-
 #app.darkTheme #content #navbar {
   background: #111;
 }
-
 #app.darkTheme #content #navbar .navbar-item:hover {
   background: #1e1e1e;
 }
-
 #app.darkTheme #content #navbar .navbar-item:active,
 #app.darkTheme #content #navbar .navbar-item.active {
   background: #222;
 }
-
 #app.darkTheme #content #below-navbar #pack-view #pack-view-packs {
   border-right-color: #555;
 }
-
 #app.darkTheme #content #below-navbar #pack-view #pack-view-packs .pack-view-pack {
   background: #232323;
   border-bottom-color: #555;
 }
-
 #app.darkTheme #content #below-navbar #pack-view #pack-view-packs .pack-view-pack:hover {
   background: #222;
 }
-
 #app.darkTheme #content #below-navbar #pack-view #pack-view-packs .pack-view-pack.selected {
   background: #333;
 }
-
 #app.darkTheme #content #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-uninstall-button {
   border-right-color: #555;
 }
-
 #app.darkTheme #content #below-navbar #pack-view #pack-view-pack-info .pack-action-buttons #installed-pack-launch-game-button:not(:last-of-type) {
   border-right-color: #555;
 }
-
 #app.darkTheme #content #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack {
   background: #262626;
 }
-
 #app.darkTheme #content #below-navbar #pack-browse #pack-browse-packs .pack-browse-pack.selected {
   background: #333;
 }
-
 #app.darkTheme #content #below-navbar #settings #launcher-update.downloading {
   background: #084700;
   border: 1px solid #084700;
 }
-
 #app.darkTheme #content #below-navbar #settings #launcher-update.downloaded {
   background: #084700;
   border: 1px solid #084700;
 }
-
 #app.darkTheme #content #below-navbar #settings #launcher-update.downloaded #launcher-update-button {
   background: #278a1e;
   border: 1px solid #278a1e;
   color: white;
 }
-
 #app.darkTheme #content .modal .modal-content {
   background: #1e1e1e;
   color: #ccc;
 }
-
 #app.darkTheme #content .progress {
   background: #333;
 }
+
 /*# sourceMappingURL=app.css.map */

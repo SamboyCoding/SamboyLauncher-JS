@@ -2,23 +2,34 @@
 import * as asar from "asar";
 import * as child_process from "child_process";
 import * as download from "download";
-import { app, BrowserWindow, ipcMain, IpcMessageEvent, Menu, MenuItem } from "electron";
+import {app, BrowserWindow, ipcMain, IpcMessageEvent, Menu, MenuItem} from "electron";
 import * as isDev from "electron-is-dev";
-import { autoUpdater } from "electron-updater";
+import {autoUpdater} from "electron-updater";
 import * as fs from "fs";
-import * as hasha from "hasha";
 import * as jsonfile from "jsonfile";
 import * as mkdirp from "mkdirp";
 import * as web from "node-fetch";
 import * as os from "os";
 import * as path from "path";
 import * as rmfr from "rmfr";
-import { Extract } from "unzipper";
-import { Config } from "./config";
+import {Extract} from "unzipper";
 import * as config from "./config";
-import { downloadAssetManifest, downloadAssets, downloadForgeJarAndGetJSON, downloadForgeLibraries, downloadGameClient, downloadRiftJarAndGetJSON, downloadRiftLibraries, downloadVanillaLibraries, downloadVanillaNatives, getVanillaVersionList, getVanillaVersionManifest } from "./gameInstaller";
-import { Logger } from "./logger";
-import { AuthData, GameVersionData, LibraryArtifact, LibraryMetadata, Mod, Pack, VanillaManifestVersion } from "./objects";
+import {Config} from "./config";
+import {
+    downloadAssetManifest,
+    downloadAssets,
+    downloadForgeJarAndGetJSON,
+    downloadForgeLibraries,
+    downloadGameClient,
+    downloadRiftJarAndGetJSON,
+    downloadRiftLibraries,
+    downloadVanillaLibraries,
+    downloadVanillaNatives,
+    getVanillaVersionList,
+    getVanillaVersionManifest
+} from "./gameInstaller";
+import {Logger} from "./logger";
+import {AuthData, GameVersionData, LibraryMetadata, Mod, Pack, VanillaManifestVersion} from "./objects";
 //#endregion
 
 // TODO: List is here because I feel like it
@@ -52,13 +63,15 @@ function atob(str: string): string {
 }
 
 async function downloadFile(url: string, localPath: string): Promise<any> {
-    return download(url, path.dirname(localPath), { filename: path.basename(localPath) });
+    return download(url, path.dirname(localPath), {filename: path.basename(localPath)});
 }
 
 async function mkdirpPromise(location: string): Promise<any> {
     return new Promise((ff, rj) => {
         mkdirp(location, (err, made) => {
-            if (err) { return rj(err); }
+            if (err) {
+                return rj(err);
+            }
 
             ff();
         });
@@ -72,6 +85,7 @@ async function mkdirpPromise(location: string): Promise<any> {
 let win: BrowserWindow;
 
 function createWindow(): void {
+    console.log("[Info] Initializing window...");
     win = new BrowserWindow({
         frame: false,
         height: 720,
@@ -110,6 +124,8 @@ function createWindow(): void {
         win = null;
     });
 }
+
+console.log("[Info] Electron Init");
 
 app.on("ready", async () => {
     await onReady();
@@ -187,7 +203,9 @@ ipcMain.on("get installed packs", (event: IpcMessageEvent) => {
     }
 
     fs.readdir(packsDir, (error, packFolders) => {
-        if (error) { return event.sender.send("installed packs", []); }
+        if (error) {
+            return event.sender.send("installed packs", []);
+        }
 
         const packData = packFolders
             .filter((packFolder) => fs.existsSync(path.join(packsDir, packFolder, "install.json")))
@@ -326,7 +344,9 @@ ipcMain.on("logout", (event: IpcMessageEvent) => {
 });
 
 ipcMain.on("validate session", (event: IpcMessageEvent) => {
-    if (!authData.accessToken) { return; }
+    if (!authData.accessToken) {
+        return;
+    }
 
     fetch("https://authserver.mojang.com/validate", {
         body: JSON.stringify({
@@ -338,7 +358,9 @@ ipcMain.on("validate session", (event: IpcMessageEvent) => {
         },
         method: "POST",
     }).then(async (resp) => {
-        if (resp.status === 204) { return; } // Session valid
+        if (resp.status === 204) {
+            return;
+        } // Session valid
 
         if (authData.email && authData.password) {
             try {
@@ -485,11 +507,11 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
             const libsToDownload = profileJSON.libraries.filter(l => !l.name.startsWith("org.dimdev:rift"));
             await downloadRiftLibraries(launcherDir, libsToDownload, event.sender);
 
-            fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
+            fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", {encoding: "utf8"});
         }
     }
 
-    const modsDir = path.join(launcherDir, "packs", pack.packName, "mods");
+    const modsDir = path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "mods");
 
     if (!fs.existsSync(modsDir))
         await mkdirpPromise(modsDir);
@@ -548,7 +570,7 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
         await downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(launcherDir, "packs", pack.packName, "overrides.zip"));
 
         await new Promise((ff, rj) => {
-            fs.createReadStream(path.join(path.join(launcherDir, "packs", pack.packName), "overrides.zip")).pipe(Extract({ path: path.join(launcherDir, "packs", pack.packName) })).on("close", () => {
+            fs.createReadStream(path.join(path.join(launcherDir, "packs", pack.packName), "overrides.zip")).pipe(Extract({path: path.join(launcherDir, "packs", pack.packName)})).on("close", () => {
                 ff();
             });
         });
@@ -574,8 +596,10 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
 });
 
 ipcMain.on("uninstall pack", async (event: IpcMessageEvent, pack: Pack) => {
-    const packDir = path.join(launcherDir, "packs", pack.packName);
-    if (!fs.existsSync(packDir)) { return; }
+    const packDir = path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
+    if (!fs.existsSync(packDir)) {
+        return;
+    }
 
     event.sender.send("uninstalling pack");
 
@@ -776,12 +800,12 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             const libsToDownload = profileJSON.libraries.filter(l => !l.name.startsWith("org.dimdev:rift"));
             await downloadRiftLibraries(launcherDir, libsToDownload, event.sender);
 
-            fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
+            fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", {encoding: "utf8"});
         }
 
         //#endregion
 
-        const packDir = path.join(packsDir, pack.packName);
+        const packDir = path.join(packsDir, pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
         const modsDir = path.join(packDir, "mods");
 
         if (!fs.existsSync(modsDir)) {
@@ -830,7 +854,7 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
             event.sender.send("modded progress", `Installing overrides`, 0.97);
 
             await new Promise((ff, rj) => {
-                fs.createReadStream(path.join(packDir, "overrides.zip")).pipe(Extract({ path: packDir })).on("close", () => {
+                fs.createReadStream(path.join(packDir, "overrides.zip")).pipe(Extract({path: packDir})).on("close", () => {
                     ff();
                 });
             });
