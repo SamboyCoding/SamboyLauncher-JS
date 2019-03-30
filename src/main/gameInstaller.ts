@@ -1,14 +1,14 @@
 import * as child_process from "child_process";
-import download = require("download");
 import * as fs from "fs";
-import hasha = require("hasha");
+import hasha from "hasha";
 import * as jsonfile from "jsonfile";
 import * as JSZip from "jszip";
 import * as mkdirp from "mkdirp";
 import * as web from "node-fetch";
 import * as path from "path";
-import { Extract } from "unzipper";
-import { AssetIndexMetadata, GameVersionData, LibraryArtifact, LibraryMetadata, VanillaManifestVersion } from "./objects";
+import {Extract} from "unzipper";
+import {AssetIndexMetadata, GameVersionData, LibraryArtifact, LibraryMetadata, VanillaManifestVersion} from "./objects";
+import download = require("download");
 
 const fetch = web.default;
 

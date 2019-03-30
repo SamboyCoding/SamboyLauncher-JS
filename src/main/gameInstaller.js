@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const child_process = require("child_process");
 const download = require("download");
 const fs = require("fs");
-const hasha = require("hasha");
+const hasha_1 = require("hasha");
 const jsonfile = require("jsonfile");
 const JSZip = require("jszip");
 const mkdirp = require("mkdirp");
@@ -57,7 +57,7 @@ async function downloadVanillaLibraries(launcherDir, libraries, webContents) {
             }
             webContents.send("install log", "[Vanilla] \tVerifying checksum of " + dest + "...");
             const correctHash = library.downloads.artifact.sha1;
-            const fileHash = await hasha.fromFile(dest, { algorithm: "sha1" });
+            const fileHash = await hasha_1.default.fromFile(dest, {algorithm: "sha1"});
             webContents.send("install log", "[Vanilla] \tShould be " + correctHash.toUpperCase() + " - is " + fileHash.toUpperCase());
             success2 = fileHash === correctHash;
             if (!success2) {
@@ -140,7 +140,7 @@ async function downloadVanillaNatives(launcherDir, ourOs, arch, nativesFolder, n
             }
             webContents.send("install log", "[Vanilla] \tVerifying checksum of " + dest + "...");
             const correctHash = artifact.sha1;
-            const fileHash = await hasha.fromFile(dest, { algorithm: "sha1" });
+            const fileHash = await hasha_1.default.fromFile(dest, {algorithm: "sha1"});
             webContents.send("install log", "[Vanilla] \tShould be " + correctHash.toUpperCase() + " - is " + fileHash.toUpperCase());
             success2 = fileHash === correctHash;
             if (!success2) {
@@ -172,7 +172,7 @@ async function downloadAssetManifest(launcherDir, index, webContents) {
             await downloadFile(index.url, assetIndexFile);
         }
         const correctChecksum = index.sha1;
-        const actual = await hasha.fromFile(assetIndexFile, { algorithm: "sha1" });
+        const actual = await hasha_1.default.fromFile(assetIndexFile, {algorithm: "sha1"});
         webContents.send("install log", "[Vanilla] \tChecking Checksum; Should be " + correctChecksum + " - is " + actual);
         success = correctChecksum === actual;
         if (!success) {
@@ -208,7 +208,7 @@ async function downloadAssets(launcherDir, index, webContents) {
                 await downloadFile(url, assetLocalPath);
                 downloaded = true;
             }
-            const actualSha1 = await hasha.fromFile(assetLocalPath, { algorithm: "sha1" });
+            const actualSha1 = await hasha_1.default.fromFile(assetLocalPath, {algorithm: "sha1"});
             if (downloaded) {
                 webContents.send("install log", "[Vanilla] \tChecking checksum; should be " + hash.toUpperCase() + " - is " + actualSha1.toUpperCase());
             }
@@ -231,7 +231,7 @@ async function downloadGameClient(launcherDir, versionData, webContents) {
             await downloadFile(versionData.downloads.client.url, filePath);
             downloaded = true;
         }
-        const actualSha1 = await hasha.fromFile(filePath, { algorithm: "sha1" });
+        const actualSha1 = await hasha_1.default.fromFile(filePath, {algorithm: "sha1"});
         if (downloaded) {
             webContents.send("install log", "[Vanilla] \tChecking checksum; should be " + versionData.downloads.client.sha1.toUpperCase() + " - is " + actualSha1.toUpperCase());
         }

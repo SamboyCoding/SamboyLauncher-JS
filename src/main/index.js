@@ -6,6 +6,7 @@ const download = require("download");
 const electron_1 = require("electron");
 const isDev = require("electron-is-dev");
 const electron_updater_1 = require("electron-updater");
+const fs_1 = require("fs");
 const fs = require("fs");
 const jsonfile = require("jsonfile");
 const mkdirp = require("mkdirp");
@@ -295,17 +296,17 @@ electron_1.ipcMain.on("validate session", (event) => {
 });
 electron_1.ipcMain.on("get update actions", async (event, pack) => {
     const responseData = {
-        addMods: new Array(),
+        addMods: [],
         forge: {
             from: pack.forgeVersion,
             to: pack.updatedForgeVersion !== pack.forgeVersion ? pack.updatedForgeVersion : null,
         },
-        removeMods: new Array(),
+        removeMods: [],
         rift: {
             from: pack.riftVersion,
             to: pack.updatedRiftVersion !== pack.riftVersion ? pack.updatedRiftVersion : null,
         },
-        updateMods: new Array(),
+        updateMods: [],
         version: {
             from: pack.installedVersion,
             to: pack.latestVersion,
@@ -390,7 +391,8 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
         currentPercent += percentPer;
         event.sender.send("pack update progress", currentPercent / 100, `Removing ${modToRemove.resolvedName}...`);
         const modPath = path.join(modsDir, modToRemove.resolvedVersion);
-        fs.unlinkSync(modPath);
+        if (fs_1.existsSync(modPath))
+            fs.unlinkSync(modPath);
     }
     for (const i in updateData.updateMods) {
         const modToRemove = updateData.updateMods[i].from;
@@ -423,7 +425,7 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
         });
     }
     event.sender.send("pack update progress", 0.98, `Finishing up`);
-    jsonfile.writeFileSync(path.join(launcherDir, "packs", pack.packName, "install.json"), {
+    jsonfile.writeFileSync(path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "install.json"), {
         author: pack.author,
         forgeVersion: updateData.forge.to ? updateData.forge.to : updateData.forge.from,
         gameVersion: pack.gameVersion,
@@ -837,7 +839,7 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
             case "${version_name}":
                 return pack.gameVersion;
             case "${game_directory}":
-                return path.join(launcherDir, "packs", pack.packName);
+                return path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
             case "${assets_root}":
                 return path.join(launcherDir, "assets");
             case "${assets_index_name}":
@@ -912,7 +914,7 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
     }
     const finalArgs = jvmArgs.concat([mainClass]).concat(gameArgs);
     const gameProcess = child_process.spawn(java, finalArgs, {
-        cwd: path.join(launcherDir, "packs", pack.packName),
+        cwd: path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")),
         detached: true,
         stdio: "pipe",
     });

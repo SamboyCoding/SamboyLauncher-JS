@@ -6,6 +6,7 @@ import {app, BrowserWindow, ipcMain, IpcMessageEvent, Menu, MenuItem} from "elec
 import * as isDev from "electron-is-dev";
 import {autoUpdater} from "electron-updater";
 import * as fs from "fs";
+import {existsSync} from "fs";
 import * as jsonfile from "jsonfile";
 import * as mkdirp from "mkdirp";
 import * as web from "node-fetch";
@@ -526,7 +527,8 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
         event.sender.send("pack update progress", currentPercent / 100, `Removing ${modToRemove.resolvedName}...`);
 
         const modPath = path.join(modsDir, modToRemove.resolvedVersion);
-        fs.unlinkSync(modPath);
+        if (existsSync(modPath))
+            fs.unlinkSync(modPath);
     }
 
     // Now remove old versions of mods we're updating and download the new ones
@@ -579,7 +581,7 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
     // Save the updated data to the install JSON
     event.sender.send("pack update progress", 0.98, `Finishing up`);
 
-    jsonfile.writeFileSync(path.join(launcherDir, "packs", pack.packName, "install.json"), {
+    jsonfile.writeFileSync(path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "install.json"), {
         author: pack.author,
         forgeVersion: updateData.forge.to ? updateData.forge.to : updateData.forge.from,
         gameVersion: pack.gameVersion,
@@ -1133,7 +1135,7 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
             case "${version_name}":
                 return pack.gameVersion;
             case "${game_directory}":
-                return path.join(launcherDir, "packs", pack.packName);
+                return path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
             case "${assets_root}":
                 return path.join(launcherDir, "assets");
             case "${assets_index_name}":
@@ -1237,7 +1239,7 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
     const finalArgs = jvmArgs.concat([mainClass]).concat(gameArgs);
 
     const gameProcess = child_process.spawn(java, finalArgs, {
-        cwd: path.join(launcherDir, "packs", pack.packName),
+        cwd: path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")),
         detached: true,
         stdio: "pipe",
     });
