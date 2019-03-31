@@ -1,24 +1,41 @@
-import chalk, { Chalk } from "chalk";
+import chalk, {Chalk} from "chalk";
+import moment = require("moment");
 
 export class Logger {
 
+    public static debugImpl(source: string, msg: string) {
+        Logger.log(source, msg, chalk.white, "Debug");
+    }
+
+    public static infoImpl(source: string, msg: string) {
+        Logger.log(source, msg, chalk.blue, "Info");
+    }
+
+    public static warnImpl(source: string, msg: string) {
+        Logger.log(source, msg, chalk.yellow, "Warning");
+    }
+
+    public static errorImpl(source: string, msg: string) {
+        Logger.log(source, msg, chalk.red, "Error");
+    }
+
     public static debug(msg: string) {
-        Logger.log(msg, chalk.white, "Debug");
+        Logger.log("Updater", msg, chalk.white, "Debug");
     }
 
     public static info(msg: string) {
-        Logger.log(msg, chalk.blue, "Info");
+        Logger.log("Updater", msg, chalk.blue, "Info");
     }
 
     public static warn(msg: string) {
-        Logger.log(msg, chalk.yellow, "Warning");
+        Logger.log("Updater", msg, chalk.yellow, "Warning");
     }
 
     public static error(msg: string) {
-        Logger.log(msg, chalk.red, "Error");
+        Logger.log("Updater", msg, chalk.red, "Error");
     }
 
-    private static log(msg: string, color: Chalk, type: string) {
-        console.log(color("[" + type + "] " + msg));
+    private static log(source: string, msg: string, color: Chalk, type: string) {
+        console.log(color(`[${moment().format("HH:mm:ss")}] [${type}] [${source}] ${msg}`));
     }
 }

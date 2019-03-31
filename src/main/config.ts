@@ -1,15 +1,26 @@
-import * as fs from "fs";
+import {existsSync} from "fs";
 import * as jsonfile from "jsonfile";
 import * as path from "path";
+import Env from "./Env";
+import {Logger} from "./logger";
 
-export class Config {
-    public darkTheme: boolean;
-}
+export default class Config {
+    public static darkTheme: boolean;
+    private static fileLoc = path.join(Env.launcherDir, "config.json");
 
-export function load(launcherDir: string): Config {
-    return fs.existsSync(path.join(launcherDir, "config.json")) ? jsonfile.readFileSync(path.join(launcherDir, "config.json")) : new Config();
-}
+    public static load() {
+        if (existsSync(Config.fileLoc)) {
+            Logger.infoImpl("ConfigManager", "Loading config from " + Config.fileLoc);
+            const data = jsonfile.readFileSync(Config.fileLoc);
+            Object.assign(Config, data);
+        } else {
+            Logger.infoImpl("ConfigManager", "Creating default config file " + Config.fileLoc);
+            Config.save();
+        }
+    }
 
-export function save(launcherDir: string, config: Config) {
-    return jsonfile.writeFileSync(path.join(launcherDir, "config.json"), config);
+    public static async save() {
+        Logger.infoImpl("ConfigManager", "Saving config file: " + Config.fileLoc);
+        return jsonfile.writeFileSync(Config.fileLoc, Config);
+    }
 }
