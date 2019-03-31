@@ -6,8 +6,8 @@ const download = require("download");
 const electron_1 = require("electron");
 const isDev = require("electron-is-dev");
 const electron_updater_1 = require("electron-updater");
-const fs_1 = require("fs");
 const fs = require("fs");
+const fs_1 = require("fs");
 const jsonfile = require("jsonfile");
 const mkdirp = require("mkdirp");
 const web = require("node-fetch");
@@ -296,17 +296,17 @@ electron_1.ipcMain.on("validate session", (event) => {
 });
 electron_1.ipcMain.on("get update actions", async (event, pack) => {
     const responseData = {
-        addMods: [],
+        addMods: new Array(),
         forge: {
             from: pack.forgeVersion,
             to: pack.updatedForgeVersion !== pack.forgeVersion ? pack.updatedForgeVersion : null,
         },
-        removeMods: [],
+        removeMods: new Array(),
         rift: {
             from: pack.riftVersion,
             to: pack.updatedRiftVersion !== pack.riftVersion ? pack.updatedRiftVersion : null,
         },
-        updateMods: [],
+        updateMods: new Array(),
         version: {
             from: pack.installedVersion,
             to: pack.latestVersion,
@@ -417,9 +417,9 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
         method: "HEAD",
     });
     if (resp.status === 200) {
-        await downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(launcherDir, "packs", pack.packName, "overrides.zip"));
+        await downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "overrides.zip"));
         await new Promise((ff, rj) => {
-            fs.createReadStream(path.join(path.join(launcherDir, "packs", pack.packName), "overrides.zip")).pipe(unzipper_1.Extract({ path: path.join(launcherDir, "packs", pack.packName) })).on("close", () => {
+            fs.createReadStream(path.join(path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")), "overrides.zip")).pipe(unzipper_1.Extract({ path: path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")) })).on("close", () => {
                 ff();
             });
         });
@@ -866,7 +866,7 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
         return arg.replace("${natives_directory}", path.join(launcherDir, "versions", vanillaManifest.id, "natives"))
             .replace("${launcher_name}", "SamboyLauncher")
             .replace("${launcher_version}", "v2")
-            .replace("${game_directory}", path.join(launcherDir, "packs", pack.packName))
+            .replace("${game_directory}", path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")))
             .replace("${classpath}", classPath.join(process.platform === "win32" ? ";" : ":"));
     });
     jvmArgs.push("-XX:+UseG1GC");

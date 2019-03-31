@@ -569,10 +569,10 @@ ipcMain.on("update pack", async (event: IpcMessageEvent, pack: Pack, updateData:
     });
 
     if (resp.status === 200) {
-        await downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(launcherDir, "packs", pack.packName, "overrides.zip"));
+        await downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "overrides.zip"));
 
         await new Promise((ff, rj) => {
-            fs.createReadStream(path.join(path.join(launcherDir, "packs", pack.packName), "overrides.zip")).pipe(Extract({path: path.join(launcherDir, "packs", pack.packName)})).on("close", () => {
+            fs.createReadStream(path.join(path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")), "overrides.zip")).pipe(Extract({path: path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"))})).on("close", () => {
                 ff();
             });
         });
@@ -1163,7 +1163,7 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
         return arg.replace("${natives_directory}", path.join(launcherDir, "versions", vanillaManifest.id, "natives"))
             .replace("${launcher_name}", "SamboyLauncher")
             .replace("${launcher_version}", "v2")
-            .replace("${game_directory}", path.join(launcherDir, "packs", pack.packName))
+            .replace("${game_directory}", path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")))
             .replace("${classpath}", classPath.join(process.platform === "win32" ? ";" : ":"));
     });
 
