@@ -1,12 +1,3 @@
-export class AuthData {
-    public clientToken: string;
-    public accessToken: string;
-    public uuid: string;
-    public username: string;
-    public email: string;
-    public password: string;
-}
-
 export class Author {
     public id: number;
     public name: string;

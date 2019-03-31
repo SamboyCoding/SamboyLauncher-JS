@@ -2,133 +2,27 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const asar = require("asar");
 const child_process = require("child_process");
-const download = require("download");
 const electron_1 = require("electron");
 const isDev = require("electron-is-dev");
 const electron_updater_1 = require("electron-updater");
 const fs = require("fs");
 const fs_1 = require("fs");
 const jsonfile = require("jsonfile");
-const mkdirp = require("mkdirp");
-const web = require("node-fetch");
+const node_fetch_1 = require("node-fetch");
 const os = require("os");
 const path = require("path");
 const rmfr = require("rmfr");
 const unzipper_1 = require("unzipper");
-const config = require("./config");
+const AuthData_1 = require("./AuthData");
+const config_1 = require("./config");
+const ElectronManager_1 = require("./ElectronManager");
 const gameInstaller_1 = require("./gameInstaller");
 const logger_1 = require("./logger");
-const objects_1 = require("./objects");
-const fetch = web.default;
-const launcherDir = path.join(process.platform === "win32" ?
-    process.env.APPDATA : (process.platform === "darwin" ?
-    path.join(process.env.HOME, "Library", "Preferences")
-    : path.join(process.env.HOME, ".SamboyLauncher/")), "SamboyLauncher_JS");
-const configuration = config.load(launcherDir);
-const packsDir = path.join(launcherDir, "packs");
-const authData = new objects_1.AuthData();
-function btoa(str) {
-    return Buffer.from(str, "binary").toString("base64");
-}
-function atob(str) {
-    return Buffer.from(str, "base64").toString("binary");
-}
-async function downloadFile(url, localPath) {
-    return download(url, path.dirname(localPath), { filename: path.basename(localPath) });
-}
-async function mkdirpPromise(location) {
-    return new Promise((ff, rj) => {
-        mkdirp(location, (err, made) => {
-            if (err) {
-                return rj(err);
-            }
-            ff();
-        });
-    });
-}
-let win;
-function createWindow() {
-    console.log("[Info] Initializing window...");
-    win = new electron_1.BrowserWindow({
-        frame: false,
-        height: 720,
-        width: 1280,
-    });
-    const menu = new electron_1.Menu();
-    if (isDev) {
-        menu.append(new electron_1.MenuItem({
-            accelerator: "CmdOrCtrl+R",
-            click: () => {
-                win.webContents.reload();
-            },
-            label: "Reload",
-        }));
-    }
-    menu.append(new electron_1.MenuItem({
-        accelerator: "CmdOrCtrl+Shift+I",
-        click: () => {
-            win.webContents.openDevTools();
-        },
-        label: "Open DevTools",
-    }));
-    win.setMenu(menu);
-    win.loadFile("src/renderer/html/index.html");
-    win.webContents.on("did-finish-load", () => {
-        win.webContents.send("dark theme", configuration.darkTheme);
-    });
-    win.on("closed", () => {
-        win = null;
-    });
-}
-console.log("[Info] Electron Init");
-electron_1.app.on("ready", async () => {
-    await onReady();
-    createWindow();
-});
-electron_1.app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
-        electron_1.app.quit();
-    }
-});
-electron_1.app.on("activate", () => {
-    if (win === null) {
-        createWindow();
-    }
-});
-async function onReady() {
-    if (!fs.existsSync(launcherDir)) {
-        await mkdirpPromise(launcherDir);
-    }
-    if (fs.existsSync(path.join(launcherDir, "authdata"))) {
-        try {
-            const content = jsonfile.readFileSync(path.join(launcherDir, "authdata"));
-            if (content.accessToken) {
-                authData.accessToken = content.accessToken;
-            }
-            if (content.clientToken) {
-                authData.clientToken = content.clientToken;
-            }
-            if (content.hash) {
-                authData.password = atob(content.hash);
-            }
-            if (content.username) {
-                authData.username = content.username;
-            }
-            if (content.uuid) {
-                authData.uuid = content.uuid;
-            }
-            if (content.email) {
-                authData.email = content.email;
-            }
-        }
-        catch (e) {
-            jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
-        }
-    }
-    else {
-        jsonfile.writeFileSync(path.join(launcherDir, "authdata"), {});
-    }
-}
+const Utils_1 = require("./util/Utils");
+const Env_1 = require("./Env");
+config_1.default.load();
+ElectronManager_1.default.init();
+AuthData_1.default.load();
 electron_1.ipcMain.on("get backgrounds", (event) => {
     if (fs.existsSync(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"))) {
         fs.readdir(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"), (err, files) => {
@@ -136,68 +30,47 @@ electron_1.ipcMain.on("get backgrounds", (event) => {
         });
     }
     else {
-        event.sender.send("backgrounds", asar.listPackage("app.asar").filter((file) => file.indexOf("renderer") >= 0 && file.indexOf("backgrounds") >= 0)
+        event.sender.send("backgrounds", asar.listPackage("app.asar")
+            .filter((file) => file.indexOf("renderer") >= 0 && file.indexOf("backgrounds") >= 0)
             .map((file) => file.replace(".." + path.sep + "renderer", "..")));
     }
 });
 electron_1.ipcMain.on("get installed packs", (event) => {
-    if (!fs.existsSync(packsDir)) {
+    if (!fs.existsSync(Env_1.default.packsDir)) {
         return event.sender.send("installed packs", []);
     }
-    fs.readdir(packsDir, (error, packFolders) => {
+    fs.readdir(Env_1.default.packsDir, (error, packFolders) => {
         if (error) {
             return event.sender.send("installed packs", []);
         }
         const packData = packFolders
-            .filter((packFolder) => fs.existsSync(path.join(packsDir, packFolder, "install.json")))
-            .map((packFolder) => path.join(packsDir, packFolder, "install.json"))
+            .filter((packFolder) => fs.existsSync(path.join(Env_1.default.packsDir, packFolder, "install.json")))
+            .map((packFolder) => path.join(Env_1.default.packsDir, packFolder, "install.json"))
             .map((installJson) => jsonfile.readFileSync(installJson));
         event.sender.send("installed packs", packData);
     });
 });
 electron_1.ipcMain.on("get top packs", (event) => {
-    fetch("https://launcher.samboycoding.me/api/mostPopularPacks").then((resp) => {
+    node_fetch_1.default("https://launcher.samboycoding.me/api/mostPopularPacks").then((resp) => {
         return resp.json();
     }).then((json) => {
         event.sender.send("top packs", json);
     });
 });
-electron_1.ipcMain.on("set dark", (event, dark) => {
-    configuration.darkTheme = dark;
-    config.save(launcherDir, configuration);
-    event.sender.send("dark theme", configuration.darkTheme);
+electron_1.ipcMain.on("set dark", async (event, dark) => {
+    config_1.default.darkTheme = dark;
+    await config_1.default.save();
+    event.sender.send("dark theme", config_1.default.darkTheme);
 });
-function saveAuthdata() {
-    const content = {};
-    if (authData.accessToken) {
-        content.accessToken = authData.accessToken;
-    }
-    if (authData.clientToken) {
-        content.clientToken = authData.clientToken;
-    }
-    if (authData.password) {
-        content.hash = btoa(authData.password);
-    }
-    if (authData.username) {
-        content.username = authData.username;
-    }
-    if (authData.uuid) {
-        content.uuid = authData.uuid;
-    }
-    if (authData.email) {
-        content.email = authData.email;
-    }
-    jsonfile.writeFileSync(path.join(launcherDir, "authdata"), content);
-}
 async function login(email, password, remember) {
     return new Promise((ff, rj) => {
-        fetch("https://authserver.mojang.com/authenticate", {
+        node_fetch_1.default("https://authserver.mojang.com/authenticate", {
             body: JSON.stringify({
                 agent: {
                     name: "Minecraft",
                     version: 1,
                 },
-                clientToken: authData.clientToken ? authData.clientToken : undefined,
+                clientToken: AuthData_1.default.clientToken ? AuthData_1.default.clientToken : undefined,
                 password,
                 requestUser: true,
                 username: email,
@@ -218,18 +91,18 @@ async function login(email, password, remember) {
                     const ct = json.clientToken;
                     const uid = json.selectedProfile.id;
                     const un = json.selectedProfile.name;
-                    authData.accessToken = at;
-                    authData.clientToken = ct;
-                    authData.uuid = uid;
-                    authData.username = un;
-                    authData.email = email;
+                    AuthData_1.default.accessToken = at;
+                    AuthData_1.default.clientToken = ct;
+                    AuthData_1.default.uuid = uid;
+                    AuthData_1.default.username = un;
+                    AuthData_1.default.email = email;
                     if (remember) {
-                        authData.password = password;
+                        AuthData_1.default.password = password;
                     }
                     else {
-                        authData.password = "";
+                        AuthData_1.default.password = "";
                     }
-                    saveAuthdata();
+                    AuthData_1.default.save();
                     ff();
                 }
             }
@@ -240,8 +113,8 @@ async function login(email, password, remember) {
     });
 }
 electron_1.ipcMain.on("get profile", (event) => {
-    if (authData.accessToken && authData.username && authData.uuid) {
-        event.sender.send("profile", authData.username, authData.uuid);
+    if (AuthData_1.default.accessToken && AuthData_1.default.username && AuthData_1.default.uuid) {
+        event.sender.send("profile", AuthData_1.default.username, AuthData_1.default.uuid);
     }
     else {
         event.sender.send("no profile");
@@ -250,28 +123,28 @@ electron_1.ipcMain.on("get profile", (event) => {
 electron_1.ipcMain.on("login", async (event, email, password, remember) => {
     try {
         await login(email, password, remember);
-        event.sender.send("profile", authData.username, authData.uuid);
+        event.sender.send("profile", AuthData_1.default.username, AuthData_1.default.uuid);
     }
     catch (e) {
         event.sender.send("login error", e);
     }
 });
 electron_1.ipcMain.on("logout", (event) => {
-    authData.accessToken = undefined;
-    authData.password = undefined;
-    authData.username = undefined;
-    authData.uuid = undefined;
-    saveAuthdata();
+    AuthData_1.default.accessToken = undefined;
+    AuthData_1.default.password = undefined;
+    AuthData_1.default.username = undefined;
+    AuthData_1.default.uuid = undefined;
+    AuthData_1.default.save();
     event.sender.send("logged out");
 });
 electron_1.ipcMain.on("validate session", (event) => {
-    if (!authData.accessToken) {
+    if (!AuthData_1.default.accessToken) {
         return;
     }
-    fetch("https://authserver.mojang.com/validate", {
+    node_fetch_1.default("https://authserver.mojang.com/validate", {
         body: JSON.stringify({
-            accessToken: authData.accessToken,
-            clientToken: authData.clientToken,
+            accessToken: AuthData_1.default.accessToken,
+            clientToken: AuthData_1.default.clientToken,
         }),
         headers: {
             "Content-Type": "application/json",
@@ -281,9 +154,9 @@ electron_1.ipcMain.on("validate session", (event) => {
         if (resp.status === 204) {
             return;
         }
-        if (authData.email && authData.password) {
+        if (AuthData_1.default.email && AuthData_1.default.password) {
             try {
-                await login(authData.email, authData.password, true);
+                await login(AuthData_1.default.email, AuthData_1.default.password, true);
             }
             catch (e) {
                 event.sender.send("session invalid");
@@ -350,13 +223,13 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
             }
             unpack200 = path.join(process.env.PROGRAMFILES, "Java", installation, "bin", "unpack200.exe");
         }
-        const forgeVersionFolder = path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + updateData.forge.to);
+        const forgeVersionFolder = path.join(Env_1.default.launcherDir, "versions", "forge-" + pack.gameVersion + "-" + updateData.forge.to);
         if (!fs.existsSync(path.join(forgeVersionFolder, "forge.jar"))) {
             await gameInstaller_1.downloadForgeJarAndGetJSON(forgeVersionFolder, updateData.forge.to, pack.gameVersion, event.sender);
             const versionJSON = jsonfile.readFileSync(path.join(forgeVersionFolder, "version.json"));
             const libs = versionJSON.libraries.filter((lib) => lib.name.indexOf("net.minecraftforge:forge:") === -1);
             event.sender.send("pack update progress", currentPercent / 100, `Updating forge libraries, this may take a minute...`);
-            await gameInstaller_1.downloadForgeLibraries(launcherDir, libs, unpack200, event.sender);
+            await gameInstaller_1.downloadForgeLibraries(Env_1.default.launcherDir, libs, unpack200, event.sender);
             fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
             fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
         }
@@ -364,28 +237,28 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
     if (updateData.rift.to) {
         currentPercent += percentPer;
         event.sender.send("pack update progress", currentPercent / 100, `Updating rift from ${updateData.rift.from} to ${updateData.rift.to}...`);
-        const riftVersionFolder = path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + updateData.rift.to);
+        const riftVersionFolder = path.join(Env_1.default.launcherDir, "versions", "rift-" + pack.gameVersion + "-" + updateData.rift.to);
         if (!fs.existsSync(path.join(riftVersionFolder, ".installed"))) {
             if (!fs.existsSync(riftVersionFolder)) {
-                await mkdirpPromise(riftVersionFolder);
+                await Utils_1.default.mkdirpPromise(riftVersionFolder);
             }
             await gameInstaller_1.downloadRiftJarAndGetJSON(riftVersionFolder, updateData.rift.to, pack.gameVersion, event.sender);
             const profileJSON = jsonfile.readFileSync(path.join(riftVersionFolder, "profile.json"));
             const riftLibraryData = profileJSON.libraries.find(l => l.name.startsWith("org.dimdev:rift"));
             const riftVersion = riftLibraryData.name.split(":")[2];
-            const correctRiftFolder = path.join(launcherDir, "libraries", "org", "dimdev", "rift", riftVersion);
+            const correctRiftFolder = path.join(Env_1.default.launcherDir, "libraries", "org", "dimdev", "rift", riftVersion);
             if (!fs.existsSync(correctRiftFolder))
-                await mkdirpPromise(correctRiftFolder);
+                await Utils_1.default.mkdirpPromise(correctRiftFolder);
             fs.copyFileSync(path.join(riftVersionFolder, "rift_temp.jar"), path.join(correctRiftFolder, "rift-" + riftVersion + ".jar"));
             fs.unlinkSync(path.join(riftVersionFolder, "rift_temp.jar"));
             const libsToDownload = profileJSON.libraries.filter(l => !l.name.startsWith("org.dimdev:rift"));
-            await gameInstaller_1.downloadRiftLibraries(launcherDir, libsToDownload, event.sender);
+            await gameInstaller_1.downloadRiftLibraries(Env_1.default.launcherDir, libsToDownload, event.sender);
             fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
         }
     }
-    const modsDir = path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "mods");
+    const modsDir = path.join(Env_1.default.launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "mods");
     if (!fs.existsSync(modsDir))
-        await mkdirpPromise(modsDir);
+        await Utils_1.default.mkdirpPromise(modsDir);
     for (const i in updateData.removeMods) {
         const modToRemove = updateData.removeMods[i];
         currentPercent += percentPer;
@@ -402,30 +275,30 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
         const modPath = path.join(modsDir, modToRemove.resolvedVersion);
         fs.unlinkSync(modPath);
         const url = `https://minecraft.curseforge.com/projects/${modToAdd.slug}/files/${modToAdd.fileId}/download`;
-        await downloadFile(url, path.join(modsDir, modToAdd.resolvedVersion));
+        await Utils_1.default.downloadFile(url, path.join(modsDir, modToAdd.resolvedVersion));
     }
     for (const i in updateData.addMods) {
         const modToAdd = updateData.addMods[i];
         currentPercent += percentPer;
         event.sender.send("pack update progress", currentPercent / 100, `Downloading ${modToAdd.resolvedName} (${modToAdd.resolvedVersion})...`);
         const url = `https://minecraft.curseforge.com/projects/${modToAdd.slug}/files/${modToAdd.fileId}/download`;
-        await downloadFile(url, path.join(modsDir, modToAdd.resolvedVersion));
+        await Utils_1.default.downloadFile(url, path.join(modsDir, modToAdd.resolvedVersion));
     }
     currentPercent += percentPer;
     event.sender.send("pack update progress", currentPercent / 100, `Applying updated overrides...`);
-    const resp = await fetch("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, {
+    const resp = await node_fetch_1.default("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, {
         method: "HEAD",
     });
     if (resp.status === 200) {
-        await downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "overrides.zip"));
+        await Utils_1.default.downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(Env_1.default.launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "overrides.zip"));
         await new Promise((ff, rj) => {
-            fs.createReadStream(path.join(path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")), "overrides.zip")).pipe(unzipper_1.Extract({ path: path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")) })).on("close", () => {
+            fs.createReadStream(path.join(path.join(Env_1.default.launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")), "overrides.zip")).pipe(unzipper_1.Extract({ path: path.join(Env_1.default.launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")) })).on("close", () => {
                 ff();
             });
         });
     }
     event.sender.send("pack update progress", 0.98, `Finishing up`);
-    jsonfile.writeFileSync(path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "install.json"), {
+    jsonfile.writeFileSync(path.join(Env_1.default.launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"), "install.json"), {
         author: pack.author,
         forgeVersion: updateData.forge.to ? updateData.forge.to : updateData.forge.from,
         gameVersion: pack.gameVersion,
@@ -439,7 +312,7 @@ electron_1.ipcMain.on("update pack", async (event, pack, updateData) => {
     event.sender.send("pack update complete");
 });
 electron_1.ipcMain.on("uninstall pack", async (event, pack) => {
-    const packDir = path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
+    const packDir = path.join(Env_1.default.launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
     if (!fs.existsSync(packDir)) {
         return;
     }
@@ -500,7 +373,7 @@ electron_1.ipcMain.on("install pack", async (event, pack) => {
                 return;
             }
         }
-        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))) {
+        if (!fs.existsSync(path.join(Env_1.default.launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))) {
             event.sender.send("vanilla progress", "Fetching version listing...", 0);
             event.sender.send("modded progress", "Waiting for base game to install...", -1);
             const versions = await gameInstaller_1.getVanillaVersionList();
@@ -509,42 +382,42 @@ electron_1.ipcMain.on("install pack", async (event, pack) => {
                 event.sender.send("install failed", "Couldn't find version " + pack.gameVersion + " in installable version list.");
             }
             event.sender.send("vanilla progress", `Fetching version information for ${version.id}...`, 2 / 100);
-            const versionData = await gameInstaller_1.getVanillaVersionManifest(launcherDir, version);
+            const versionData = await gameInstaller_1.getVanillaVersionManifest(Env_1.default.launcherDir, version);
             const libraries = versionData.libraries.filter((lib) => lib.downloads.artifact && lib.downloads.artifact.url);
             const natives = versionData.libraries.filter((lib) => lib.natives);
             event.sender.send("vanilla progress", `Starting download of ${libraries.length} libraries for ${versionData.id}...`, 5 / 100);
-            await gameInstaller_1.downloadVanillaLibraries(launcherDir, libraries, event.sender);
+            await gameInstaller_1.downloadVanillaLibraries(Env_1.default.launcherDir, libraries, event.sender);
             event.sender.send("vanilla progress", `Starting download of ${natives.length} natives for ${versionData.id}...`, 30 / 100);
             const ourOs = process.platform === "darwin" ? "osx" : process.platform === "win32" ? "windows" : "linux";
             const arch = process.arch.indexOf("64") > -1 ? "64" : "32";
-            const nativesFolder = path.join(launcherDir, "versions", version.id, "natives");
-            await gameInstaller_1.downloadVanillaNatives(launcherDir, ourOs, arch, nativesFolder, natives, event.sender);
-            await gameInstaller_1.downloadAssetManifest(launcherDir, versionData.assetIndex, event.sender);
-            await gameInstaller_1.downloadAssets(launcherDir, versionData.assetIndex, event.sender);
-            await gameInstaller_1.downloadGameClient(launcherDir, versionData, event.sender);
+            const nativesFolder = path.join(Env_1.default.launcherDir, "versions", version.id, "natives");
+            await gameInstaller_1.downloadVanillaNatives(Env_1.default.launcherDir, ourOs, arch, nativesFolder, natives, event.sender);
+            await gameInstaller_1.downloadAssetManifest(Env_1.default.launcherDir, versionData.assetIndex, event.sender);
+            await gameInstaller_1.downloadAssets(Env_1.default.launcherDir, versionData.assetIndex, event.sender);
+            await gameInstaller_1.downloadGameClient(Env_1.default.launcherDir, versionData, event.sender);
             event.sender.send("vanilla progress", `Finished`, 1);
         }
         else {
             event.sender.send("vanilla progress", `Game client is already installed.`, 1);
         }
-        const forgeVersionFolder = path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion);
+        const forgeVersionFolder = path.join(Env_1.default.launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion);
         if (pack.forgeVersion && !fs.existsSync(path.join(forgeVersionFolder, "forge.jar"))) {
             if (!fs.existsSync(forgeVersionFolder)) {
-                await mkdirpPromise(forgeVersionFolder);
+                await Utils_1.default.mkdirpPromise(forgeVersionFolder);
             }
             await gameInstaller_1.downloadForgeJarAndGetJSON(forgeVersionFolder, pack.forgeVersion, pack.gameVersion, event.sender);
             event.sender.send("modded progress", `Reading forge version info...`, 3 / 100);
             const versionJSON = jsonfile.readFileSync(path.join(forgeVersionFolder, "version.json"));
             event.sender.send("modded progress", `Preparing to install forge libraries...`, 4 / 100);
             const libs = versionJSON.libraries.filter((lib) => lib.name.indexOf("net.minecraftforge:forge:") === -1);
-            await gameInstaller_1.downloadForgeLibraries(launcherDir, libs, unpack200, event.sender);
+            await gameInstaller_1.downloadForgeLibraries(Env_1.default.launcherDir, libs, unpack200, event.sender);
             fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
             fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
         }
-        const riftVersionFolder = path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion);
+        const riftVersionFolder = path.join(Env_1.default.launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion);
         if (pack.riftVersion && !fs.existsSync(path.join(riftVersionFolder, ".installed"))) {
             if (!fs.existsSync(riftVersionFolder)) {
-                await mkdirpPromise(riftVersionFolder);
+                await Utils_1.default.mkdirpPromise(riftVersionFolder);
             }
             await gameInstaller_1.downloadRiftJarAndGetJSON(riftVersionFolder, pack.riftVersion, pack.gameVersion, event.sender);
             event.sender.send("modded progress", `Reading rift profile data...`, 3 / 100);
@@ -552,22 +425,22 @@ electron_1.ipcMain.on("install pack", async (event, pack) => {
             const riftLibraryData = profileJSON.libraries.find(l => l.name.startsWith("org.dimdev:rift"));
             const riftVersion = riftLibraryData.name.split(":")[2];
             event.sender.send("install log", "[Modpack] \tRift version identified as " + riftVersion);
-            const correctRiftFolder = path.join(launcherDir, "libraries", "org", "dimdev", "rift", riftVersion);
+            const correctRiftFolder = path.join(Env_1.default.launcherDir, "libraries", "org", "dimdev", "rift", riftVersion);
             if (!fs.existsSync(correctRiftFolder))
-                await mkdirpPromise(correctRiftFolder);
+                await Utils_1.default.mkdirpPromise(correctRiftFolder);
             event.sender.send("modded progress", `Installing Rift jar in correct location...`, 4 / 100);
             fs.copyFileSync(path.join(riftVersionFolder, "rift_temp.jar"), path.join(correctRiftFolder, "rift-" + riftVersion + ".jar"));
             event.sender.send("install log", "[Modpack] \tCopied file " + path.join(riftVersionFolder, "rift_temp.jar") + " => " + path.join(correctRiftFolder, "rift-" + riftVersion + ".jar"));
             fs.unlinkSync(path.join(riftVersionFolder, "rift_temp.jar"));
             event.sender.send("install log", "[Modpack] \tDeleted file: " + path.join(riftVersionFolder, "rift_temp.jar"));
             const libsToDownload = profileJSON.libraries.filter(l => !l.name.startsWith("org.dimdev:rift"));
-            await gameInstaller_1.downloadRiftLibraries(launcherDir, libsToDownload, event.sender);
+            await gameInstaller_1.downloadRiftLibraries(Env_1.default.launcherDir, libsToDownload, event.sender);
             fs.writeFileSync(path.join(riftVersionFolder, ".installed"), "1", { encoding: "utf8" });
         }
-        const packDir = path.join(packsDir, pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
+        const packDir = path.join(Env_1.default.packsDir, pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
         const modsDir = path.join(packDir, "mods");
         if (!fs.existsSync(modsDir)) {
-            await mkdirpPromise(modsDir);
+            await Utils_1.default.mkdirpPromise(modsDir);
         }
         let installedMods = [];
         if (fs.existsSync(path.join(packDir, "install.json"))) {
@@ -587,16 +460,16 @@ electron_1.ipcMain.on("install pack", async (event, pack) => {
                 }
                 const url = `https://minecraft.curseforge.com/projects/${mod.slug}/files/${mod.fileId}/download`;
                 event.sender.send("install log", "[Modpack] \tDownloading " + mod.resolvedVersion + " from " + url);
-                await downloadFile(url, path.join(modsDir, mod.resolvedVersion));
+                await Utils_1.default.downloadFile(url, path.join(modsDir, mod.resolvedVersion));
             }
         }
         event.sender.send("modded progress", `Checking for overrides`, 0.95);
-        const resp = await fetch("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, {
+        const resp = await node_fetch_1.default("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, {
             method: "HEAD",
         });
         if (resp.status === 200) {
             event.sender.send("modded progress", `Downloading overrides`, 0.96);
-            await downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(packDir, "overrides.zip"));
+            await Utils_1.default.downloadFile("https://launcher.samboycoding.me/api/packoverrides/" + pack.id, path.join(packDir, "overrides.zip"));
             event.sender.send("modded progress", `Installing overrides`, 0.97);
             await new Promise((ff, rj) => {
                 fs.createReadStream(path.join(packDir, "overrides.zip")).pipe(unzipper_1.Extract({ path: packDir })).on("close", () => {
@@ -634,16 +507,16 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
     let vanillaManifest;
     let forgeManifest;
     if (pack.forgeVersion) {
-        if (!fs.existsSync(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "forge.jar"))
-            || !fs.existsSync(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "version.json"))) {
+        if (!fs.existsSync(path.join(Env_1.default.launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "forge.jar"))
+            || !fs.existsSync(path.join(Env_1.default.launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "version.json"))) {
             return event.sender.send("launch failed", "Forge version is no longer installed or installation corrupt. Please reinstall the pack.");
         }
-        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
-            || !fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
+        if (!fs.existsSync(path.join(Env_1.default.launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
+            || !fs.existsSync(path.join(Env_1.default.launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
             return event.sender.send("launch failed", "Base game version is no longer installed or installation corrupt. Please reinstall the pack.");
         }
-        forgeManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "version.json"));
-        vanillaManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"));
+        forgeManifest = jsonfile.readFileSync(path.join(Env_1.default.launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "version.json"));
+        vanillaManifest = jsonfile.readFileSync(path.join(Env_1.default.launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"));
         const arch = process.arch.indexOf("64") > -1 ? "x64" : "x86";
         gameArgs = forgeManifest.minecraftArguments.split(" ");
         jvmArgs = [];
@@ -665,7 +538,7 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
             if (library.name.indexOf("net.minecraftforge:forge") === -1) {
                 const libnameSplit = library.name.split(":");
                 const filePath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
-                const localPath = [launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
+                const localPath = [Env_1.default.launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
                 classPath.push(localPath);
             }
         }
@@ -676,19 +549,19 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
             if (classPath.find(cpEntry => cpEntry.indexOf(searchTerm) > 0))
                 continue;
             if (library.downloads && library.downloads.artifact) {
-                classPath.push(path.join(launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
+                classPath.push(path.join(Env_1.default.launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
             }
         }
-        classPath.push(path.join(launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"));
-        classPath.push(path.join(launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "forge.jar"));
+        classPath.push(path.join(Env_1.default.launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"));
+        classPath.push(path.join(Env_1.default.launcherDir, "versions", "forge-" + pack.gameVersion + "-" + pack.forgeVersion, "forge.jar"));
         mainClass = forgeManifest.mainClass;
     }
     else {
-        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
-            || !fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
+        if (!fs.existsSync(path.join(Env_1.default.launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
+            || !fs.existsSync(path.join(Env_1.default.launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
             return event.sender.send("launch failed", "Base game version is no longer installed or installation corrupt. Please reinstall the pack.");
         }
-        vanillaManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"));
+        vanillaManifest = jsonfile.readFileSync(path.join(Env_1.default.launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"));
         const ourOs = process.platform === "win32" ? "windows"
             : process.platform === "darwin" ? "osx"
                 : "linux";
@@ -806,28 +679,28 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
         for (const index in vanillaManifest.libraries) {
             const library = vanillaManifest.libraries[index];
             if (library.downloads && library.downloads.artifact) {
-                classPath.push(path.join(launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
+                classPath.push(path.join(Env_1.default.launcherDir, "libraries") + (process.platform === "win32" ? "\\" : "/") + library.downloads.artifact.path.split("/").join(process.platform === "win32" ? "\\" : "/"));
             }
         }
-        classPath.push(path.join(launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"));
+        classPath.push(path.join(Env_1.default.launcherDir, "versions", vanillaManifest.id, vanillaManifest.id + ".jar"));
         mainClass = vanillaManifest.mainClass;
     }
     if (pack.riftVersion) {
-        if (!fs.existsSync(path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, ".installed"))
-            || !fs.existsSync(path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, "profile.json"))) {
+        if (!fs.existsSync(path.join(Env_1.default.launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, ".installed"))
+            || !fs.existsSync(path.join(Env_1.default.launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, "profile.json"))) {
             return event.sender.send("launch failed", "Rift version is no longer installed or installation corrupt. Please reinstall the pack.");
         }
-        if (!fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
-            || !fs.existsSync(path.join(launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
+        if (!fs.existsSync(path.join(Env_1.default.launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".jar"))
+            || !fs.existsSync(path.join(Env_1.default.launcherDir, "versions", pack.gameVersion, pack.gameVersion + ".json"))) {
             return event.sender.send("launch failed", "Base game version is no longer installed or installation corrupt. Please reinstall the pack.");
         }
-        const riftManifest = jsonfile.readFileSync(path.join(launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, "profile.json"));
+        const riftManifest = jsonfile.readFileSync(path.join(Env_1.default.launcherDir, "versions", "rift-" + pack.gameVersion + "-" + pack.riftVersion, "profile.json"));
         gameArgs = gameArgs.concat(riftManifest.arguments.game);
         for (const index in riftManifest.libraries) {
             const library = riftManifest.libraries[index];
             const libnameSplit = library.name.split(":");
             const filePath = libnameSplit[0].split(".").join("/") + "/" + libnameSplit[1] + "/" + libnameSplit[2] + "/" + libnameSplit[1] + "-" + libnameSplit[2] + ".jar";
-            const localPath = [launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
+            const localPath = [Env_1.default.launcherDir, "libraries"].concat(filePath.split("/")).join(path.sep);
             classPath.push(localPath);
         }
         mainClass = riftManifest.mainClass;
@@ -835,19 +708,19 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
     gameArgs = gameArgs.map((arg) => {
         switch (arg) {
             case "${auth_player_name}":
-                return authData.username;
+                return AuthData_1.default.username;
             case "${version_name}":
                 return pack.gameVersion;
             case "${game_directory}":
-                return path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
+                return path.join(Env_1.default.launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_"));
             case "${assets_root}":
-                return path.join(launcherDir, "assets");
+                return path.join(Env_1.default.launcherDir, "assets");
             case "${assets_index_name}":
                 return vanillaManifest.assetIndex.id;
             case "${auth_uuid}":
-                return authData.uuid;
+                return AuthData_1.default.uuid;
             case "${auth_access_token}":
-                return authData.accessToken;
+                return AuthData_1.default.accessToken;
             case "${user_type}":
                 return "mojang";
             case "${version_type}":
@@ -863,10 +736,10 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
         }
     });
     jvmArgs = jvmArgs.map((arg) => {
-        return arg.replace("${natives_directory}", path.join(launcherDir, "versions", vanillaManifest.id, "natives"))
+        return arg.replace("${natives_directory}", path.join(Env_1.default.launcherDir, "versions", vanillaManifest.id, "natives"))
             .replace("${launcher_name}", "SamboyLauncher")
             .replace("${launcher_version}", "v2")
-            .replace("${game_directory}", path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")))
+            .replace("${game_directory}", path.join(Env_1.default.launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")))
             .replace("${classpath}", classPath.join(process.platform === "win32" ? ";" : ":"));
     });
     jvmArgs.push("-XX:+UseG1GC");
@@ -914,7 +787,7 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
     }
     const finalArgs = jvmArgs.concat([mainClass]).concat(gameArgs);
     const gameProcess = child_process.spawn(java, finalArgs, {
-        cwd: path.join(launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")),
+        cwd: path.join(Env_1.default.launcherDir, "packs", pack.packName.replace(/[\\/:*?"<>|]/g, "_")),
         detached: true,
         stdio: "pipe",
     });
@@ -933,7 +806,7 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
 electron_updater_1.autoUpdater.autoDownload = true;
 electron_updater_1.autoUpdater.logger = logger_1.Logger;
 electron_updater_1.autoUpdater.on("update-downloaded", () => {
-    win.webContents.send("update downloaded");
+    ElectronManager_1.default.win.webContents.send("update downloaded");
 });
 electron_1.ipcMain.on("check updates", (event) => {
     logger_1.Logger.info("Checking for updates...");
