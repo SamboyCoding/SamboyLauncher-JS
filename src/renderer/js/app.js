@@ -2,6 +2,8 @@ const {
     ipcRenderer,
 } = require("electron");
 
+const package = require("../../../package");
+
 const semver = require("semver");
 const packageData = require("../../../package");
 
@@ -74,6 +76,7 @@ const app = new Vue({
             },
             settings: {
                 show: false,
+                version: package.version,
             },
         },
     },

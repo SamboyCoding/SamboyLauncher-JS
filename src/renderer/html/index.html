@@ -243,6 +243,8 @@
                         <label for="darkThemeToggle">Use Dark Theme</label>
                         <br><br>
                         The rest of the settings are coming Soon&trade;
+                        <br><br>
+                        SamboyLauncher version {{ui.settings.version}}
                     </div>
                 </div>
                 <div :class="{modal: true, shown: ui.packInstall.show}" id="pack-install-modal">
@@ -269,7 +271,7 @@
                         <label for="pack-install-pack-progress">
                             {{ui.packInstall.moddedProgress.label}}
                         </label>
-                        <div class="progress" id="pack-installed-pack-progress">
+                        <div class="progress" id="pack-install-pack-progress">
                             <div :class="{bar: true, indeterminate: ui.packInstall.moddedProgress.progress === -1, red: ui.packInstall.failed && ui.packInstall.moddedProgress.progress < 1 && ui.packInstall.moddedProgress.progress !== -1}"
                                 :style="{width: ui.packInstall.moddedProgress.progress === -1 ? '20%' : (ui.packInstall.moddedProgress.progress * 100) + '%'}"></div>
                         </div>
