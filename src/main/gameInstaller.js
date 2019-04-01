@@ -129,7 +129,7 @@ async function downloadVanillaNatives(launcherDir, ourOs, arch, nativesFolder, n
         }
         if (!artifact) {
             webContents.send("install log", `[Vanilla] \tSkipping native as it doesn't have a download link for our OS.`, 30 / 100);
-            console.warn("[Native] Skipping artifact " + artifact.url + " that has no download for our platform");
+            console.warn("[Native] Skipping artifact " + native.name + " that has no download for our platform");
             continue;
         }
         const dest = path.join(launcherDir, "libraries", artifact.path);

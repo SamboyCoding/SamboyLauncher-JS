@@ -150,7 +150,7 @@ export async function downloadVanillaNatives(launcherDir: string, ourOs: string,
 
         if(!artifact) {
             webContents.send("install log", `[Vanilla] \tSkipping native as it doesn't have a download link for our OS.`, 30 / 100);
-            console.warn("[Native] Skipping artifact " + artifact.url + " that has no download for our platform");
+            console.warn("[Native] Skipping artifact " + native.name + " that has no download for our platform");
             continue;
         }
 
