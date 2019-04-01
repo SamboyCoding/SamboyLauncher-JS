@@ -30,7 +30,8 @@ import {
     getVanillaVersionManifest
 } from "./gameInstaller";
 import {Logger} from "./logger";
-import {GameVersionData, LibraryMetadata, Mod, Pack, VanillaManifestVersion} from "./objects";
+import {Mod} from "./objects/mod";
+import {GameVersionData, LibraryMetadata, Pack, VanillaManifestVersion} from "./objects";
 import Utils from "./util/Utils";
 //#endregion
 

@@ -1,13 +1,8 @@
+import {Mod} from "./objects/mod";
+
 export class Author {
     public id: number;
     public name: string;
-}
-
-export class Mod {
-    public fileId: string;
-    public resolvedName: string;
-    public resolvedVersion: string;
-    public slug: string;
 }
 
 export class Pack {
