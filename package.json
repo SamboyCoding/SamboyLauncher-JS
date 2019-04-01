@@ -1,6 +1,6 @@
 {
     "name": "samboylauncher",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "description": "Minecraft Launcher - see https://launcher.samboycoding.me",
     "main": "src/main/index.js",
     "scripts": {
