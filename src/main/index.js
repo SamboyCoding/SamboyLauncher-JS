@@ -892,6 +892,9 @@ electron_1.ipcMain.on("launch pack", (event, pack) => {
         const free = parseInt(line[3], 10), buffers = parseInt(line[5], 10), actualFree = free + buffers;
         memFreeGigs = actualFree / 1024 / 1024 / 1024;
     }
+    else if (process.platform === "darwin") {
+        memFreeGigs = 3;
+    }
     const memGigs = memFreeGigs > 6 ? 6 : memFreeGigs;
     jvmArgs = jvmArgs.concat([`-Xmx${memGigs}G`, `-Xms${memGigs - 1}G`, "-Djava.net.preferIPv4Stack=true"]);
     let java = "java";
