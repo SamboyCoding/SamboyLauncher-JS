@@ -1206,6 +1206,24 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
             actualFree = free + buffers;
 
         memFreeGigs = actualFree / 1024 / 1024 / 1024;
+    } else if (process.platform === "darwin") {
+        // const result = child_process.spawnSync("vm_stat", {
+        //     encoding: "utf8",
+        //     stdio: "pipe",
+        // });
+        // const lines = result.stdout.split("\n");
+        // let line = lines.find(l => l.startsWith("Pages free:"));
+        // line = line.replace("Pages free:", "").trim();
+        // line = line.substr(0, line.length - 1); //Remove trailing .
+        //
+        // const freePages = Number(line);
+        // const freeBytes = freePages * 4096;
+        //
+        // memFreeGigs = freeBytes / 1024 / 1024 / 1024;
+
+        //TODO: ^
+
+        memFreeGigs = 3;
     }
 
     const memGigs = memFreeGigs > 6 ? 6 : memFreeGigs;
