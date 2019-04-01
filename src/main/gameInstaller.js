@@ -101,12 +101,12 @@ async function downloadVanillaNatives(launcherDir, ourOs, arch, nativesFolder, n
         }
         let artifact;
         if (ourOs === "osx") {
-            artifact = native.downloads.classifiers["natives-macos"];
+            artifact = native.downloads.classifiers["natives-osx"];
             if (!artifact && arch === "64") {
-                artifact = native.downloads.classifiers["natives-macos-64"];
+                artifact = native.downloads.classifiers["natives-osx-64"];
             }
             else if (!artifact) {
-                artifact = native.downloads.classifiers["natives-macos-32"];
+                artifact = native.downloads.classifiers["natives-osx-32"];
             }
         }
         else if (ourOs === "linux") {
