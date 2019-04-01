@@ -148,6 +148,11 @@ export async function downloadVanillaNatives(launcherDir: string, ourOs: string,
             }
         }
 
+        if(!artifact) {
+            console.warn("[Native] Skipping artifact " + artifact.url + " that has no download for our platform");
+            continue;
+        }
+
         const dest = path.join(launcherDir, "libraries", artifact.path);
         const directory = path.dirname(dest);
 
