@@ -1,6 +1,6 @@
 import * as child_process from "child_process";
 import * as fs from "fs";
-import hasha from "hasha";
+import * as hasha from "hasha";
 import * as jsonfile from "jsonfile";
 import * as JSZip from "jszip";
 import * as mkdirp from "mkdirp";
