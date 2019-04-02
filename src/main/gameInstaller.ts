@@ -330,7 +330,7 @@ export async function downloadForgeJarAndGetJSON(forgeVersionFolder: string, for
     });
 }
 
-export async function downloadForgeLibraries(launcherDir: string, libs: any, unpack200: string, webContents: Electron.WebContents) {
+export async function downloadForgeLibraries(launcherDir: string, libs: any, unpack200: string, webContents: Electron.WebContents): Promise<boolean> {
     webContents.send("install log", "[Modpack] \tNeed to install " + libs.length + " libraries for forge.");
 
     const percentPer = 46 / libs.length;
@@ -375,7 +375,7 @@ export async function downloadForgeLibraries(launcherDir: string, libs: any, unp
             if (!fs.existsSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"))) {
                 webContents.send("install log", "[Modpack] [Error] Unable to acquire even packed jar; aborting");
                 webContents.send("install failed", "Unable to acquire even packed jar for " + lib.name);
-                return;
+                return false;
             }
 
             // let input = fs.readFileSync(path.join(tempFolder, path.basename(localPath) + ".pack.xz"));
@@ -399,7 +399,7 @@ export async function downloadForgeLibraries(launcherDir: string, libs: any, unp
                 } catch (e) {
                     webContents.send("install failed", "Unable to unpack .xz file (probably due to missing XZ command-line application - try installing xz) for " + lib.name);
                     webContents.send("install log", "[Modpack] [Error] Failed to call xz - probably not installed. Error: " + e);
-                    return;
+                    return false;
                 }
             }
 
@@ -415,7 +415,7 @@ export async function downloadForgeLibraries(launcherDir: string, libs: any, unp
             if (checkString !== "SIGN") {
                 webContents.send("install log", "[Modpack] [Error] Failed to verify signature of pack file. Aborting install.");
                 webContents.send("install failed", "Failed to verify pack file signature for " + lib.name);
-                return;
+                return false;
             }
 
             webContents.send("install log", "[Modpack] \t\tPack file is signed. Stripping checksum...");
@@ -441,12 +441,13 @@ export async function downloadForgeLibraries(launcherDir: string, libs: any, unp
             if (!fs.existsSync(localPath)) {
                 webContents.send("install log", "[Modpack] \t[Error] Failed to unpack packed file - result missing. Aborting install.");
                 webContents.send("install failed", "Unable to unpack .pack file (result file doesn't exist) for " + lib.name);
-                return;
+                return false;
             }
 
             fs.unlinkSync(path.join(tempFolder, path.basename(localPath) + ".pack"));
         }
     }
+    return true;
 }
 
 export async function downloadRiftJarAndGetJSON(riftVersionFolder: string, riftVersion: string, gameVersion: string, webContents: Electron.WebContents) {

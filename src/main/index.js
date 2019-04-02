@@ -537,7 +537,9 @@ electron_1.ipcMain.on("install pack", async (event, pack) => {
             const versionJSON = jsonfile.readFileSync(path.join(forgeVersionFolder, "version.json"));
             event.sender.send("modded progress", `Preparing to install forge libraries...`, 4 / 100);
             const libs = versionJSON.libraries.filter((lib) => lib.name.indexOf("net.minecraftforge:forge:") === -1);
-            await gameInstaller_1.downloadForgeLibraries(launcherDir, libs, unpack200, event.sender);
+            const success = await gameInstaller_1.downloadForgeLibraries(launcherDir, libs, unpack200, event.sender);
+            if (!success)
+                return;
             fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
             fs.unlinkSync(path.join(forgeVersionFolder, "forge_temp.jar"));
         }

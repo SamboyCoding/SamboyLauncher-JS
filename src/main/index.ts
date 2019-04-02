@@ -755,7 +755,9 @@ ipcMain.on("install pack", async (event: IpcMessageEvent, pack: Pack) => {
 
             const libs = versionJSON.libraries.filter((lib: any) => lib.name.indexOf("net.minecraftforge:forge:") === -1);
 
-            await downloadForgeLibraries(launcherDir, libs, unpack200, event.sender);
+            const success = await downloadForgeLibraries(launcherDir, libs, unpack200, event.sender);
+
+            if (!success) return;
 
             // Move to here to mark as installed once libs installed.
             fs.copyFileSync(path.join(forgeVersionFolder, "forge_temp.jar"), path.join(forgeVersionFolder, "forge.jar"));
