@@ -27,10 +27,12 @@ export default class InstalledPack {
 
     public name: string;
     public installedVersion: string;
-    public installedMods: ModJar[];
-    public overrides: OverrideFile[];
-    public gameVersion: MCVersion;
-    public forgeVersion: ForgeVersion;
+
+    // TODO
+    // public installedMods: ModJar[];
+    // public overrides: OverrideFile[];
+    // public gameVersion: MCVersion;
+    // public forgeVersion: ForgeVersion;
 
 
     constructor(baseDir: string) {

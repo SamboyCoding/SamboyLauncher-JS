@@ -1,21 +1,6 @@
 {
+    "extends": "./node_modules/electron-webpack/tsconfig-base",
     "compilerOptions": {
-        "target": "esnext",
-        "module": "commonjs",
-        "noImplicitAny": false,
-        "removeComments": true,
-        "preserveConstEnums": true,
-        "sourceMap": true,
-        "moduleResolution": "node",
-        "lib": [
-            "es2015",
-            "es2018"
-        ]
-    },
-    "include": [
-        "./src/main/"
-    ],
-    "exclude": [
-        "./node_modules/"
-    ]
+        "strict": false
+    }
 }

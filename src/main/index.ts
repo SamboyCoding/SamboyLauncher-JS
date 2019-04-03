@@ -1,7 +1,7 @@
 //#region Imports
 import * as asar from "asar";
 import * as child_process from "child_process";
-import {app, ipcMain, IpcMessageEvent} from "electron";
+import {ipcMain, IpcMessageEvent} from "electron";
 import * as isDev from "electron-is-dev";
 import {autoUpdater} from "electron-updater";
 import * as fs from "fs";

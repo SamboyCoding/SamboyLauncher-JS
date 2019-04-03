@@ -8,7 +8,7 @@ import * as web from "node-fetch";
 import * as path from "path";
 import {Extract} from "unzipper";
 import {AssetIndexMetadata, GameVersionData, LibraryArtifact, LibraryMetadata, VanillaManifestVersion} from "./objects";
-import download = require("download");
+import * as download from 'download';
 
 const fetch = web.default;
 

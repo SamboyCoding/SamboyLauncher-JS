@@ -1,5 +1,5 @@
 import chalk, {Chalk} from "chalk";
-import moment = require("moment");
+import * as moment from 'moment';
 
 export class Logger {
 

@@ -1,12 +1,13 @@
 import {app, BrowserWindow, Menu, MenuItem} from "electron";
 import * as isDev from "electron-is-dev";
-import * as fs from "fs";
-import * as jsonfile from "jsonfile";
-import * as path from "path";
+import {join} from "path";
 import Config from "./config";
-import Env from "./Env";
 import {Logger} from "./logger";
-import Utils from "./util/Utils";
+import {format as formatUrl} from "url";
+
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+Logger.infoImpl("ElectronManager", "Env is " + process.env.NODE_ENV);
 
 export default class ElectronManager {
     public static win: BrowserWindow;
@@ -62,7 +63,14 @@ export default class ElectronManager {
 
         ElectronManager.win.setMenu(menu);
 
-        ElectronManager.win.loadFile("src/renderer/html/index.html");
+        if (isDevelopment)
+            ElectronManager.win.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
+        else
+            ElectronManager.win.loadFile(formatUrl({
+                pathname: join(__dirname, "index.html"),
+                protocol: 'file',
+                slashes: true,
+            }));
 
         ElectronManager.win.webContents.on("did-finish-load", () => {
             ElectronManager.win.webContents.send("dark theme", Config.darkTheme);
