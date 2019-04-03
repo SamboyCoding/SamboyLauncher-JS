@@ -1,6 +1,6 @@
 <template>
     <div id="app">
-
+        SamboyLauncher!
     </div>
 </template>
 
@@ -24,6 +24,7 @@
         width: 100%;
         height: 100%;
         margin: 0;
+        background: #111;
     }
 
     * {
@@ -33,5 +34,6 @@
     #app {
         font-family: Roboto, Arial, sans-serif;
         background: radial-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5) 90%);
+        color: white;
     }
 </style>
