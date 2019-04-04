@@ -1225,7 +1225,7 @@ ipcMain.on("launch pack", (event: IpcMessageEvent, pack: Pack) => {
 
         //TODO: ^
 
-        memFreeGigs = 3;
+        memFreeGigs = 5;
     }
 
     const memGigs = memFreeGigs > 6 ? 6 : memFreeGigs;
