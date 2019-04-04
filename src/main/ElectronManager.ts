@@ -1,9 +1,10 @@
-import {app, BrowserWindow, Menu, MenuItem} from "electron";
+import {app, BrowserWindow, Menu, MenuItem, ipcMain} from "electron";
 import * as isDev from "electron-is-dev";
 import {join} from "path";
 import Config from "./config";
 import {Logger} from "./logger";
 import {format as formatUrl} from "url";
+import IpcMessageEvent = Electron.IpcMessageEvent;
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -14,6 +15,8 @@ export default class ElectronManager {
 
     public static init() {
         Logger.infoImpl("ElectronManager", "Init");
+
+        app.commandLine.appendSwitch("--enable-experimental-web-platform-features");
 
         app.on("ready", async () => {
             await ElectronManager.onReady();
@@ -31,6 +34,17 @@ export default class ElectronManager {
                 ElectronManager.createWindow();
             }
         });
+
+        ipcMain.on("maximize", (event: IpcMessageEvent) => {
+            if(ElectronManager.win.isMaximized())
+                ElectronManager.win.restore();
+            else
+                ElectronManager.win.maximize();
+        });
+
+        ipcMain.on("minimize", (event: IpcMessageEvent) => {
+            ElectronManager.win.minimize();
+        })
     }
 
     private static createWindow(): void {
@@ -39,6 +53,9 @@ export default class ElectronManager {
             frame: false,
             height: 720,
             width: 1280,
+            webPreferences: {
+                nodeIntegration: true,
+            }
         });
 
         const menu: Menu = new Menu();

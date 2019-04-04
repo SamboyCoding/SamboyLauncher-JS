@@ -1,12 +1,13 @@
 <template>
     <div id="app">
-        <div id="top-bar">
-            <h3>SamboyLauncher</h3>
-
-            <div id="window-controls">
-                <i class="material-icons" @click="doMinimize()">minimize</i>
-                <i class="material-icons" @click="doMaximize()">crop_din</i>
-                <i class="material-icons" @click="doClose()">close</i>
+        <top-bar/>
+        <div id="subnav">
+            <div id="packs">
+                <div class="pack" v-for="i in 8">
+                    <div class="pack-icon"></div>
+                    <div class="pack-shade"></div>
+                    <div class="pack-title">Pack {{i}}</div>
+                </div>
             </div>
         </div>
     </div>
@@ -14,34 +15,15 @@
 
 <script lang='ts'>
     import {Component, Vue} from "vue-property-decorator";
-    import {ipcRenderer} from "electron";
+    import TopBar from "./components/TopBar.vue";
 
     // noinspection JSUnusedGlobalSymbols
     @Component({
-        components: {},
+        components: {TopBar},
     })
     export default class App extends Vue {
-        public background: string = "";
-
         public mounted() {
-            ipcRenderer.on("backgrounds", (event, files) => {
-                let file = files[Math.floor(Math.random() * files.length)];
-                this.background = "./resources/backgrounds/" + file;
-            });
 
-            ipcRenderer.send("get backgrounds");
-        }
-
-        public doMinimize() {
-            ipcRenderer.send("minimize");
-        }
-
-        public doMaximize() {
-            ipcRenderer.send("maximize");
-        }
-
-        public doClose() {
-            window.close();
         }
     }
 </script>
@@ -54,9 +36,10 @@
         width: 100%;
         height: 100%;
         margin: 0;
+        overflow: hidden;
     }
 
-    h1,h2,h3,h4,h5 {
+    h1, h2, h3, h4, h5 {
         margin: 0;
     }
 
@@ -65,13 +48,14 @@
     }
 
     html {
-        background: url(./resources/backgrounds/4.jpg);
+        background: url(./resources/backgrounds/4.jpg) no-repeat fixed;
         background-size: cover;
     }
 
     #app {
         font-family: Roboto, Arial, sans-serif;
-        background: radial-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.9) 90%);
+        background: radial-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.9) 90%) no-repeat fixed;
+        background-size: cover;
         color: white;
         width: 100%;
         height: 100%;
@@ -79,24 +63,82 @@
         user-select: none;
     }
 
-    #top-bar {
-        -webkit-app-region: drag;
-        padding: 2rem 0 1.5rem;
-        margin: 0 2rem;
-        border-bottom: 1px solid #222;
-        display: flex;
+    ::-webkit-scrollbar{
+        background-color: transparent;
+    }
 
-        #window-controls {
-            margin-left: auto;
-            -webkit-app-region: none;
+    ::-webkit-scrollbar-thumb {
+        background: rgba(150, 150, 150, 0.3);
+    }
 
-            i {
-                color: #aaa;
-                transition: color 0.5s;
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(200, 200, 200, 0.3);
+    }
 
-                &:hover {
-                    color: #fff;
-                }
+    #subnav {
+        margin-top: 6rem;
+        height: calc(100% - 6rem);
+        overflow-y: scroll;
+
+        #packs {
+            padding: 3rem 2rem;
+            display: flex;
+            flex-flow: row wrap;
+        }
+
+        .pack {
+            flex-basis: 360px;
+            margin: 1rem 1.5%;
+            height: 225px;
+            cursor: pointer;
+            background: transparent;
+            position: relative;
+            transition: background 0.5s;
+            border-radius: 1rem;
+
+            .pack-icon {
+                width: 50%;
+                height: 50%;
+                position: absolute;
+                left: 25%;
+                top: 25%;
+                background-image: url(./resources/default_pack_icon.png);
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: center;
+            }
+
+            .pack-shade {
+                width: 100%;
+                height: 100%;
+                background: transparent;
+                transition: background 0.5s;
+                position: absolute;
+                top: 0;
+                left: 0;
+                border-radius: 1rem;
+            }
+
+            .pack-title {
+                color: white;
+                opacity: 0;
+                transition: opacity 0.5s;
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                text-align: left;
+                font-size: 24px;
+                padding: 0.4rem 1rem;
+            }
+
+            &:hover {
+                background: rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(6px);
+            }
+
+            &:hover .pack-title {
+                opacity: 1;
             }
         }
     }
