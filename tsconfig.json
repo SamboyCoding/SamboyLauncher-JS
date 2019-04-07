@@ -1,6 +1,20 @@
 {
-    "extends": "./node_modules/electron-webpack/tsconfig-base",
     "compilerOptions": {
-        "strict": false
-    }
+        "strict": false,
+        "target": "esnext",
+        "module": "none",
+        "importHelpers": true,
+        "experimentalDecorators": true,
+        "sourceMap": true,
+        "noImplicitThis": true,
+        "moduleResolution": "node",
+        "lib": [
+            "es2018",
+            "dom"
+        ]
+    },
+    "exclude": [
+        "node_modules",
+        "lib"
+    ]
 }

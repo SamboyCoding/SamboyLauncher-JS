@@ -1,14 +1,9 @@
-import {app, BrowserWindow, Menu, MenuItem, ipcMain} from "electron";
+import {app, BrowserWindow, ipcMain, IpcMessageEvent, Menu, MenuItem} from "electron";
 import * as isDev from "electron-is-dev";
 import {join} from "path";
+import {format as formatUrl} from "url";
 import Config from "./config";
 import {Logger} from "./logger";
-import {format as formatUrl} from "url";
-import IpcMessageEvent = Electron.IpcMessageEvent;
-
-const isDevelopment = process.env.NODE_ENV !== 'production';
-
-Logger.infoImpl("ElectronManager", "Env is " + process.env.NODE_ENV);
 
 export default class ElectronManager {
     public static win: BrowserWindow;
@@ -19,8 +14,12 @@ export default class ElectronManager {
         app.commandLine.appendSwitch("--enable-experimental-web-platform-features");
 
         app.on("ready", async () => {
-            await ElectronManager.onReady();
-            ElectronManager.createWindow();
+            try {
+                await ElectronManager.onReady();
+                await ElectronManager.createWindow();
+            } catch (e) {
+                Logger.errorImpl("ElectronManager", "Exception initializing! " + e);
+            }
         });
 
         app.on("window-all-closed", () => {
@@ -29,14 +28,14 @@ export default class ElectronManager {
             }
         });
 
-        app.on("activate", () => {
+        app.on("activate", async () => {
             if (ElectronManager.win === null) {
-                ElectronManager.createWindow();
+                await ElectronManager.createWindow();
             }
         });
 
         ipcMain.on("maximize", (event: IpcMessageEvent) => {
-            if(ElectronManager.win.isMaximized())
+            if (ElectronManager.win.isMaximized())
                 ElectronManager.win.restore();
             else
                 ElectronManager.win.maximize();
@@ -44,10 +43,10 @@ export default class ElectronManager {
 
         ipcMain.on("minimize", (event: IpcMessageEvent) => {
             ElectronManager.win.minimize();
-        })
+        });
     }
 
-    private static createWindow(): void {
+    private static async createWindow() {
         Logger.infoImpl("ElectronManager", "Initializing ElectronManager.win...");
         ElectronManager.win = new BrowserWindow({
             frame: false,
@@ -55,7 +54,8 @@ export default class ElectronManager {
             width: 1280,
             webPreferences: {
                 nodeIntegration: true,
-            }
+            },
+            show: false,
         });
 
         const menu: Menu = new Menu();
@@ -80,22 +80,18 @@ export default class ElectronManager {
 
         ElectronManager.win.setMenu(menu);
 
-        if (isDevelopment)
-            ElectronManager.win.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
-        else
-            ElectronManager.win.loadFile(formatUrl({
-                pathname: join(__dirname, "index.html"),
-                protocol: 'file',
-                slashes: true,
-            }));
-
-        ElectronManager.win.webContents.on("did-finish-load", () => {
+        ElectronManager.win.once("ready-to-show", () => {
+            Logger.infoImpl("ElectronManager", "Showing window...");
             ElectronManager.win.webContents.send("dark theme", Config.darkTheme);
+            ElectronManager.win.show();
         });
 
         ElectronManager.win.on("closed", () => {
             ElectronManager.win = null;
         });
+
+        await ElectronManager.win.loadFile(join(__dirname, "../renderer/index.html"));
+
     }
 
     private static async onReady() {

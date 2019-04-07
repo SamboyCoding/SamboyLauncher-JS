@@ -1125,5 +1125,9 @@ ipcMain.on("install update", (event: IpcMessageEvent) => {
     autoUpdater.quitAndInstall();
 });
 
+process.on("uncaughtException", error => {
+    Logger.errorImpl("Process", "Uncaught Exception: " + error);
+});
+
 //#endregion
 // -----------------------

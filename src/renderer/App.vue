@@ -17,14 +17,13 @@
     import {Component, Vue} from "vue-property-decorator";
     import TopBar from "./components/TopBar.vue";
 
-    // noinspection JSUnusedGlobalSymbols
     @Component({
-        components: {TopBar},
+        components: {
+            TopBar
+        },
     })
     export default class App extends Vue {
-        public mounted() {
 
-        }
     }
 </script>
 

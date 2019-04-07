@@ -9,3 +9,9 @@ dist/
 \.idea/modules\.xml
 
 \.idea/misc\.xml
+
+*.js
+
+*.map
+
+lib/
