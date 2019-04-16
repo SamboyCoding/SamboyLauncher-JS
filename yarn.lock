@@ -33,10 +33,12 @@
     "@types/got" "^8"
     "@types/node" "*"
 
-"@types/electron-is-dev@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@types/electron-is-dev/-/electron-is-dev-0.3.0.tgz#28dc6aa4c9493869a8c5da29ebd586648f5ffb70"
-  integrity sha512-Y7ur72wnUrPACXLnw8RyO+vPMOPTB1zGm0yJBPZ750+jTk2mEpC4EgoRSBpjrQW21v6p39ZPk7tPDMxIVyDMcg==
+"@types/electron-is-dev@^1.1.0":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@types/electron-is-dev/-/electron-is-dev-1.1.1.tgz#b48cb249b4615915b16477891160414b57b9a8c5"
+  integrity sha512-axJ7z6N/FfXHf0Q6MO75Sl7gXCqAeIJMxxYd8n80FNmGev8GPHMcva31zQQX+i4B7aBUzdyVY1UfQeFxph3xVQ==
+  dependencies:
+    electron-is-dev "*"
 
 "@types/events@*":
   version "3.0.0"
@@ -956,6 +958,11 @@ electron-download@^4.1.0:
     rc "^1.2.1"
     semver "^5.4.1"
     sumchecker "^2.0.2"
+
+electron-is-dev@*:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/electron-is-dev/-/electron-is-dev-1.1.0.tgz#b15a2a600bdc48a51a857d460e05f15b19a2522c"
+  integrity sha512-Z1qA/1oHNowGtSBIcWk0pcLEqYT/j+13xUw/MYOrBUOL4X7VN0i0KCTf5SqyvMPmW5pSPKbo28wkxMxzZ20YnQ==
 
 electron-is-dev@^1.0.1:
   version "1.0.1"
