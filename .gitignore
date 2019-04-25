@@ -15,3 +15,7 @@ src/**/*.js
 *.map
 
 lib/
+
+\.idea/dictionaries/
+
+yarn.lock
