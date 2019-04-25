@@ -10,7 +10,7 @@ dist/
 
 \.idea/misc\.xml
 
-*.js
+src/**/*.js
 
 *.map
 
