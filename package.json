@@ -28,7 +28,7 @@
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.3.1",
         "@types/hasha": "3.0.0",
-        "asar": "^1.0.0",
+        "asar": "^2.0.0",
         "chalk": "^2.4.1",
         "download": "^7.1.0",
         "electron-is-dev": "^1.0.1",
