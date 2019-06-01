@@ -41,7 +41,7 @@
         "node-fetch": "^2.2.0",
         "rmfr": "^2.0.0",
         "semver": "^6.0.0",
-        "unzipper": "^0.9.3",
+        "unzipper": "^0.10.0",
         "vue": "^2.5.17"
     },
     "build": {
