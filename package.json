@@ -58,9 +58,6 @@
         "vue-hot-reload-api": "^2.3.3",
         "vuex": "^3.1.1"
     },
-    "browser": {
-        "fs": false
-    },
     "build": {
         "appId": "me.samboycoding.samboylauncherjs",
         "productName": "SamboyLauncher",

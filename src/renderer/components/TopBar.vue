@@ -12,8 +12,8 @@
 </template>
 
 <script lang="ts">
-    import {Component, Vue} from "vue-property-decorator";
     import {ipcRenderer} from "electron";
+    import {Component, Vue} from "vue-property-decorator";
 
     @Component({
         components: {},
@@ -45,7 +45,7 @@
         border-bottom: 1px solid #222;
         display: flex;
         align-items: center;
-        position: fixed;
+        //position: absolute;
         width: calc(100% - 4rem);
 
 

@@ -1,31 +1,24 @@
+import Page from "./model/Page";
 <template>
     <div id="app">
         <top-bar></top-bar>
 
         <div id="subnav">
-            <div id="top-menu">
-                <div id="menu-item-play">
-                    <i class="material-icons">play_arrow</i>
-                    <br>
-                    Play
-                </div>
-                <div id="menu-item-discover">
-                    <i class="material-icons">search</i>
-                    <br>
-                    Discover
-                </div>
-                <div id="menu-item-create">
-                    <i class="material-icons">settings</i>
-                    <br>
-                    Create
+            <main-menu v-if="page === Page.MAIN_MENU"></main-menu>
+            <div id="play" v-else-if="page === Page.PLAY">
+                <div id="packs">
+                    <div class="pack" v-for="i in 8">
+                        <div class="pack-icon"></div>
+                        <div class="pack-shade"></div>
+                        <div class="pack-title">Pack {{i}}</div>
+                    </div>
                 </div>
             </div>
-            <div id="packs" v-if="false">
-                <div class="pack" v-for="i in 8">
-                    <div class="pack-icon"></div>
-                    <div class="pack-shade"></div>
-                    <div class="pack-title">Pack {{i}}</div>
-                </div>
+            <div id="discover" v-else-if="page === Page.DISCOVER">
+
+            </div>
+            <div id="create" v-else-if="page === Page.CREATE">
+
             </div>
         </div>
     </div>
@@ -33,15 +26,22 @@
 
 <script lang='ts'>
     import {Component, Vue} from "vue-property-decorator";
+    import MainMenu from "./components/MainMenu.vue";
     import TopBar from "./components/TopBar.vue";
+    import Page from "./model/Page";
 
     @Component({
         components: {
-            TopBar
+            TopBar,
+            MainMenu
         },
     })
     export default class App extends Vue {
+        public Page = Page; //Expose to the view
 
+        get page() {
+            return this.$store.state.currentPage as Page;
+        }
     }
 </script>
 
@@ -78,7 +78,7 @@
         user-select: none;
     }
 
-    ::-webkit-scrollbar{
+    ::-webkit-scrollbar {
         background-color: transparent;
     }
 
@@ -91,33 +91,10 @@
     }
 
     #subnav {
-        margin-top: 6rem;
+        //margin-top: 6rem;
         height: calc(100% - 6rem);
-        overflow-y: scroll;
-
-        #top-menu {
-            display: flex;
-            flex-flow: row nowrap;
-            height: 100%;
-            overflow: hidden;
-            width: 100%;
-
-            & > div {
-                flex-grow: 1;
-                text-align: center;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-
-                &:not(:last-of-type) {
-                    border-right: 1px solid #222;
-                }
-
-                &:hover {
-                    //TODO: Hover effect w/ transition
-                }
-            }
-        }
+        overflow-y: auto;
+        overflow-x: hidden;
 
         #packs {
             padding: 3rem 2rem;

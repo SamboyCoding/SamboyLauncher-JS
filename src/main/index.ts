@@ -1,5 +1,4 @@
 //#region Imports
-import * as asar from "asar";
 import * as child_process from "child_process";
 import {ipcMain, IpcMessageEvent} from "electron";
 import * as isDev from "electron-is-dev";
@@ -30,8 +29,8 @@ import {
     getVanillaVersionManifest
 } from "./gameInstaller";
 import {Logger} from "./logger";
-import {Mod} from "./objects/mod";
 import {GameVersionData, LibraryMetadata, Pack, VanillaManifestVersion} from "./objects";
+import {Mod} from "./objects/mod";
 import Utils from "./util/Utils";
 //#endregion
 
@@ -45,18 +44,6 @@ import Utils from "./util/Utils";
 Config.load();
 ElectronManager.init();
 AuthData.load();
-
-ipcMain.on("get backgrounds", (event: IpcMessageEvent) => {
-    if (fs.existsSync(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"))) {
-        fs.readdir(path.join(__dirname, "..", "..", "src", "renderer", "resources", "backgrounds"), (err: NodeJS.ErrnoException, files: string[]) => {
-            event.sender.send("backgrounds", files);
-        });
-    } else {
-        event.sender.send("backgrounds", asar.listPackage("app.asar")
-            .filter((file: string) => file.indexOf("renderer") >= 0 && file.indexOf("backgrounds") >= 0)
-            .map((file: string) => file.replace(".." + path.sep + "renderer", "..")));
-    }
-});
 
 ipcMain.on("get installed packs", (event: IpcMessageEvent) => {
     if (!fs.existsSync(Env.packsDir)) {
