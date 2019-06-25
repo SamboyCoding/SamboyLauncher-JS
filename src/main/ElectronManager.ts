@@ -90,7 +90,7 @@ export default class ElectronManager {
             ElectronManager.win = null;
         });
 
-        await ElectronManager.win.loadFile(join(__dirname, "../renderer/index.html"));
+        await ElectronManager.win.loadFile(join(__dirname, "../../dist/index.html"));
 
     }
 

@@ -19,3 +19,5 @@ lib/
 \.idea/dictionaries/
 
 yarn.lock
+
+\.cache/
