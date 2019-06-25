@@ -1,6 +1,6 @@
 <template>
     <div id="top-bar">
-        <h3>SamboyLauncher 2.0</h3>
+        <h3 @click="page = Page.MAIN_MENU">SamboyLauncher 2.0</h3>
 
         <div id="window-controls">
             <i class="material-icons" id="profile-button" @click="showProfile()">account_circle</i>
@@ -14,11 +14,14 @@
 <script lang="ts">
     import {ipcRenderer} from "electron";
     import {Component, Vue} from "vue-property-decorator";
+    import Page from "../model/Page";
 
     @Component({
         components: {},
     })
     export default class TopBar extends Vue {
+        public Page = Page;
+
         public doMinimize() {
             ipcRenderer.send("minimize");
         }
@@ -34,6 +37,14 @@
         public showProfile() {
 
         }
+
+        get page() {
+            return this.$store.state.currentPage as Page;
+        }
+
+        set page(value: Page) {
+            this.$store.commit("setCurrentPage", value);
+        }
     }
 </script>
 
@@ -48,6 +59,15 @@
         //position: absolute;
         width: calc(100% - 4rem);
 
+        h3 {
+            color: #aaa;
+            transition: color 0.5s;
+            -webkit-app-region: none;
+
+            &:hover {
+                color: #fff;
+            }
+        }
 
         #window-controls {
             margin-left: auto;

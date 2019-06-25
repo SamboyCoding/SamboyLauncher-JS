@@ -9,7 +9,7 @@ export default new Vuex.Store({
         currentPage: Page.MAIN_MENU
     },
     mutations: {
-        setPage: (state, payload: Page) => {
+        setCurrentPage: (state, payload: Page) => {
             state.currentPage = payload;
         }
     },

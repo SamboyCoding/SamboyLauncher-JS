@@ -7,8 +7,8 @@ import Page from "./model/Page";
             <main-menu v-if="page === Page.MAIN_MENU"></main-menu>
             <div id="play" v-else-if="page === Page.PLAY">
                 <div id="packs">
-                    <div class="pack" v-for="i in 8">
-                        <div class="pack-icon"></div>
+                    <div class="pack" v-for="i in 32">
+                        <div class="pack-icon" style="background-image: url(./resources/default_pack_icon.png);"></div>
                         <div class="pack-shade"></div>
                         <div class="pack-title">Pack {{i}}</div>
                     </div>
@@ -18,7 +18,11 @@ import Page from "./model/Page";
 
             </div>
             <div id="create" v-else-if="page === Page.CREATE">
-
+                <div class="pack" id="create-pack">
+                    <div class="pack-icon">
+                        <i class="material-icons">add</i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -100,18 +104,18 @@ import Page from "./model/Page";
             padding: 3rem 2rem;
             display: flex;
             flex-flow: row wrap;
-            justify-content: space-between;
+            justify-content: space-evenly;
         }
 
         .pack {
             flex-basis: 360px;
             margin: 1rem 1.5%;
             height: 225px;
-            cursor: pointer;
+            //cursor: pointer;
             background: transparent;
             position: relative;
-            transition: background 0.5s;
-            border-radius: 1rem;
+            transition: background 0.25s;
+            border-radius: 0.5rem;
 
             .pack-icon {
                 width: 50%;
@@ -119,7 +123,7 @@ import Page from "./model/Page";
                 position: absolute;
                 left: 25%;
                 top: 25%;
-                background-image: url(./resources/default_pack_icon.png);
+
                 background-size: contain;
                 background-repeat: no-repeat;
                 background-position: center;
@@ -129,7 +133,7 @@ import Page from "./model/Page";
                 width: 100%;
                 height: 100%;
                 background: transparent;
-                transition: background 0.5s;
+                transition: background 0.25s;
                 position: absolute;
                 top: 0;
                 left: 0;
@@ -150,7 +154,7 @@ import Page from "./model/Page";
             }
 
             &:hover {
-                background: rgba(0, 0, 0, 0.3);
+                background: rgba(255, 255, 255, 0.1);
                 backdrop-filter: blur(6px);
             }
 

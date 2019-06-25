@@ -1,14 +1,14 @@
 <template>
     <div id="main-menu">
-        <div id="menu-item-play">
+        <div @click="page = Page.PLAY" id="menu-item-play">
             <i class="material-icons">play_arrow</i>
             Play
         </div>
-        <div id="menu-item-discover">
+        <div @click="page = Page.DISCOVER" id="menu-item-discover">
             <i class="material-icons">search</i>
             Discover
         </div>
-        <div id="menu-item-create">
+        <div @click="page = Page.CREATE" id="menu-item-create">
             <i class="material-icons">edit</i>
             Create
         </div>
@@ -17,10 +17,19 @@
 
 <script lang="ts">
     import {Component, Vue} from "vue-property-decorator";
+    import Page from "../model/Page";
 
     @Component
     export default class MainMenu extends Vue {
+        public Page = Page;
 
+        get page() {
+            return this.$store.state.currentPage;
+        }
+
+        set page(value: Page) {
+            this.$store.commit("setCurrentPage", value);
+        }
     }
 </script>
 
@@ -38,7 +47,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            transition: background .25s, flex-grow .25s;
+            transition: background .15s, flex-grow .15s;
             font-size: 2rem;
             font-weight: 300;
 
