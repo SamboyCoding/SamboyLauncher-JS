@@ -19,8 +19,6 @@
     "license": "ISC",
     "devDependencies": {
         "@types/download": "^6.2.2",
-        "@types/electron-is-dev": "^1.1.1",
-        "@types/hasha": "3.0.1",
         "@types/jsonfile": "^5.0.0",
         "@types/jszip": "^3.1.6",
         "@types/mkdirp": "^0.5.2",
@@ -40,7 +38,6 @@
     },
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.9.0",
-        "asar": "^2.0.1",
         "chalk": "^2.4.1",
         "download": "^7.1.0",
         "electron-is-dev": "^1.1.0",

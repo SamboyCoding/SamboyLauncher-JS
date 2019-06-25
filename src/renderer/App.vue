@@ -1,8 +1,26 @@
 <template>
     <div id="app">
-        <top-bar/>
+        <top-bar></top-bar>
+
         <div id="subnav">
-            <div id="packs">
+            <div id="top-menu">
+                <div id="menu-item-play">
+                    <i class="material-icons">play_arrow</i>
+                    <br>
+                    Play
+                </div>
+                <div id="menu-item-discover">
+                    <i class="material-icons">search</i>
+                    <br>
+                    Discover
+                </div>
+                <div id="menu-item-create">
+                    <i class="material-icons">settings</i>
+                    <br>
+                    Create
+                </div>
+            </div>
+            <div id="packs" v-if="false">
                 <div class="pack" v-for="i in 8">
                     <div class="pack-icon"></div>
                     <div class="pack-shade"></div>
@@ -77,10 +95,35 @@
         height: calc(100% - 6rem);
         overflow-y: scroll;
 
+        #top-menu {
+            display: flex;
+            flex-flow: row nowrap;
+            height: 100%;
+            overflow: hidden;
+            width: 100%;
+
+            & > div {
+                flex-grow: 1;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+
+                &:not(:last-of-type) {
+                    border-right: 1px solid #222;
+                }
+
+                &:hover {
+                    //TODO: Hover effect w/ transition
+                }
+            }
+        }
+
         #packs {
             padding: 3rem 2rem;
             display: flex;
             flex-flow: row wrap;
+            justify-content: space-between;
         }
 
         .pack {
