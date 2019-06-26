@@ -20,8 +20,10 @@ import Page from "./model/Page";
             <div id="create" v-else-if="page === Page.CREATE">
                 <div class="pack" id="create-pack">
                     <div class="pack-icon">
-                        <i class="material-icons">add</i>
+                        +
                     </div>
+                    <div class="pack-shade"></div>
+                    <div class="pack-title">Create a Pack</div>
                 </div>
             </div>
         </div>
@@ -105,6 +107,21 @@ import Page from "./model/Page";
             display: flex;
             flex-flow: row wrap;
             justify-content: space-evenly;
+        }
+
+        #create {
+            display: flex;
+            flex-flow: row wrap;
+            justify-content: space-evenly;
+            padding: 3rem 2rem;
+
+            .pack-icon {
+                text-align: center;
+                font-size: 6rem;
+                display: flex;
+                flex-flow: column nowrap;
+                justify-content: center;
+            }
         }
 
         .pack {
