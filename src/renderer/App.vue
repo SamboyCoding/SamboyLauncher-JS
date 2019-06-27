@@ -1,4 +1,3 @@
-import Page from "./model/Page";
 <template>
     <div id="app">
         <top-bar></top-bar>
@@ -17,27 +16,14 @@ import Page from "./model/Page";
             <div id="discover" v-else-if="page === Page.DISCOVER">
 
             </div>
-            <div id="create" v-else-if="page === Page.CREATE">
-                <div id="created-packs">
-                    <div class="pack" id="create-pack" @click="editingPack = newPack">
-                        <div class="pack-icon">
-                            +
-                        </div>
-                        <div class="pack-shade"></div>
-                        <div class="pack-title">Create a Pack</div>
-                    </div>
-                </div>
-                <div id="edit-pack" :class="{show: !!editingPack}">
-                    <input id="edit-pack-name" v-model="editingPack.name" v-if="editingPack">
-                    <textarea id="edit-pack-desc" v-model="editingPack.description" v-if="editingPack"></textarea>
-                </div>
-            </div>
+            <create-menu  v-else-if="page === Page.CREATE"></create-menu>
         </div>
     </div>
 </template>
 
 <script lang='ts'>
     import {Component, Vue} from "vue-property-decorator";
+    import CreateMenu from "./components/CreateMenu.vue";
     import MainMenu from "./components/MainMenu.vue";
     import TopBar from "./components/TopBar.vue";
     import Page from "./model/Page";
@@ -45,20 +31,12 @@ import Page from "./model/Page";
     @Component({
         components: {
             TopBar,
-            MainMenu
+            MainMenu,
+            CreateMenu
         },
     })
     export default class App extends Vue {
         public Page = Page; //Expose to the view
-
-        public editingPack = null;
-
-        public newPack = {
-            uploaded: false,
-            name: "[Enter Pack Name]",
-            description: "[Enter Pack Description]",
-        };
-
 
         get page() {
             return this.$store.state.currentPage as Page;
@@ -125,62 +103,7 @@ import Page from "./model/Page";
             justify-content: space-evenly;
         }
 
-        #create {
-            display: flex;
-            height: 100%;
 
-            #created-packs {
-                display: flex;
-                flex-flow: row wrap;
-                justify-content: space-evenly;
-                padding: 3rem 2rem;
-                flex-grow: 1;
-                transition: flex-grow 0.5s;
-            }
-
-            #edit-pack {
-                flex-grow: 0;
-                flex-basis: 0;
-                transition: flex-grow 0.5s;
-                overflow: hidden;
-                height: 100%;
-                border-left: 1px solid #222;
-
-                &.show {
-                    flex-grow: 2;
-                    padding: 3rem 2rem;
-                }
-
-                input, textarea {
-                    background: none;
-                    border: none;
-                    outline: none;
-                    border-bottom: 1px solid #222;
-                    padding: 1rem 1rem .4rem 1rem;
-                    display: block;
-                    color: inherit;
-                    font-family: inherit;
-                    resize: none;
-                }
-
-                #edit-pack-name {
-                    font-size: 2rem;
-                    width: 500px;
-                }
-
-                #edit-pack-desc {
-                    width: 500px;
-                }
-            }
-
-            .pack-icon {
-                text-align: center;
-                font-size: 6rem;
-                display: flex;
-                flex-flow: column nowrap;
-                justify-content: center;
-            }
-        }
 
         .pack {
             flex-basis: 360px;
