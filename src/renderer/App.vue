@@ -116,11 +116,12 @@
             border-radius: 0.5rem;
 
             .pack-icon {
-                width: 50%;
+                width: 80%;
                 height: 50%;
                 position: absolute;
-                left: 25%;
+                left: 10%;
                 top: 25%;
+                overflow: hidden;
 
                 background-size: contain;
                 background-repeat: no-repeat;
@@ -136,6 +137,17 @@
                 top: 0;
                 left: 0;
                 border-radius: 1rem;
+            }
+
+            .pack-installation {
+                background: rgba(0, 0, 0, 0.75);
+                position: absolute;
+                right: 0;
+                top: 0;
+                width: 40%;
+                height: 100%;
+                transition: width 0.25s;
+                border-radius: 8px;
             }
 
             .pack-title {

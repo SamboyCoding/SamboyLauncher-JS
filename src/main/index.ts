@@ -30,6 +30,7 @@ import {
 } from "./gameInstaller";
 import {Logger} from "./logger";
 import {GameVersionData, LibraryMetadata, Pack, VanillaManifestVersion} from "./objects";
+import MCVersion from "./objects/MCVersion";
 import {Mod} from "./objects/mod";
 import Utils from "./util/Utils";
 //#endregion
@@ -44,6 +45,7 @@ import Utils from "./util/Utils";
 Config.load();
 ElectronManager.init();
 AuthData.load();
+MCVersion.Get(); //Preload these.
 
 ipcMain.on("get installed packs", (event: IpcMessageEvent) => {
     if (!fs.existsSync(Env.packsDir)) {

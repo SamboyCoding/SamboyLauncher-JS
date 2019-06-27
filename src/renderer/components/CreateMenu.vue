@@ -1,12 +1,20 @@
 <template>
     <div id="create">
         <div id="created-packs">
-            <div class="pack" id="create-pack" @click="editingPack = newPack">
+            <div @click="editingPack = {} Object.assign(editingPack, newPack)" class="pack" id="create-pack">
                 <div class="pack-icon">
                     +
                 </div>
                 <div class="pack-shade"></div>
                 <div class="pack-title">Create a Pack</div>
+            </div>
+            <div class="pack" v-for="pack in installingPacks">
+                <div class="pack-icon">
+                    {{pack.name}}
+                </div>
+                <div class="pack-shade"></div>
+                <div :style="{width: ((1 - pack.installProgress) * 100) + '%'}" class="pack-installation"></div>
+                <div class="pack-title">Creating "{{pack.name}}" ({{pack.installProgress * 100}}%)</div>
             </div>
         </div>
         <div id="edit-pack" :class="{show: !!editingPack}">
@@ -15,39 +23,98 @@
 
             <br>
 
-            <label for="edit-pack-mc-ver">Game Version:</label>
-            <select id="edit-pack-mc-ver" v-model="editingPack.mcVersion" v-if="editingPack">
+            <label for="edit-pack-mc-ver" v-if="editingPack">Game Version:</label>
+            <select @change="updateForgeVer()" id="edit-pack-mc-ver" v-if="editingPack" v-model="editingPack.mcVersion">
                 <option v-for="ver in mcVersions">{{ver}}</option>
             </select>
+
+            <br><br>
+
+            <label for="edit-pack-forge-ver" v-if="editingPack">Forge Version:</label>
+            <select id="edit-pack-forge-ver" v-if="editingPack && editingPack.mcVersion" v-model="editingPack.fmlVersion">
+                <option v-for="ver in forgeVersions[editingPack.mcVersion]">{{ver}}</option>
+            </select>
+
+            <button @click="editingPack = null" id="cancel-edit-pack" v-if="editingPack">Cancel</button>
+            <button @click="savePack()" id="finish-edit-pack" v-if="editingPack">
+                <span v-if="editingPack.needsInstall">Create & Install</span>
+                <span v-else>Save</span>
+            </button>
         </div>
     </div>
 </template>
 
 <script lang="ts">
+    import {ipcRenderer} from "electron";
     import {Component, Vue} from "vue-property-decorator";
     import Config from "../Config";
+    import parser = require("fast-xml-parser");
 
     @Component({
         components: {},
     })
     export default class CreateMenu extends Vue {
-        public editingPack = null;
         public mcVersions = ["Loading version listing..."];
+        public forgeVersions = {};
 
         public newPack = {
             uploaded: false,
             name: "[Enter Pack Name]",
             description: "[Enter Pack Description]",
-            mcVersion: ""
+            mcVersion: "",
+            fmlVersion: "",
+            needsInstall: true,
+            amAuthor: true,
         };
 
-        public mounted() {
-            fetch(Config.API_URL + "/pack/versions").then(res => {
-                return res.json();
-            }).then((array: string[]) => {
-                this.mcVersions = array;
-                this.newPack.mcVersion = array[array.length - 1];
-            });
+        public async mounted() {
+            let array = await (await fetch(Config.API_URL + "/pack/versions")).json();
+            this.mcVersions = array;
+            this.newPack.mcVersion = array[array.length - 1];
+
+            let xml = await (await fetch("http://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.xml")).text();
+            let json = parser.parse(xml);
+
+            let versions = json.metadata.versioning.versions.version;
+
+            for (let version of this.mcVersions) {
+                this.forgeVersions[version] = versions.filter(ver => ver.startsWith(version))
+                    .map(ver => ver.replace(version + "-", ""));
+            }
+
+            let vers = this.forgeVersions[this.newPack.mcVersion];
+            this.newPack.fmlVersion = vers[vers.length - 1];
+        }
+
+        public updateForgeVer() {
+            let vers = this.forgeVersions[this.editingPack.mcVersion];
+            this.editingPack.fmlVersion = vers[vers.length - 1];
+        }
+
+        get editingPack() {
+            return this.$store.state.editingPack;
+        }
+
+        set editingPack(val) {
+            this.$store.commit("setEditingPack", val);
+        }
+
+        get installingPacks() {
+            return this.$store.state.installingPacks;
+        }
+
+        public savePack() {
+            if (/[^\w\d\s]/g.test(this.editingPack.name)) {
+                alert("Pack name must be alphanumeric");
+                return;
+            }
+
+            let pack = this.editingPack;
+            pack.installProgress = 0;
+
+            this.$store.commit("queuePackInstall", pack);
+            ipcRenderer.send("install game", pack.mcVersion, pack.fmlVersion);
+            this.editingPack = null;
         }
     }
 </script>
@@ -62,7 +129,7 @@
             flex-flow: row wrap;
             justify-content: space-evenly;
             padding: 3rem 2rem;
-            flex-grow: 1;
+            flex-grow: 2;
             transition: flex-grow 0.5s;
         }
 
@@ -73,9 +140,10 @@
             overflow: hidden;
             height: 100%;
             border-left: 1px solid #222;
+            position: relative;
 
             &.show {
-                flex-grow: 2;
+                flex-grow: 1;
                 padding: 3rem 2rem;
             }
 
@@ -109,6 +177,46 @@
 
             option {
                 border: none;
+            }
+
+            #cancel-edit-pack, #finish-edit-pack {
+                position: absolute;
+                bottom: 1rem;
+                width: calc(50% - 1rem);
+                padding: 1rem;
+                background: none;
+                color: white;
+                font-family: inherit;
+                border: 1px solid #222;
+                font-size: 1rem;
+                outline: none;
+            }
+
+            #cancel-edit-pack {
+                left: 1rem;
+                border-radius: 4px 0 0 4px;
+
+                &:hover {
+                    background: rgba(255, 100, 100, 0.1);
+                }
+
+                &:active {
+                    background: rgba(255, 50, 50, 0.1);
+                }
+            }
+
+            #finish-edit-pack {
+                right: 1rem;
+                border-radius: 0 4px 4px 0;
+                border-left: none;
+
+                &:hover {
+                    background: rgba(100, 255, 100, 0.1);
+                }
+
+                &:active {
+                    background: rgba(0, 255, 0, 0.1);
+                }
             }
         }
 
