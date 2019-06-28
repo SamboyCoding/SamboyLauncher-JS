@@ -85,6 +85,13 @@ export default class MCVersion {
             const json: { latest: any, versions: { id: string, type: string, url: string }[] } = await resp.json();
 
             json.versions.forEach(ver => MCVersion._cache.set(ver.id, new MCVersion(ver)));
+
+            let releases = json.versions.filter(v => v.type === "release").length;
+            let snapshots = json.versions.filter(v => v.type === "snapshot").length;
+            let oldBetas = json.versions.filter(v => v.type === "old_beta").length;
+            let oldAlphas = json.versions.filter(v => v.type === "old_alpha").length;
+
+            Logger.infoImpl("Minecraft Version Manager", `Loaded ${json.versions.length} versions, of which ${releases} are release builds, ${snapshots} are snapshots, ${oldBetas} are beta builds, and ${oldAlphas} are alpha builds.`);
         }
 
         if (name) {

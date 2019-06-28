@@ -1,7 +1,7 @@
 <template>
     <div id="create">
         <div id="created-packs">
-            <div @click="editingPack = {} Object.assign(editingPack, newPack)" class="pack" id="create-pack">
+            <div @click="editingPack = {}; Object.assign(editingPack, newPack)" class="pack" id="create-pack">
                 <div class="pack-icon">
                     +
                 </div>
@@ -84,6 +84,7 @@
 
             let vers = this.forgeVersions[this.newPack.mcVersion];
             this.newPack.fmlVersion = vers[vers.length - 1];
+            console.log("Forge versions", this.forgeVersions);
         }
 
         public updateForgeVer() {
