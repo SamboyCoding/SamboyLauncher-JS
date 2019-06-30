@@ -5,6 +5,7 @@
         "module": "none",
         "importHelpers": true,
         "experimentalDecorators": true,
+        "esModuleInterop": true,
         "sourceMap": true,
         "noImplicitThis": true,
         "moduleResolution": "node",

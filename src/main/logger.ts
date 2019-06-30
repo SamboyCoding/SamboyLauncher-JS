@@ -1,5 +1,5 @@
 import chalk, {Chalk} from "chalk";
-import * as moment from 'moment';
+import moment from "moment";
 
 export class Logger {
 

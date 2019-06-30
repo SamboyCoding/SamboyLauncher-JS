@@ -2,7 +2,8 @@ import {existsSync, readdirSync, readFileSync} from "fs";
 import {join} from "path";
 import Env from "../Env";
 import {Logger} from "../logger";
-import InstallJson from "./InstallJson";
+import InstalledPackJSON from "./InstalledPackJSON";
+import MCVersion from "./MCVersion";
 
 export default class InstalledPack {
     private static byNameMap: Map<string, InstalledPack> = new Map<string, InstalledPack>();
@@ -31,18 +32,19 @@ export default class InstalledPack {
     // TODO
     // public installedMods: ModJar[];
     // public overrides: OverrideFile[];
-    // public gameVersion: MCVersion;
+    public gameVersion: MCVersion;
     // public forgeVersion: ForgeVersion;
 
 
     constructor(baseDir: string) {
         const installJsonPath = join(baseDir, "install.json");
-        const installJson = JSON.parse(readFileSync(installJsonPath).toString("utf8")) as InstallJson;
+        const installJson = JSON.parse(readFileSync(installJsonPath).toString("utf8")) as InstalledPackJSON;
 
         this.name = installJson.packName;
         this.installedVersion = installJson.installedVersion;
+        MCVersion.Get(installJson.gameVersion).then(ver => this.gameVersion = ver);
 
-        //TODO: Load jars, overrides, mc version, forge version.
+        //TODO: Load jars, overrides, forge version.
     }
 
     get packDirectory(): string {

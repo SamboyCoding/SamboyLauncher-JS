@@ -114,14 +114,17 @@
             position: relative;
             transition: background 0.25s;
             border-radius: 0.5rem;
+            overflow: hidden;
 
             .pack-icon {
                 width: 80%;
-                height: 50%;
+                height: 112px;
                 position: absolute;
                 left: 10%;
-                top: 25%;
+                top: 61px;
                 overflow: hidden;
+                white-space: nowrap;
+                text-align: center;
 
                 background-size: contain;
                 background-repeat: no-repeat;
@@ -140,13 +143,13 @@
             }
 
             .pack-installation {
-                background: rgba(0, 0, 0, 0.75);
+                background: rgba(0, 0, 0, 0.5);
                 position: absolute;
                 right: 0;
                 top: 0;
-                width: 40%;
-                height: 100%;
-                transition: width 0.25s;
+                width: 100%;
+                height: 40%;
+                transition: height 0.25s;
                 border-radius: 8px;
             }
 

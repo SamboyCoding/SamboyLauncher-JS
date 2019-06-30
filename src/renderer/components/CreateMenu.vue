@@ -1,20 +1,20 @@
 <template>
     <div id="create">
         <div id="created-packs">
-            <div @click="editingPack = {}; Object.assign(editingPack, newPack)" class="pack" id="create-pack">
+            <div @click="createPack()" class="pack" id="create-pack">
                 <div class="pack-icon">
                     +
                 </div>
                 <div class="pack-shade"></div>
                 <div class="pack-title">Create a Pack</div>
             </div>
-            <div class="pack" v-for="pack in installingPacks">
+            <div class="pack" v-for="(percent, name) in installingPacks">
                 <div class="pack-icon">
-                    {{pack.name}}
+                    {{name}}
                 </div>
                 <div class="pack-shade"></div>
-                <div :style="{width: ((1 - pack.installProgress) * 100) + '%'}" class="pack-installation"></div>
-                <div class="pack-title">Creating "{{pack.name}}" ({{pack.installProgress * 100}}%)</div>
+                <div :style="{height: ((1 - percent) * 225) + 'px'}" class="pack-installation"></div>
+                <div class="pack-title">Creating "{{name}}" ({{percent * 100}}%)</div>
             </div>
         </div>
         <div id="edit-pack" :class="{show: !!editingPack}">
@@ -24,14 +24,14 @@
             <br>
 
             <label for="edit-pack-mc-ver" v-if="editingPack">Game Version:</label>
-            <select @change="updateForgeVer()" id="edit-pack-mc-ver" v-if="editingPack" v-model="editingPack.mcVersion">
+            <select @change="updateForgeVer()" id="edit-pack-mc-ver" v-if="editingPack" v-model="mcVers">
                 <option v-for="ver in mcVersions">{{ver}}</option>
             </select>
 
             <br><br>
 
             <label for="edit-pack-forge-ver" v-if="editingPack">Forge Version:</label>
-            <select id="edit-pack-forge-ver" v-if="editingPack && editingPack.mcVersion" v-model="editingPack.fmlVersion">
+            <select id="edit-pack-forge-ver" v-if="editingPack && editingPack.mcVersion" v-model="fmlVers">
                 <option v-for="ver in forgeVersions[editingPack.mcVersion]">{{ver}}</option>
             </select>
 
@@ -78,18 +78,28 @@
             let versions = json.metadata.versioning.versions.version;
 
             for (let version of this.mcVersions) {
-                this.forgeVersions[version] = versions.filter(ver => ver.startsWith(version))
-                    .map(ver => ver.replace(version + "-", ""));
+                this.forgeVersions[version] = versions.filter(ver => ver.startsWith(version));
             }
 
             let vers = this.forgeVersions[this.newPack.mcVersion];
             this.newPack.fmlVersion = vers[vers.length - 1];
             console.log("Forge versions", this.forgeVersions);
+
+            ipcRenderer.on("install error", (event, packName, error) => {
+                alert(`Pack ${packName} cannot be installed due to an error: ${error}`);
+                this.$store.commit("cancelInstall", packName);
+            });
+
+            ipcRenderer.on("install progress", (event, packName, progress) => {
+                progress = Math.round(progress * 1000) / 1000;
+                this.$store.commit("setInstallProgress", {name: packName, value: progress});
+                this.$forceUpdate();
+            });
         }
 
         public updateForgeVer() {
             let vers = this.forgeVersions[this.editingPack.mcVersion];
-            this.editingPack.fmlVersion = vers[vers.length - 1];
+            this.fmlVers = vers[vers.length - 1];
         }
 
         get editingPack() {
@@ -97,7 +107,24 @@
         }
 
         set editingPack(val) {
-            this.$store.commit("setEditingPack", val);
+            this.$store.commit("setEditingPack", JSON.parse(JSON.stringify(val)));
+        }
+
+        get mcVers() {
+            return this.$store.state.mcVersion;
+        }
+
+        set mcVers(val) {
+            this.$store.commit("setMCVers", val);
+        }
+
+        get fmlVers() {
+            console.log(this);
+            return this.$store.state.fmlVersion;
+        }
+
+        set fmlVers(val) {
+            this.$store.commit("setForgeVers", val);
         }
 
         get installingPacks() {
@@ -106,16 +133,22 @@
 
         public savePack() {
             if (/[^\w\d\s]/g.test(this.editingPack.name)) {
-                alert("Pack name must be alphanumeric");
+                alert("Pack name must be alphanumeric (spaces are allowed too)");
                 return;
             }
 
             let pack = this.editingPack;
             pack.installProgress = 0;
 
-            this.$store.commit("queuePackInstall", pack);
-            ipcRenderer.send("install game", pack.mcVersion, pack.fmlVersion);
+            this.$store.commit("queuePackInstall", pack.name);
+            ipcRenderer.send("install pack client", pack.name, pack.mcVersion, pack.fmlVersion);
             this.editingPack = null;
+        }
+
+        public createPack() {
+            let pack = {};
+            Object.assign(pack, this.newPack);
+            this.editingPack = pack;
         }
     }
 </script>
