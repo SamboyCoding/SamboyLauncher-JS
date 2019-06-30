@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import {readFileSync} from "jsonfile";
 import * as os from "os";
 import {basename, join} from "path";
@@ -133,12 +134,21 @@ export default class ForgeVersion {
             let command: string[] = [];
 
             //Build classpath
-            command.push("-cp");
-            command.push(processor.classpath.map(descriptor => join(Env.librariesDir, MavenArtifact.FromString(descriptor).fullPath)).join(os.platform() === "win32" ? ";" : ":"));
 
-            //Add the jar we're executing
-            command.push("-jar");
-            command.push(join(Env.librariesDir, MavenArtifact.FromString(processor.jar).fullPath));
+            //First extract the manifest
+            let processorJarPath = join(Env.librariesDir, MavenArtifact.FromString(processor.jar).fullPath);
+            await Utils.tryExtractFileFromArchive(processorJarPath, Env.tempDir, "META-INF/MANIFEST.MF");
+
+            //Find the main class
+            let manifestContent = fs.readFileSync(join(Env.tempDir, "MANIFEST.MF")).toString("utf8");
+            let mainClass = manifestContent.split("\n").find(line => line.startsWith("Main-Class:")).replace("Main-Class:", "").trim();
+
+            //Build the classpath from the jar and it's requirements
+            command.push("-cp");
+            command.push([processorJarPath].concat(processor.classpath.map(descriptor => join(Env.librariesDir, MavenArtifact.FromString(descriptor).fullPath))).join(os.platform() === "win32" ? ";" : ":"));
+
+            //Specify the class to execute.
+            command.push(mainClass);
 
             for (var arg of processor.args) {
                 if (arg.startsWith("{")) {

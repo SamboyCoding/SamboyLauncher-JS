@@ -183,10 +183,15 @@ export default class MainIPCHandler {
                 if (result.status !== 0)
                     return Logger.errorImpl("IPCMain", "Patch failed; exit code " + result.status);
                 Logger.debugImpl("IPCMain", "Success!");
+
+                pct += 0.1 / commands.length;
+                event.sender.send("install progress", packName, pct);
             }
         } else {
             pct += 0.1;
             event.sender.send("install progress", packName, pct);
         }
+
+
     }
 }
