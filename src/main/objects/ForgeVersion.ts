@@ -32,6 +32,7 @@ export default class ForgeVersion {
             try {
                 await Utils.downloadFile(`http://files.minecraftforge.net/maven/net/minecraftforge/forge/${name}/forge-${name}-installer.jar`, installJar);
             } catch (e) {
+                Logger.errorImpl("Forge Version Manager", e.message + "\n" + e.stack);
                 return null;
             }
 
@@ -71,11 +72,11 @@ export default class ForgeVersion {
         if (this.needsPatch) {
             //This is easy: grab all the libraries directly from the install profile as they're in Manifest format
             //These are the ones needed for the installer processors.
-            let ret = this.installProfile.libraries.filter(lib => lib.downloads.artifact.url !== "").map(lib => lib.downloads.artifact);
+            let ret = this.installProfile.libraries.map(lib => lib.downloads.artifact);
 
             //And then append all the ones from the version json, also in mojang format
             //These are the ones needed for the game to run
-            return ret.concat(this.manifest.libraries.filter(lib => lib.downloads.artifact.url !== "").map(lib => lib.downloads.artifact));
+            return ret.concat(this.manifest.libraries.map(lib => lib.downloads.artifact));
         } else {
             //Convert from old format to new.
 

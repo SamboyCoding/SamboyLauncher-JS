@@ -1,7 +1,7 @@
 import {spawnSync} from "child_process";
 import {ipcMain, IpcMessageEvent} from "electron";
 import {existsSync} from "fs";
-import {dirname, join} from "path";
+import {dirname, join, basename} from "path";
 import * as rimraf from "rimraf";
 import Env from "./Env";
 import {Logger} from "./logger";
@@ -145,8 +145,17 @@ export default class MainIPCHandler {
         promises = libs.map(async lib => {
             const dest = join(Env.librariesDir, lib.path);
             await Utils.mkdirpPromise(dirname(dest));
-            if (lib.size !== 1)
-                await Utils.downloadWithSigCheck(lib.url, dest, lib.sha1);
+            if (lib.size !== 1) {
+                if(lib.url)
+                    await Utils.downloadWithSigCheck(lib.url, dest, lib.sha1);
+                else {
+                    //No url, try to get from inside installer
+                    if(!await Utils.tryExtractFileFromArchive(forge.installerJarPath, dirname(dest), "maven/" + lib.path))
+                        throw new Error(`${basename(lib.path)} does not specify a url and couldn't be found in the installer's builtin maven`);
+
+                    Logger.debugImpl("IPCMain", `Extracted ${basename(lib.path)} from installer's builtin maven.`);
+                }
+            }
             else if (!existsSync(dest)) {
                 try {
                     await Utils.downloadFile(lib.url, dest); //Old version, no sha1
@@ -174,9 +183,12 @@ export default class MainIPCHandler {
 
         //Patch forge if we have to.
         if (forge.needsPatch) {
+            //TODO: Make this check the output SHA1s and not execute if not needed.
             let commands = await forge.getPatchCommands();
             for (let args of commands) {
-                Logger.infoImpl("IPCMain", "Patching forge with command 'java " + args.join(" ") + "'");
+                Logger.infoImpl("IPCMain", "Running post-processor command 'java " + args.join(" ") + "'");
+
+                //TODO: Make async so we don't lock the ui
                 let result = spawnSync("java", args);
                 if (result.error)
                     return Logger.errorImpl("IPCMain", "Patch failed with error " + result.error);
@@ -184,14 +196,14 @@ export default class MainIPCHandler {
                     return Logger.errorImpl("IPCMain", "Patch failed; exit code " + result.status);
                 Logger.debugImpl("IPCMain", "Success!");
 
-                pct += 0.1 / commands.length;
+                pct += 0.15 / commands.length;
                 event.sender.send("install progress", packName, pct);
             }
         } else {
-            pct += 0.1;
+            pct += 0.15;
             event.sender.send("install progress", packName, pct);
         }
 
-
+        //And we're done!
     }
 }
