@@ -1,11 +1,14 @@
 import {path7za} from "7zip-bin";
 import {spawnSync} from "child_process";
 import download from "download";
+import * as fs from "fs";
 import {existsSync, unlinkSync} from "fs";
 import * as hasha from "hasha";
 import mkdirp from "mkdirp";
 import * as path from "path";
+import {basename, join} from "path";
 import * as rimraf from "rimraf";
+import Env from "../Env";
 import {Logger} from "../logger";
 
 export default class Utils {
@@ -36,7 +39,7 @@ export default class Utils {
 
         let sanity = 1;
         while (!existsSync(localPath)) {
-            if (sanity > 5) throw new Error(`Failed to download ${localPath} with valid signature after 5 attempts.`);
+            if (sanity > 5) throw new Error(`Failed to download ${url} => ${localPath} with valid signature after 5 attempts.`);
 
             try {
                 await this.downloadFile(url, localPath);
@@ -91,6 +94,63 @@ export default class Utils {
 
             ff();
         });
+    }
+
+    public static tryExtractFileFromArchive(src: string, dest: string, file: string) {
+        return new Promise(async (ff, rj) => {
+            Logger.debugImpl("Extract", `Extracting ${file} from ${src} to ${dest}`);
+
+            await Utils.mkdirpPromise(dest);
+            const result = spawnSync(path7za, ["e", src, "-y", "-o" + dest, file]);
+
+            if (result.error || result.status !== 0) return ff(false);
+            if (!existsSync(join(dest, basename(file)))) return ff(false);
+
+            ff(true);
+        });
+    }
+
+    public static async handlePackedForgeLibrary(url: string, dest: string) {
+        url += ".pack.xz";
+        let xzipped = join(Env.tempDir, basename(dest) + ".pack.xz");
+
+        Logger.debugImpl("Packed Forge Lib Handler", "Downloading " + url + "...");
+        await Utils.downloadFile(url, xzipped);
+        Logger.debugImpl("Packed Forge Lib Handler", "Downloaded pack.xz file. Reversing LZMA...");
+
+        await Utils.extractArchive(xzipped, Env.tempDir);
+        Logger.debugImpl("Packed Forge Lib Handler", "LZMA reversed. Stripping checksums...");
+
+        let packFile = join(Env.tempDir, basename(dest) + ".pack");
+        let packFileContent = fs.readFileSync(packFile);
+        unlinkSync(packFile); //Remove existing one; we're stripping the checksums
+
+        const checkString = Buffer.from(packFileContent.subarray(packFileContent.length - 4)).toString("ascii");
+        if (checkString !== "SIGN")
+            throw new Error("Invalid check string at end of packed file.");
+
+        const length = packFileContent.length;
+        const checksumLength = packFileContent[length - 8] & 255 | (packFileContent[length - 7] & 255) << 8 |
+            (packFileContent[length - 6] & 255) << 16 |
+            (packFileContent[length - 5] & 255) << 24;
+
+        let realEnd = length - checksumLength - 8;
+        Logger.debugImpl("Packed Forge Lib Handler", `File is ${length} bytes. Checksums are ${checksumLength} bytes of that, and the header is a further 8, leaving the real EOF at offset ${realEnd}`);
+
+        const realPackContent = packFileContent.subarray(0, realEnd);
+        fs.writeFileSync(packFile, realPackContent);
+
+        Logger.debugImpl("Packed Forge Lib Handler", "Wrote real pack file. Cleaning up LZMA file...");
+        unlinkSync(xzipped);
+
+        Logger.debugImpl("Packed Forge Lib Handler", "Calling unpack200...");
+
+        let result = spawnSync("unpack200", [packFile, dest]);
+
+        if (result.error || result.status !== 0)
+            throw new Error(`Failed to invoke unpack200 on ${packFile}. Error: ${result.error} | exit code ${result.status}`);
+
+        Logger.debugImpl("Packed Forge Lib Handler", `${dest} created successfully.`);
     }
 
     public static sleepMs(ms: number) {

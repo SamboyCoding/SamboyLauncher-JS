@@ -1,9 +1,11 @@
+import {spawnSync} from "child_process";
 import {ipcMain, IpcMessageEvent} from "electron";
 import {existsSync} from "fs";
 import {dirname, join} from "path";
 import * as rimraf from "rimraf";
 import Env from "./Env";
 import {Logger} from "./logger";
+import ForgeVersion from "./objects/ForgeVersion";
 import MCVersion from "./objects/MCVersion";
 import Utils from "./util/Utils";
 
@@ -128,6 +130,63 @@ export default class MainIPCHandler {
 
         Logger.debugImpl("IPCMain", "Finished getting assets");
 
+        pct = 0.75;
+
         //Forge is complex.
+
+        //Get forge installer
+        let forge = await ForgeVersion.Get(forgeVersionId);
+
+        //Get forge libraries
+        let libs = forge.getRequiredLibraries();
+        totalSize = 0;
+        libs.forEach(lib => totalSize += lib.size); //If we're an old version these all have a size of 1, but that's fine.
+
+        promises = libs.map(async lib => {
+            const dest = join(Env.librariesDir, lib.path);
+            await Utils.mkdirpPromise(dirname(dest));
+            if (lib.size !== 1)
+                await Utils.downloadWithSigCheck(lib.url, dest, lib.sha1);
+            else if (!existsSync(dest)) {
+                try {
+                    await Utils.downloadFile(lib.url, dest); //Old version, no sha1
+                    Logger.debugImpl("IPCMain", `Downloaded forge lib: ${dest}`);
+                } catch (e) {
+                    Logger.warnImpl("IPCMain", `Failed to get forge library: ${lib.url}. Trying packed...`);
+                    await Utils.handlePackedForgeLibrary(lib.url, dest);
+                }
+            } else {
+                Logger.debugImpl("IPCMain", `${dest} already exists, but no checksum. Have to assume it's good.`);
+            }
+
+            pct += 0.1 * lib.size / totalSize;
+
+            event.sender.send("install progress", packName, pct);
+        });
+
+        try {
+            await Promise.all(promises);
+        } catch (e) {
+            Logger.errorImpl("IPCMain", e.message + "\n" + e.stack);
+            event.sender.send("install error", packName, e.message);
+            return;
+        }
+
+        //Patch forge if we have to.
+        if (forge.needsPatch) {
+            let commands = await forge.getPatchCommands();
+            for (let args of commands) {
+                Logger.infoImpl("IPCMain", "Patching forge with command 'java " + args.join(" ") + "'");
+                let result = spawnSync("java", args);
+                if (result.error)
+                    return Logger.errorImpl("IPCMain", "Patch failed with error " + result.error);
+                if (result.status !== 0)
+                    return Logger.errorImpl("IPCMain", "Patch failed; exit code " + result.status);
+                Logger.debugImpl("IPCMain", "Success!");
+            }
+        } else {
+            pct += 0.1;
+            event.sender.send("install progress", packName, pct);
+        }
     }
 }
