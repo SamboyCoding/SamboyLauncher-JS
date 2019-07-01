@@ -6,7 +6,7 @@ export default class InstalledPackJSON {
     public author: User;
     public forgeVersion: string;
     public gameVersion: string;
-    public id: number;
+    public id: string;
     public installedVersion: string;
     public installedMods: Mod[];
 }

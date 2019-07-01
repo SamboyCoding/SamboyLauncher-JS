@@ -1,17 +1,20 @@
 import {spawnSync} from "child_process";
 import {ipcMain, IpcMessageEvent} from "electron";
 import {existsSync, copyFileSync} from "fs";
+import {writeFileSync} from "jsonfile";
 import {dirname, join, basename} from "path";
 import * as rimraf from "rimraf";
 import Env from "./Env";
 import {Logger} from "./logger";
 import ForgeVersion from "./objects/ForgeVersion";
+import InstalledPackJSON from "./objects/InstalledPackJSON";
 import MCVersion from "./objects/MCVersion";
 import Utils from "./util/Utils";
 
 export default class MainIPCHandler {
     public static Init() {
         ipcMain.on("install pack client", MainIPCHandler.installPackClient);
+        ipcMain.on("create pack", MainIPCHandler.createPack);
     }
 
     private static async installPackClient(event: IpcMessageEvent, packName: string, gameVersionId: string, forgeVersionId: string) {
@@ -205,16 +208,41 @@ export default class MainIPCHandler {
             Logger.infoImpl("IPCMain", "Finishing up by copying the forge version json...");
 
             //Copy install json to forge
-            let version = forge.manifest.id;
-            let dir = join(Env.versionsDir, version);
+            let dir = join(Env.versionsDir, forgeVersionId);
             await Utils.mkdirpPromise(dir);
 
-            Logger.debugImpl("IPCMain", `Copy file: ${join(Env.tempDir, "version.json")} => ${join(dir, version + ".json")}`);
-            copyFileSync(join(Env.tempDir, "version.json"), join(dir, version + ".json"));
+            Logger.debugImpl("IPCMain", `Copy file: ${join(Env.tempDir, "version.json")} => ${join(dir, forgeVersionId + ".json")}`);
+            copyFileSync(join(Env.tempDir, "version.json"), join(dir, forgeVersionId + ".json"));
         }
 
         //And we're done!
         Logger.infoImpl("IPCMain", "Install complete!");
-        event.sender.send("install complete", packName);
+        event.sender.send("install complete", packName, minecraftVersion.name, forgeVersionId);
+    }
+
+    private static async createPack(event: IpcMessageEvent, name: string, gameVersion: string, forgeVersion: string) {
+        name = name.replace(/\s/g, "_").trim();
+        let dir = join(Env.packsDir, name);
+        if(existsSync(dir))
+            return event.sender.send("pack create failed", "Directory already exists");
+
+        await Utils.mkdirpPromise(dir);
+
+        let install: InstalledPackJSON = {
+            id: "",
+            gameVersion,
+            forgeVersion,
+            installedVersion: "1.0",
+            author: {
+                id: "",
+                name: "Me"
+            },
+            installedMods: [],
+            packName: name,
+        };
+
+        writeFileSync(join(dir, "install.json"), install);
+
+        event.sender.send("pack created", install);
     }
 }

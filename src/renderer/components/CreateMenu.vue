@@ -18,10 +18,10 @@
             </div>
             <div class="pack" v-for="pack in ourPacks">
                 <div class="pack-icon">
-                    {{pack.name}}
+                    {{pack.packName}}
                 </div>
                 <div class="pack-shade"></div>
-                <div class="pack-title">{{pack.name}}</div>
+                <div class="pack-title">{{pack.packName}}</div>
             </div>
         </div>
         <div id="edit-pack" :class="{show: !!editingPack}">
@@ -52,8 +52,9 @@
 </template>
 
 <script lang="ts">
-    import {ipcRenderer} from "electron";
+    import {ipcRenderer, IpcMessageEvent} from "electron";
     import {Component, Vue} from "vue-property-decorator";
+    import InstalledPackJSON from "../../main/objects/InstalledPackJSON";
     import Config from "../Config";
     import parser = require("fast-xml-parser");
 
@@ -74,7 +75,7 @@
             amAuthor: true,
         };
 
-        public ourPacks = [];
+        public ourPacks: InstalledPackJSON[] = [];
 
         public async mounted() {
             let array = await (await fetch(Config.API_URL + "/pack/versions")).json();
@@ -105,9 +106,16 @@
                 this.$forceUpdate();
             });
 
-            ipcRenderer.on("install complete", (event, packName) => {
-                this.$store.commit("cancelInstall", packName);
-                this.ourPacks.push({name: packName});
+            ipcRenderer.on("install complete", (event: IpcMessageEvent, packName: string, gameVersion: string, forgeVersion: string) => {
+                // this.$store.commit("cancelInstall", packName);
+                // this.ourPacks.push({name: packName});
+                this.$store.commit("setInstallProgress", {name: packName, value: 1});
+                event.sender.send("create pack", packName, gameVersion, forgeVersion);
+            });
+
+            ipcRenderer.on("pack created", (event: IpcMessageEvent, pack: InstalledPackJSON) => {
+                this.$store.commit("cancelInstall", pack.packName);
+                this.ourPacks.push(pack);
             });
         }
 
@@ -148,6 +156,13 @@
         public savePack() {
             if (/[^\w\d\s]/g.test(this.editingPack.name)) {
                 alert("Pack name must be alphanumeric (spaces are allowed too)");
+                return;
+            }
+
+            this.editingPack.name = this.editingPack.name.trim();
+
+            if(this.ourPacks.find(p => p.name.toLowerCase() === this.editingPack.name.toLowerCase()) || this.installingPacks.hasOwnProperty(this.editingPack.name)) {
+                alert("Pack name is taken by one you already own.");
                 return;
             }
 
