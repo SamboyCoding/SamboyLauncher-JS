@@ -52,7 +52,7 @@
 </template>
 
 <script lang="ts">
-    import {ipcRenderer, IpcMessageEvent} from "electron";
+    import {IpcMessageEvent, ipcRenderer} from "electron";
     import {Component, Vue} from "vue-property-decorator";
     import InstalledPackJSON from "../../main/objects/InstalledPackJSON";
     import Config from "../Config";
@@ -95,6 +95,12 @@
             this.newPack.fmlVersion = vers[vers.length - 1];
             console.log("Forge versions", this.forgeVersions);
 
+            ipcRenderer.removeAllListeners("install error")
+                .removeAllListeners("install progress")
+                .removeAllListeners("install complete")
+                .removeAllListeners("pack created")
+                .removeAllListeners("pack create failed");
+
             ipcRenderer.on("install error", (event, packName, error) => {
                 alert(`Pack ${packName} cannot be installed due to an error: ${error}`);
                 this.$store.commit("cancelInstall", packName);
@@ -116,6 +122,12 @@
             ipcRenderer.on("pack created", (event: IpcMessageEvent, pack: InstalledPackJSON) => {
                 this.$store.commit("cancelInstall", pack.packName);
                 this.ourPacks.push(pack);
+            });
+
+            ipcRenderer.on("pack create failed", (event, name, error) => {
+                alert("Successfully installed the game, but couldn't create the pack due to an error: " + error);
+                this.$store.commit("cancelInstall", name);
+                this.$forceUpdate();
             });
         }
 
@@ -161,7 +173,7 @@
 
             this.editingPack.name = this.editingPack.name.trim();
 
-            if(this.ourPacks.find(p => p.name.toLowerCase() === this.editingPack.name.toLowerCase()) || this.installingPacks.hasOwnProperty(this.editingPack.name)) {
+            if (this.ourPacks.find(p => p.packName.toLowerCase() === this.editingPack.name.toLowerCase()) || this.installingPacks.hasOwnProperty(this.editingPack.name)) {
                 alert("Pack name is taken by one you already own.");
                 return;
             }
