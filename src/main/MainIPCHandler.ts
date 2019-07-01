@@ -1,6 +1,6 @@
 import {spawnSync} from "child_process";
 import {ipcMain, IpcMessageEvent} from "electron";
-import {existsSync} from "fs";
+import {existsSync, copyFileSync} from "fs";
 import {dirname, join, basename} from "path";
 import * as rimraf from "rimraf";
 import Env from "./Env";
@@ -132,78 +132,89 @@ export default class MainIPCHandler {
 
         pct = 0.75;
 
-        //Forge is complex.
+        //Check if we need to install at all.
+        if(!existsSync(join(Env.versionsDir, forgeVersionId, forgeVersionId + ".json"))) {
+            //Get forge installer
+            let forge = await ForgeVersion.Get(forgeVersionId);
 
-        //Get forge installer
-        let forge = await ForgeVersion.Get(forgeVersionId);
+            //Get forge libraries
+            let libs = forge.getRequiredLibraries();
+            totalSize = 0;
+            libs.forEach(lib => totalSize += lib.size); //If we're an old version these all have a size of 1, but that's fine.
 
-        //Get forge libraries
-        let libs = forge.getRequiredLibraries();
-        totalSize = 0;
-        libs.forEach(lib => totalSize += lib.size); //If we're an old version these all have a size of 1, but that's fine.
+            promises = libs.map(async lib => {
+                const dest = join(Env.librariesDir, lib.path);
+                await Utils.mkdirpPromise(dirname(dest));
+                if (lib.size !== 1) {
+                    if (lib.url)
+                        await Utils.downloadWithSigCheck(lib.url, dest, lib.sha1);
+                    else {
+                        //No url, try to get from inside installer
+                        if (!await Utils.tryExtractFileFromArchive(forge.installerJarPath, dirname(dest), "maven/" + lib.path))
+                            throw new Error(`${basename(lib.path)} does not specify a url and couldn't be found in the installer's builtin maven`);
 
-        promises = libs.map(async lib => {
-            const dest = join(Env.librariesDir, lib.path);
-            await Utils.mkdirpPromise(dirname(dest));
-            if (lib.size !== 1) {
-                if(lib.url)
-                    await Utils.downloadWithSigCheck(lib.url, dest, lib.sha1);
-                else {
-                    //No url, try to get from inside installer
-                    if(!await Utils.tryExtractFileFromArchive(forge.installerJarPath, dirname(dest), "maven/" + lib.path))
-                        throw new Error(`${basename(lib.path)} does not specify a url and couldn't be found in the installer's builtin maven`);
-
-                    Logger.debugImpl("IPCMain", `Extracted ${basename(lib.path)} from installer's builtin maven.`);
+                        Logger.debugImpl("IPCMain", `Extracted ${basename(lib.path)} from installer's builtin maven.`);
+                    }
+                } else if (!existsSync(dest)) {
+                    try {
+                        await Utils.downloadFile(lib.url, dest); //Old version, no sha1
+                        Logger.debugImpl("IPCMain", `Downloaded forge lib: ${dest}`);
+                    } catch (e) {
+                        Logger.warnImpl("IPCMain", `Failed to get forge library: ${lib.url}. Trying packed...`);
+                        await Utils.handlePackedForgeLibrary(lib.url, dest);
+                    }
+                } else {
+                    Logger.debugImpl("IPCMain", `${dest} already exists, but no checksum. Have to assume it's good.`);
                 }
+
+                pct += 0.1 * lib.size / totalSize;
+
+                event.sender.send("install progress", packName, pct);
+            });
+
+            try {
+                await Promise.all(promises);
+            } catch (e) {
+                Logger.errorImpl("IPCMain", e.message + "\n" + e.stack);
+                event.sender.send("install error", packName, e.message);
+                return;
             }
-            else if (!existsSync(dest)) {
-                try {
-                    await Utils.downloadFile(lib.url, dest); //Old version, no sha1
-                    Logger.debugImpl("IPCMain", `Downloaded forge lib: ${dest}`);
-                } catch (e) {
-                    Logger.warnImpl("IPCMain", `Failed to get forge library: ${lib.url}. Trying packed...`);
-                    await Utils.handlePackedForgeLibrary(lib.url, dest);
+
+            //Patch forge if we have to.
+            if (forge.needsPatch) {
+                let commands = await forge.getPatchCommands();
+                for (let args of commands) {
+                    Logger.infoImpl("IPCMain", "Running post-processor command 'java " + args.join(" ") + "'");
+
+                    //TODO: Make async so we don't lock the ui
+                    let result = spawnSync("java", args);
+                    if (result.error)
+                        return Logger.errorImpl("IPCMain", "Patch failed with error " + result.error);
+                    if (result.status !== 0)
+                        return Logger.errorImpl("IPCMain", "Patch failed; exit code " + result.status);
+                    Logger.debugImpl("IPCMain", "Success!");
+
+                    pct += 0.15 / commands.length;
+                    event.sender.send("install progress", packName, pct);
                 }
             } else {
-                Logger.debugImpl("IPCMain", `${dest} already exists, but no checksum. Have to assume it's good.`);
-            }
-
-            pct += 0.1 * lib.size / totalSize;
-
-            event.sender.send("install progress", packName, pct);
-        });
-
-        try {
-            await Promise.all(promises);
-        } catch (e) {
-            Logger.errorImpl("IPCMain", e.message + "\n" + e.stack);
-            event.sender.send("install error", packName, e.message);
-            return;
-        }
-
-        //Patch forge if we have to.
-        if (forge.needsPatch) {
-            //TODO: Make this check the output SHA1s and not execute if not needed.
-            let commands = await forge.getPatchCommands();
-            for (let args of commands) {
-                Logger.infoImpl("IPCMain", "Running post-processor command 'java " + args.join(" ") + "'");
-
-                //TODO: Make async so we don't lock the ui
-                let result = spawnSync("java", args);
-                if (result.error)
-                    return Logger.errorImpl("IPCMain", "Patch failed with error " + result.error);
-                if (result.status !== 0)
-                    return Logger.errorImpl("IPCMain", "Patch failed; exit code " + result.status);
-                Logger.debugImpl("IPCMain", "Success!");
-
-                pct += 0.15 / commands.length;
+                pct += 0.15;
                 event.sender.send("install progress", packName, pct);
             }
-        } else {
-            pct += 0.15;
-            event.sender.send("install progress", packName, pct);
+
+            Logger.infoImpl("IPCMain", "Finishing up by copying the forge version json...");
+
+            //Copy install json to forge
+            let version = forge.manifest.id;
+            let dir = join(Env.versionsDir, version);
+            await Utils.mkdirpPromise(dir);
+
+            Logger.debugImpl("IPCMain", `Copy file: ${join(Env.tempDir, "version.json")} => ${join(dir, version + ".json")}`);
+            copyFileSync(join(Env.tempDir, "version.json"), join(dir, version + ".json"));
         }
 
         //And we're done!
+        Logger.infoImpl("IPCMain", "Install complete!");
+        event.sender.send("install complete", packName);
     }
 }

@@ -16,6 +16,13 @@
                 <div :style="{height: ((1 - percent) * 225) + 'px'}" class="pack-installation"></div>
                 <div class="pack-title">Creating "{{name}}" ({{percent * 100}}%)</div>
             </div>
+            <div class="pack" v-for="pack in ourPacks">
+                <div class="pack-icon">
+                    {{pack.name}}
+                </div>
+                <div class="pack-shade"></div>
+                <div class="pack-title">{{pack.name}}</div>
+            </div>
         </div>
         <div id="edit-pack" :class="{show: !!editingPack}">
             <input id="edit-pack-name" v-model="editingPack.name" v-if="editingPack">
@@ -67,6 +74,8 @@
             amAuthor: true,
         };
 
+        public ourPacks = [];
+
         public async mounted() {
             let array = await (await fetch(Config.API_URL + "/pack/versions")).json();
             this.mcVersions = array;
@@ -94,6 +103,11 @@
                 progress = Math.round(progress * 1000) / 1000;
                 this.$store.commit("setInstallProgress", {name: packName, value: progress});
                 this.$forceUpdate();
+            });
+
+            ipcRenderer.on("install complete", (event, packName) => {
+                this.$store.commit("cancelInstall", packName);
+                this.ourPacks.push({name: packName});
             });
         }
 

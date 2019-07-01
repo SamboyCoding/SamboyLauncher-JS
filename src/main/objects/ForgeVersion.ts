@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as hasha from "hasha";
 import {readFileSync} from "jsonfile";
 import * as os from "os";
 import {basename, join} from "path";
@@ -9,6 +10,7 @@ import ForgeVersionManifest from "./ForgeVersionManifest";
 import ManifestArtifact from "./ManifestArtifact";
 import MavenArtifact from "./MavenArtifact";
 import NewForgeInstallProfile from "./NewForgeInstallProfile";
+import {existsSync} from "fs";
 
 export default class ForgeVersion {
     private static _cache = new Map<string, ForgeVersion>();
@@ -131,7 +133,60 @@ export default class ForgeVersion {
             }
         }
 
-        for (let processor of this.installProfile.processors) {
+        let processors = this.installProfile.processors;
+        let actualProcessors: { jar: string, classpath: string[], args: string[], outputs?: { [key: string]: string } }[] = [];
+        let go = true;
+
+        while (go) {
+            let prc = processors[0];
+
+            if (!prc.outputs) {
+                actualProcessors.push(prc);
+                processors.splice(0, 1);
+                continue;
+            }
+
+            if (Object.keys(prc.outputs).every((outputFile) => {
+                let hash = prc.outputs[outputFile];
+                if (outputFile.startsWith("{"))
+                    outputFile = data[outputFile.replace("{", "").replace("}", "")];
+                else
+                    outputFile = join(Env.librariesDir, MavenArtifact.FromString(outputFile.replace("[", "").replace("]", "")).fullPath);
+
+                if (existsSync(outputFile)) {
+                    Logger.debugImpl("Forge Version Manager", `Output artifact already exists: ${outputFile}. Checking hash...`);
+                    if (hash.startsWith("'"))
+                        hash = hash.replace(/'/g, "");
+                    else
+                        hash = data[hash.replace("{", "").replace("}", "")];
+
+                    let actualHash = hasha.fromFileSync(outputFile, {algorithm: "sha1"});
+                    let success = actualHash === hash;
+                    if (success) {
+                        Logger.debugImpl("Forge Version Manager", "Hash match");
+                        return true;
+                    } else {
+                        Logger.warnImpl("Forge Version Manager", `Hash MISMATCH. Expecting ${hash}, got ${actualHash}`);
+                        return false;
+                    }
+                }
+            })) {
+                Logger.debugImpl("Forge Version Manager", "We can safely skip this processor.");
+                processors.splice(0, 1); //Remove from current
+
+                //As we're still skipping, we can clear out any currently in actual as we know we're good up until now
+                actualProcessors = [];
+                if(processors.length === 0)
+                    go = false;
+            } else {
+                Logger.debugImpl("Forge Version Manager", `Need to run ${processors.length} processors.`);
+                actualProcessors = actualProcessors.concat(processors); //Add all the remaining ones
+                go = false;
+            }
+        }
+
+        for (let processor of actualProcessors) {
+
             let command: string[] = [];
 
             //Build classpath
