@@ -1,4 +1,4 @@
-import {readFileSync} from "jsonfile";
+import {readFileSync, writeFileSync} from "jsonfile";
 import fetch from "node-fetch";
 import * as os from "os";
 import * as path from "path";
@@ -9,6 +9,8 @@ import ManifestArtifact from "./ManifestArtifact";
 import MCAssetDefinition from "./MCAssetDefinition";
 import MCAssetIndex from "./MCAssetIndex";
 import MCClientVersionManifest from "./MCClientVersionManifest";
+import { join } from 'path';
+import { existsSync } from 'fs';
 
 export default class MCVersion {
     private static _cache = new Map<string, MCVersion>();
@@ -21,6 +23,28 @@ export default class MCVersion {
     public libraries: ManifestArtifact[] = [];
     public natives: ManifestArtifact[] = [];
     public assets: Map<string, MCAssetDefinition> = new Map<string, MCAssetDefinition>();
+
+    public arguments?: {
+        game: (string | {
+            rules: {
+                action: "allow" | "deny",
+                features: {
+                    [key: string]: boolean
+                }
+            }[],
+            value: string | string[]
+        })[],
+        jvm: (string | {
+            rules: {
+                action: "allow" | "deny",
+                os: {
+                    name?: "windows" | "osx" | "linux",
+                    version?: string
+                }
+            }[],
+            value: string | string[]
+        })[]
+    };
 
     constructor(data: { id: string, type: "release" | "snapshot" | "old_alpha" | "old_beta", url: string }) {
         this.manifestUrl = data.url;
@@ -59,10 +83,22 @@ export default class MCVersion {
 
             Logger.infoImpl("Minecraft Version Manager", "Fetching data for version " + name + "...");
 
-            const resp2 = await fetch(mcVersion.manifestUrl);
-            const mfest = await resp2.json() as MCClientVersionManifest;
+            const manifestFile = join(EnvironmentManager.versionsDir, name, name + ".json");
+
+            let mfest: MCClientVersionManifest;
+            if(existsSync(manifestFile)) {
+                Logger.debugImpl("Minecraft Version Manager", "Loading from local file; version is installed");
+                mfest = readFileSync(manifestFile) as MCClientVersionManifest;
+            }
+            else {
+                const resp2 = await fetch(mcVersion.manifestUrl);
+                mfest = await resp2.json() as MCClientVersionManifest;
+
+                writeFileSync(manifestFile, mfest, {spaces: 4});
+            }
 
             mcVersion.assetIndex = mfest.assetIndex;
+            mcVersion.arguments = mfest.arguments;
             mcVersion.clientJar = mfest.downloads.client;
 
             //Identify libs and natives.
@@ -71,29 +107,7 @@ export default class MCVersion {
                 //First, check rules.
 
                 if (libOrNative.rules) {
-                    let mustAllow = false;
-                    let allow = true;
-
-                    for (let rule of libOrNative.rules) {
-                        if (rule.action === "allow") {
-                            if (!mustAllow)
-                                allow = false; //Set this.
-
-                            mustAllow = true; //If there's at least one allow rule we assume the default is not to do so.
-
-                            if (!rule.os || ((!rule.os.name || rule.os.name === ourOs) && (!rule.os.version || new RegExp(rule.os.version).test(os.release())))) {
-                                allow = true;
-                            }
-                        } else {
-                            //Deny
-                            if ((!rule.os.name || rule.os.name === ourOs) && (!rule.os.version || new RegExp(rule.os.version).test(os.release()))) {
-                                allow = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!allow) {
+                    if(!Utils.handleOSBasedRule(libOrNative.rules)) {
                         Logger.debugImpl("Minecraft Version Manager", "\tWill not install lib/native " + libOrNative.name + " as it is disallowed.");
                         continue;
                     }

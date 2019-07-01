@@ -11,6 +11,7 @@ import ClientInstallManager from "./ClientInstallManager";
 import ElectronManager from "./ElectronManager";
 import EnvironmentManager from "./EnvironmentManager";
 import InstalledPackManager from "./InstalledPackManager";
+import { spawn } from 'child_process';
 
 export default class MainIPCHandler {
     public static Init() {
@@ -39,9 +40,10 @@ export default class MainIPCHandler {
                 //And we're done!
                 Logger.infoImpl("IPCMain", "Install complete!");
                 event.sender.send("install complete", packName, gameVersionId, forgeVersionId);
+                InstalledPackManager.LoadFromDisk();
             })
             .catch((e: Error | string) => {
-                Logger.errorImpl("IPCMain", `${e}`);
+                Logger.errorImpl("IPCMain", (e instanceof Error ? e.message + "\n" + e.stack : e));
                 ElectronManager.win.webContents.send("install error", packName, (e instanceof Error ? e.message : e));
             });
     }
@@ -102,6 +104,60 @@ export default class MainIPCHandler {
             .map(entry => join(EnvironmentManager.librariesDir, entry.fullPath))
             .join(os.platform() === "win32" ? ";" : ":");
 
-        //TODO: Build args (both jvm and game), get main class, and launch.
+        let args: string[] = []; //["-cp", classpathString, "-Djava.library.path=" + join(EnvironmentManager.versionsDir, pack.gameVersion.name, "natives")];
+
+        for(let arg of pack.gameVersion.arguments.jvm) {
+            if(typeof(arg) === 'string') {
+                args.push(arg);
+                continue;
+            }
+
+            if(!arg.rules || Utils.handleOSBasedRule(arg.rules)) {
+                if(typeof(arg.value) === 'string')
+                    args.push(arg.value);
+                else
+                    args = args.concat(arg.value);
+            }
+        }
+
+        args.push(pack.forgeVersion.manifest.mainClass);
+
+        //TODO: Conditional game args like resolution
+        args = args.concat(pack.gameVersion.arguments.game.concat(pack.forgeVersion.manifest.arguments.game).filter(arg => typeof(arg) === 'string') as string[]);
+
+        args = args.map(arg => {
+            switch(arg) {
+                case "${auth_player_name}":
+                    return "memes"; //TODO
+                case "${version_name}":
+                    return pack.forgeVersion.manifest.id;
+                case "${game_directory}":
+                    return pack.packDirectory;
+                case "${assets_root}":
+                    return EnvironmentManager.assetsDir;
+                case "${assets_index_name}":
+                    return pack.gameVersion.assetIndex.id;
+                case "${auth_uuid}":
+                    return "dummy"; //TODO
+                case "${auth_access_token}":
+                    return "dummy"; //TODO
+                case "${user_type}":
+                    return "mojang";
+                case "${version_type}":
+                    return pack.forgeVersion.manifest.type;
+                case "${classpath}":
+                    return classpathString;
+                default:
+                    return arg
+                        .replace("${natives_directory}", join(EnvironmentManager.versionsDir, pack.gameVersion.name, "natives"))
+                        .replace("${launcher_name}", "SamboyLauncher")
+                        .replace("${launcher_version}", "2.0");
+            }
+        });
+
+
+
+        Logger.debugImpl("Launch", "java " + args.join(" "));
+        let process = spawn("java", args, {stdio: "inherit", cwd: pack.packDirectory});
     }
 }

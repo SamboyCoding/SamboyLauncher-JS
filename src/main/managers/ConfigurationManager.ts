@@ -5,7 +5,6 @@ import Logger from "../logger";
 import EnvironmentManager from "./EnvironmentManager";
 
 export default class ConfigurationManager {
-    public static darkTheme: boolean;
     private static fileLoc = path.join(EnvironmentManager.launcherDir, "config.json");
 
     public static LoadFromDisk() {

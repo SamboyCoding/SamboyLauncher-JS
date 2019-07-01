@@ -7,11 +7,13 @@ import Logger from "./logger";
 import AuthenticationManager from "./managers/AuthenticationManager";
 import ConfigurationManager from "./managers/configurationManager";
 import ElectronManager from "./managers/ElectronManager";
+import EnvironmentManager from "./managers/EnvironmentManager";
 import InstalledPackManager from "./managers/InstalledPackManager";
 import MainIPCHandler from "./managers/MainIPCHandler";
 import MCVersion from "./model/MCVersion";
 //#endregion
 
+EnvironmentManager.Init();
 ConfigurationManager.LoadFromDisk();
 AuthenticationManager.LoadFromDisk();
 MCVersion.Get(); //Preload these.

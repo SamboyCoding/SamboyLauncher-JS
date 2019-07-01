@@ -5,6 +5,7 @@ import * as fs from "fs";
 import {existsSync, unlinkSync} from "fs";
 import * as hasha from "hasha";
 import mkdirp from "mkdirp";
+import * as os from "os";
 import * as path from "path";
 import {basename, join} from "path";
 import * as rimraf from "rimraf";
@@ -151,6 +152,34 @@ export default class Utils {
             throw new Error(`Failed to invoke unpack200 on ${packFile}. Error: ${result.error} | exit code ${result.status}`);
 
         Logger.debugImpl("Packed Forge Lib Handler", `${dest} created successfully.`);
+    }
+
+    public static handleOSBasedRule(rules: any[]) {
+        let ourOs = os.platform() === "darwin" ? "osx" : os.platform() === "win32" ? "windows" : "linux";
+
+        let mustAllow = false;
+        let allow = true;
+
+        for (let rule of rules) {
+            if (rule.action === "allow") {
+                if (!mustAllow)
+                    allow = false; //Set this.
+
+                mustAllow = true; //If there's at least one allow rule we assume the default is not to do so.
+
+                if (!rule.os || ((!rule.os.name || rule.os.name === ourOs) && (!rule.os.version || new RegExp(rule.os.version).test(os.release())))) {
+                    allow = true;
+                }
+            } else {
+                //Deny
+                if ((!rule.os.name || rule.os.name === ourOs) && (!rule.os.version || new RegExp(rule.os.version).test(os.release()))) {
+                    allow = false;
+                    break;
+                }
+            }
+        }
+
+        return allow;
     }
 
     public static sleepMs(ms: number) {

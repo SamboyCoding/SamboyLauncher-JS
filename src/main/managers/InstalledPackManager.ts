@@ -12,6 +12,9 @@ export default class InstalledPackManager {
     private static packJsons: InstalledPackJSON[] = [];
 
     public static LoadFromDisk() {
+        this.packs = new Map<string, InstalledPack>();
+        this.packJsons = [];
+
         let dir = EnvironmentManager.packsDir;
         let packDirs = readdirSync(dir)
             .map(name => join(EnvironmentManager.packsDir, name))

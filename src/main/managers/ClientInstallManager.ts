@@ -248,6 +248,9 @@ export default class ClientInstallManager {
 
     private static doPostProcessRecursive(packName: string, pct: number, pctPer: number, argsList: string[][]) {
         return new Promise((ff, rj) => {
+            if(argsList.length === 0)
+                return ff();
+
             let args = argsList[0];
 
             Logger.infoImpl("Client Install Manager", "Running post-processor command 'java " + args.join(" ") + "'");
