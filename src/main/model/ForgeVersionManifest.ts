@@ -29,7 +29,7 @@ export default class ForgeVersionManifest {
         },
         name: string,
         url?: string,
-        clientreq?: string,
+        clientreq?: boolean,
     }[];
     public mainClass: string;
     public type: "release" | "snapshot" | "old_alpha" | "old_beta";

@@ -1,7 +1,7 @@
 import chalk, {Chalk} from "chalk";
 import moment from "moment";
 
-export class Logger {
+export default class Logger {
 
     public static debugImpl(source: string, msg: string) {
         Logger.log(source, msg, chalk.white, "Debug");
@@ -19,19 +19,19 @@ export class Logger {
         Logger.log(source, msg, chalk.red, "Error");
     }
 
-    public static debug(msg: string) {
+    private static debug(msg: string) {
         Logger.log("Updater", msg, chalk.white, "Debug");
     }
 
-    public static info(msg: string) {
+    private static info(msg: string) {
         Logger.log("Updater", msg, chalk.blue, "Info");
     }
 
-    public static warn(msg: string) {
+    private static warn(msg: string) {
         Logger.log("Updater", msg, chalk.yellow, "Warning");
     }
 
-    public static error(msg: string) {
+    private static error(msg: string) {
         Logger.log("Updater", msg, chalk.red, "Error");
     }
 

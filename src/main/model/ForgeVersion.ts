@@ -1,16 +1,16 @@
 import * as fs from "fs";
+import {existsSync} from "fs";
 import * as hasha from "hasha";
 import {readFileSync} from "jsonfile";
 import * as os from "os";
 import {basename, join} from "path";
-import Env from "../Env";
-import {Logger} from "../logger";
+import Logger from "../logger";
+import EnvironmentManager from "../managers/EnvironmentManager";
 import Utils from "../util/Utils";
 import ForgeVersionManifest from "./ForgeVersionManifest";
 import ManifestArtifact from "./ManifestArtifact";
 import MavenArtifact from "./MavenArtifact";
 import NewForgeInstallProfile from "./NewForgeInstallProfile";
-import {existsSync} from "fs";
 
 export default class ForgeVersion {
     private static _cache = new Map<string, ForgeVersion>();
@@ -19,18 +19,26 @@ export default class ForgeVersion {
     public needsPatch: boolean = false;
     public data?: Map<string, MavenArtifact | string> = new Map<string, MavenArtifact | string>();
     public installProfile?: NewForgeInstallProfile;
-    public installerJarPath;
+    public installerJarPath?;
 
     public static async Get(name: string): Promise<ForgeVersion | null> {
         if (this._cache.has(name))
             return this._cache.get(name);
 
-        Logger.infoImpl("Forge Version Manifest", `Attempting to load data for forge ${name}...`);
+        Logger.infoImpl("Forge Version Manager", `Attempting to load data for forge ${name}...`);
         let ret = new ForgeVersion();
+
+        let jsonPath = join(EnvironmentManager.versionsDir, name, name + ".json");
+        if (existsSync(jsonPath)) {
+            Logger.debugImpl("Forge Version Manager", "Loading from local file; version is installed");
+            ret.manifest = readFileSync(jsonPath);
+            ret.needsPatch = !!ret.manifest.libraries[0].downloads;
+            return ret;
+        }
 
         try {
             Logger.debugImpl("Forge Version Manager", `Attempting to download installer...`);
-            const installJar = join(Env.tempDir, `forge-${name}-installer.jar`);
+            const installJar = join(EnvironmentManager.tempDir, `forge-${name}-installer.jar`);
             try {
                 await Utils.downloadFile(`http://files.minecraftforge.net/maven/net/minecraftforge/forge/${name}/forge-${name}-installer.jar`, installJar);
             } catch (e) {
@@ -41,10 +49,10 @@ export default class ForgeVersion {
             ret.installerJarPath = installJar;
 
             Logger.debugImpl("Forge Version Manager", "Extracting installer profile...");
-            let success = await Utils.tryExtractFileFromArchive(installJar, Env.tempDir, "install_profile.json");
+            let success = await Utils.tryExtractFileFromArchive(installJar, EnvironmentManager.tempDir, "install_profile.json");
             if (!success) return null;
 
-            let json = readFileSync(join(Env.tempDir, "install_profile.json"));
+            let json = readFileSync(join(EnvironmentManager.tempDir, "install_profile.json"));
 
             if (json.versionInfo) {
                 Logger.debugImpl("Forge Version Manager", "OLD install profile detected.");
@@ -59,8 +67,8 @@ export default class ForgeVersion {
 
                 Logger.debugImpl("Forge Version Manager", `Extracting version json: ${filename}`);
 
-                await Utils.tryExtractFileFromArchive(installJar, Env.tempDir, filename);
-                ret.manifest = readFileSync(join(Env.tempDir, filename));
+                await Utils.tryExtractFileFromArchive(installJar, EnvironmentManager.tempDir, filename);
+                ret.manifest = readFileSync(join(EnvironmentManager.tempDir, filename));
             }
 
             return ret;
@@ -70,11 +78,14 @@ export default class ForgeVersion {
         }
     }
 
-    public getRequiredLibraries(): ManifestArtifact[] {
+    public getRequiredLibraries(includeInstallerLibs: boolean): ManifestArtifact[] {
         if (this.needsPatch) {
             //This is easy: grab all the libraries directly from the install profile as they're in Manifest format
             //These are the ones needed for the installer processors.
-            let ret = this.installProfile.libraries.map(lib => lib.downloads.artifact);
+            let ret: ManifestArtifact[] = [];
+
+            if (this.installProfile && includeInstallerLibs)
+                ret = this.installProfile.libraries.map(lib => lib.downloads.artifact);
 
             //And then append all the ones from the version json, also in mojang format
             //These are the ones needed for the game to run
@@ -84,15 +95,16 @@ export default class ForgeVersion {
 
             let ret: ManifestArtifact[] = [];
             this.manifest.libraries.forEach(lib => {
-                if (!lib.clientreq) return;
+                if (lib.clientreq === false) return;
                 let mvn = MavenArtifact.FromString(lib.name);
                 let url = lib.url ? lib.url : "https://libraries.minecraft.net/";
 
                 ret.push({
                     size: 1,
                     sha1: "",
-                    path: mvn.directory + "/" + mvn.filename,
-                    url: url + mvn.directory + "/" + mvn.filename,
+                    path: mvn.fullPath,
+                    url: url + mvn.fullPath,
+                    id: lib.name
                 });
             });
             return ret;
@@ -110,7 +122,7 @@ export default class ForgeVersion {
         let mcVersion = version.substr(0, version.indexOf("-"));
 
         data["SIDE"] = "client";
-        data["MINECRAFT_JAR"] = join(Env.versionsDir, mcVersion, mcVersion + ".jar");
+        data["MINECRAFT_JAR"] = join(EnvironmentManager.versionsDir, mcVersion, mcVersion + ".jar");
 
         for (let key in this.installProfile.data) {
             let rawValue = this.installProfile.data[key].client;
@@ -121,15 +133,15 @@ export default class ForgeVersion {
                 //Artifact
                 let descriptor = rawValue.replace("[", "").replace("]", "");
                 let artifact = MavenArtifact.FromString(descriptor);
-                data[key] = join(Env.librariesDir, artifact.fullPath);
+                data[key] = join(EnvironmentManager.librariesDir, artifact.fullPath);
             } else {
                 //Entry in the jar
                 let pathInJar = rawValue.substr(1);
-                if (!await Utils.tryExtractFileFromArchive(this.installerJarPath, Env.tempDir, pathInJar)) {
+                if (!await Utils.tryExtractFileFromArchive(this.installerJarPath, EnvironmentManager.tempDir, pathInJar)) {
                     Logger.errorImpl("Forge Version Manager", `Failed to get ${pathInJar} from ${this.installerJarPath}, required for data point ${key}`);
                     continue;
                 }
-                data[key] = join(Env.tempDir, basename(pathInJar));
+                data[key] = join(EnvironmentManager.tempDir, basename(pathInJar));
             }
         }
 
@@ -151,7 +163,7 @@ export default class ForgeVersion {
                 if (outputFile.startsWith("{"))
                     outputFile = data[outputFile.replace("{", "").replace("}", "")];
                 else
-                    outputFile = join(Env.librariesDir, MavenArtifact.FromString(outputFile.replace("[", "").replace("]", "")).fullPath);
+                    outputFile = join(EnvironmentManager.librariesDir, MavenArtifact.FromString(outputFile.replace("[", "").replace("]", "")).fullPath);
 
                 if (existsSync(outputFile)) {
                     Logger.debugImpl("Forge Version Manager", `Output artifact already exists: ${outputFile}. Checking hash...`);
@@ -192,16 +204,16 @@ export default class ForgeVersion {
             //Build classpath
 
             //First extract the manifest
-            let processorJarPath = join(Env.librariesDir, MavenArtifact.FromString(processor.jar).fullPath);
-            await Utils.tryExtractFileFromArchive(processorJarPath, Env.tempDir, "META-INF/MANIFEST.MF");
+            let processorJarPath = join(EnvironmentManager.librariesDir, MavenArtifact.FromString(processor.jar).fullPath);
+            await Utils.tryExtractFileFromArchive(processorJarPath, EnvironmentManager.tempDir, "META-INF/MANIFEST.MF");
 
             //Find the main class
-            let manifestContent = fs.readFileSync(join(Env.tempDir, "MANIFEST.MF")).toString("utf8");
+            let manifestContent = fs.readFileSync(join(EnvironmentManager.tempDir, "MANIFEST.MF")).toString("utf8");
             let mainClass = manifestContent.split("\n").find(line => line.startsWith("Main-Class:")).replace("Main-Class:", "").trim();
 
             //Build the classpath from the jar and it's requirements
             command.push("-cp");
-            command.push([processorJarPath].concat(processor.classpath.map(descriptor => join(Env.librariesDir, MavenArtifact.FromString(descriptor).fullPath))).join(os.platform() === "win32" ? ";" : ":"));
+            command.push([processorJarPath].concat(processor.classpath.map(descriptor => join(EnvironmentManager.librariesDir, MavenArtifact.FromString(descriptor).fullPath))).join(os.platform() === "win32" ? ";" : ":"));
 
             //Specify the class to execute.
             command.push(mainClass);
@@ -212,7 +224,7 @@ export default class ForgeVersion {
                     command.push(data[arg.replace("{", "").replace("}", "")]);
                 } else if (arg.startsWith("[")) {
                     //Artifact
-                    command.push(join(Env.librariesDir, MavenArtifact.FromString(arg.replace("[", "").replace("]", "")).fullPath));
+                    command.push(join(EnvironmentManager.librariesDir, MavenArtifact.FromString(arg.replace("[", "").replace("]", "")).fullPath));
                 } else {
                     //Raw arg
                     command.push(arg);

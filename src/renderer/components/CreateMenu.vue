@@ -16,16 +16,20 @@
                 <div :style="{height: ((1 - percent) * 225) + 'px'}" class="pack-installation"></div>
                 <div class="pack-title">Creating "{{name}}" ({{percent * 100}}%)</div>
             </div>
-            <div class="pack" v-for="pack in ourPacks">
+            <div @click="doEditPack(packName)" class="pack" v-for="packName in $store.state.createdPacks">
                 <div class="pack-icon">
-                    {{pack.packName}}
+                    {{packName}}
                 </div>
                 <div class="pack-shade"></div>
-                <div class="pack-title">{{pack.packName}}</div>
+                <div class="pack-title">{{packName}}</div>
             </div>
         </div>
-        <div id="edit-pack" :class="{show: !!editingPack}">
-            <input id="edit-pack-name" v-model="editingPack.name" v-if="editingPack">
+        <div :class="{show: $store.state.showEditPack}" id="edit-pack">
+            <button @click="launchPack()" id="launch-pack-button" v-if="editingPack && editingPack.installedVersion">
+                Playtest
+            </button>
+
+            <input id="edit-pack-name" v-if="editingPack" v-model="editingPack.packName">
             <textarea id="edit-pack-desc" v-model="editingPack.description" v-if="editingPack"></textarea>
 
             <br>
@@ -38,13 +42,15 @@
             <br><br>
 
             <label for="edit-pack-forge-ver" v-if="editingPack">Forge Version:</label>
-            <select id="edit-pack-forge-ver" v-if="editingPack && editingPack.mcVersion" v-model="fmlVers">
-                <option v-for="ver in forgeVersions[editingPack.mcVersion]">{{ver}}</option>
+            <select id="edit-pack-forge-ver" v-if="editingPack && editingPack.gameVersion" v-model="fmlVers">
+                <option v-for="ver in forgeVersions[editingPack.gameVersion]">{{ver}}</option>
             </select>
 
-            <button @click="editingPack = null" id="cancel-edit-pack" v-if="editingPack">Cancel</button>
+            <button @click="editingPack = null; $store.commit('setShowEditPack', false);" id="cancel-edit-pack" v-if="editingPack">
+                Cancel
+            </button>
             <button @click="savePack()" id="finish-edit-pack" v-if="editingPack">
-                <span v-if="editingPack.needsInstall">Create & Install</span>
+                <span v-if="!editingPack.installedVersion">Create & Install</span>
                 <span v-else>Save</span>
             </button>
         </div>
@@ -54,7 +60,7 @@
 <script lang="ts">
     import {IpcMessageEvent, ipcRenderer} from "electron";
     import {Component, Vue} from "vue-property-decorator";
-    import InstalledPackJSON from "../../main/objects/InstalledPackJSON";
+    import InstalledPackJSON from "../../main/model/InstalledPackJSON";
     import Config from "../Config";
     import parser = require("fast-xml-parser");
 
@@ -65,22 +71,24 @@
         public mcVersions = ["Loading version listing..."];
         public forgeVersions = {};
 
-        public newPack = {
-            uploaded: false,
-            name: "[Enter Pack Name]",
+        public newPack: InstalledPackJSON = {
+            packName: "[Enter Pack Name]",
             description: "[Enter Pack Description]",
-            mcVersion: "",
-            fmlVersion: "",
-            needsInstall: true,
-            amAuthor: true,
+            gameVersion: "",
+            forgeVersion: "",
+            id: "",
+            installedMods: [],
+            installedVersion: "",
+            author: {
+                name: "Me",
+                uuid: "",
+            }
         };
-
-        public ourPacks: InstalledPackJSON[] = [];
 
         public async mounted() {
             let array = await (await fetch(Config.API_URL + "/pack/versions")).json();
             this.mcVersions = array;
-            this.newPack.mcVersion = array[array.length - 1];
+            this.newPack.gameVersion = array[array.length - 1];
 
             let xml = await (await fetch("http://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.xml")).text();
             let json = parser.parse(xml);
@@ -91,9 +99,12 @@
                 this.forgeVersions[version] = versions.filter(ver => ver.startsWith(version));
             }
 
-            let vers = this.forgeVersions[this.newPack.mcVersion];
-            this.newPack.fmlVersion = vers[vers.length - 1];
-            console.log("Forge versions", this.forgeVersions);
+            let forgeVersions = this.forgeVersions[this.newPack.gameVersion];
+            this.newPack.forgeVersion = forgeVersions[forgeVersions.length - 1];
+            if (this.editingPack) {
+                this.editingPack.forgeVersion = forgeVersions[forgeVersions.length - 1];
+                this.$forceUpdate();
+            }
 
             ipcRenderer.removeAllListeners("install error")
                 .removeAllListeners("install progress")
@@ -113,15 +124,15 @@
             });
 
             ipcRenderer.on("install complete", (event: IpcMessageEvent, packName: string, gameVersion: string, forgeVersion: string) => {
-                // this.$store.commit("cancelInstall", packName);
-                // this.ourPacks.push({name: packName});
                 this.$store.commit("setInstallProgress", {name: packName, value: 1});
-                event.sender.send("create pack", packName, gameVersion, forgeVersion);
+
+                if (!this.editingPack.installedVersion)
+                    event.sender.send("create pack", packName, this.editingPack.description, gameVersion, forgeVersion);
             });
 
             ipcRenderer.on("pack created", (event: IpcMessageEvent, pack: InstalledPackJSON) => {
                 this.$store.commit("cancelInstall", pack.packName);
-                this.ourPacks.push(pack);
+                this.$store.commit("addCreatedPack", pack.packName);
             });
 
             ipcRenderer.on("pack create failed", (event, name, error) => {
@@ -131,12 +142,21 @@
             });
         }
 
+        public doEditPack(name) {
+            ipcRenderer.once("pack json", (event, pack: InstalledPackJSON) => {
+                this.editingPack = pack;
+                this.$store.commit("setShowEditPack", true);
+            });
+
+            ipcRenderer.send("get pack json", name);
+        }
+
         public updateForgeVer() {
-            let vers = this.forgeVersions[this.editingPack.mcVersion];
+            let vers = this.forgeVersions[this.editingPack.gameVersion];
             this.fmlVers = vers[vers.length - 1];
         }
 
-        get editingPack() {
+        get editingPack(): InstalledPackJSON {
             return this.$store.state.editingPack;
         }
 
@@ -166,30 +186,41 @@
         }
 
         public savePack() {
-            if (/[^\w\d\s]/g.test(this.editingPack.name)) {
+            if (/[^\w\d\s]/g.test(this.editingPack.packName)) {
                 alert("Pack name must be alphanumeric (spaces are allowed too)");
                 return;
             }
 
-            this.editingPack.name = this.editingPack.name.trim();
+            this.editingPack.packName = this.editingPack.packName.trim();
 
-            if (this.ourPacks.find(p => p.packName.toLowerCase() === this.editingPack.name.toLowerCase()) || this.installingPacks.hasOwnProperty(this.editingPack.name)) {
+            if (this.$store.state.createdPacks.find(name => name.toLowerCase() === this.editingPack.packName.toLowerCase()) || this.installingPacks.hasOwnProperty(this.editingPack.packName)) {
                 alert("Pack name is taken by one you already own.");
                 return;
             }
 
             let pack = this.editingPack;
-            pack.installProgress = 0;
 
-            this.$store.commit("queuePackInstall", pack.name);
-            ipcRenderer.send("install pack client", pack.name, pack.mcVersion, pack.fmlVersion);
-            this.editingPack = null;
+            this.$store.commit("removeCreatedPack", pack.packName);
+            this.$store.commit("queuePackInstall", pack.packName);
+            ipcRenderer.send("install pack client", pack.packName, pack.gameVersion, pack.forgeVersion);
+
+            if (this.editingPack.installedVersion) {
+                //TODO: Save/install mods.
+            }
+
+            this.$store.commit("setShowEditPack", false);
         }
 
         public createPack() {
             let pack = {};
             Object.assign(pack, this.newPack);
-            this.editingPack = pack;
+
+            this.editingPack = pack as InstalledPackJSON;
+            this.$store.commit("setShowEditPack", true);
+        }
+
+        public launchPack() {
+            ipcRenderer.send("launch pack", this.editingPack.packName);
         }
     }
 </script>
@@ -236,11 +267,12 @@
 
             #edit-pack-name {
                 font-size: 2rem;
-                width: 500px;
+                margin-top: 2rem;
+                width: calc(100% - 2rem);
             }
 
             #edit-pack-desc {
-                width: 500px;
+                width: calc(100% - 2rem);
             }
 
             select {
@@ -254,7 +286,7 @@
                 border: none;
             }
 
-            #cancel-edit-pack, #finish-edit-pack {
+            #cancel-edit-pack, #finish-edit-pack, #launch-pack-button {
                 position: absolute;
                 bottom: 1rem;
                 width: calc(50% - 1rem);
@@ -265,6 +297,21 @@
                 border: 1px solid #222;
                 font-size: 1rem;
                 outline: none;
+            }
+
+            #launch-pack-button {
+                top: 1rem;
+                bottom: auto;
+                left: 1rem;
+                width: calc(100% - 2rem);
+
+                &:hover {
+                    background: rgba(100, 255, 100, 0.1);
+                }
+
+                &:active {
+                    background: rgba(0, 255, 0, 0.1);
+                }
             }
 
             #cancel-edit-pack {

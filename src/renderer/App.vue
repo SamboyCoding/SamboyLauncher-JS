@@ -22,6 +22,7 @@
 </template>
 
 <script lang='ts'>
+    import {ipcRenderer} from "electron";
     import {Component, Vue} from "vue-property-decorator";
     import CreateMenu from "./components/CreateMenu.vue";
     import MainMenu from "./components/MainMenu.vue";
@@ -37,6 +38,18 @@
     })
     export default class App extends Vue {
         public Page = Page; //Expose to the view
+
+        public mounted() {
+            ipcRenderer.on("installed packs", (event, packs: string[]) => {
+                this.$store.commit("setInstalledPacks", packs);
+            });
+
+            ipcRenderer.on("created packs", (event, packs: string[]) => {
+                this.$store.commit("setCreatedPacks", packs);
+            });
+
+            ipcRenderer.send("get installed packs");
+        }
 
         get page() {
             return this.$store.state.currentPage as Page;

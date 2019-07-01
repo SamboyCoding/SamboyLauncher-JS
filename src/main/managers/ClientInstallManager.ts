@@ -2,22 +2,22 @@ import {spawn} from "child_process";
 import {copyFileSync, existsSync, readdirSync} from "fs";
 import {basename, dirname, join} from "path";
 import rimraf from "rimraf";
+import Logger from "../logger";
+import ForgeVersion from "../model/ForgeVersion";
+import MCVersion from "../model/MCVersion";
+import Utils from "../util/Utils";
 import ElectronManager from "./ElectronManager";
-import Env from "./Env";
-import {Logger} from "./logger";
-import ForgeVersion from "./objects/ForgeVersion";
-import MCVersion from "./objects/MCVersion";
-import Utils from "./util/Utils";
+import EnvironmentManager from "./EnvironmentManager";
 
-export default class ClientInstaller {
-    public static async installClient(packName: string, gameVersionId: string, forgeVersionId: string) {
+export default class ClientInstallManager {
+    public static async installClient(packName: string, gameVersionId: string, forgeVersionId: string): Promise<void> {
         return new Promise((ff, rj) => {
             MCVersion.Get(gameVersionId)
                 .then(minecraftVersion => {
                     if (!minecraftVersion)
                         throw new Error("Couldn't find mc version");
 
-                    if (existsSync(join(Env.versionsDir, minecraftVersion.name, minecraftVersion.name + ".jar")))
+                    if (existsSync(join(EnvironmentManager.versionsDir, minecraftVersion.name, minecraftVersion.name + ".jar")))
                         throw new Error("ntd"); //Nothing to do
 
                     return minecraftVersion;
@@ -36,7 +36,7 @@ export default class ClientInstaller {
                     if (e)
                         throw e; //Rethrow so we don't attempt forge.
 
-                    if (existsSync(join(Env.versionsDir, forgeVersionId, forgeVersionId + ".json")))
+                    if (existsSync(join(EnvironmentManager.versionsDir, forgeVersionId, forgeVersionId + ".json")))
                         throw new Error("ntd"); //Nothing to do
                 })
                 .then(() => ForgeVersion.Get(forgeVersionId)) //Do this after the check as it involves downloading forge's installer, which is intensive.
@@ -53,23 +53,23 @@ export default class ClientInstaller {
                     return Promise.resolve();
                 })
                 .then(() => {
-                    Logger.infoImpl("IPCMain", "Finishing up by copying the forge version json...");
+                    Logger.infoImpl("Client Install Manager", "Finishing up by copying the forge version json...");
 
                     //Copy install json to forge
-                    let dir = join(Env.versionsDir, forgeVersionId);
+                    let dir = join(EnvironmentManager.versionsDir, forgeVersionId);
                     return Utils.mkdirpPromise(dir);
                 })
                 .then(() => {
-                    let dir = join(Env.versionsDir, forgeVersionId);
-                    Logger.debugImpl("IPCMain", `Copy file: ${join(Env.tempDir, "version.json")} => ${join(dir, forgeVersionId + ".json")}`);
-                    copyFileSync(join(Env.tempDir, "version.json"), join(dir, forgeVersionId + ".json"));
+                    let dir = join(EnvironmentManager.versionsDir, forgeVersionId);
+                    Logger.debugImpl("Client Install Manager", `Copy file: ${join(EnvironmentManager.tempDir, "version.json")} => ${join(dir, forgeVersionId + ".json")}`);
+                    copyFileSync(join(EnvironmentManager.tempDir, "version.json"), join(dir, forgeVersionId + ".json"));
                     return true;
                 })
                 .catch((e: Error) => {
                     if (e.message === "ntd")
                         return true;
 
-                    this.cleanupTemp();
+                    //this.cleanupTemp();
 
                     rj(e);
                     return false;
@@ -84,10 +84,11 @@ export default class ClientInstaller {
     }
 
     private static cleanupTemp() {
+        Logger.debugImpl("Client Install Manager", "Cleaning up temp dir");
         //Cleanup temp dir in the background
-        let content = readdirSync(Env.tempDir);
+        let content = readdirSync(EnvironmentManager.tempDir);
         for (let file of content) {
-            rimraf.sync(join(Env.tempDir, file));
+            rimraf.sync(join(EnvironmentManager.tempDir, file));
         }
     }
 
@@ -97,7 +98,7 @@ export default class ClientInstaller {
         minecraftVersion.libraries.forEach(lib => totalSize += lib.size);
 
         let promises = minecraftVersion.libraries.map(async lib => {
-            const dest = join(Env.librariesDir, lib.path);
+            const dest = join(EnvironmentManager.librariesDir, lib.path);
             await Utils.mkdirpPromise(dirname(dest));
             await Utils.downloadWithSigCheck(lib.url, dest, lib.sha1);
             pct += 0.3 * lib.size / totalSize;
@@ -111,7 +112,7 @@ export default class ClientInstaller {
     }
 
     private static async downloadVanillaClient(packName: string, minecraftVersion: MCVersion) {
-        const versionFolder = join(Env.versionsDir, minecraftVersion.name);
+        const versionFolder = join(EnvironmentManager.versionsDir, minecraftVersion.name);
 
         let dest = join(versionFolder, minecraftVersion.name + ".jar");
         await Utils.mkdirpPromise(dirname(dest));
@@ -123,7 +124,7 @@ export default class ClientInstaller {
     }
 
     private static async downloadVanillaNatives(packName: string, minecraftVersion: MCVersion) {
-        const versionFolder = join(Env.versionsDir, minecraftVersion.name);
+        const versionFolder = join(EnvironmentManager.versionsDir, minecraftVersion.name);
         const nativesDir = join(versionFolder, "natives");
 
         let totalSize = 0;
@@ -134,7 +135,7 @@ export default class ClientInstaller {
         let pct = 0.4;
 
         let promises = minecraftVersion.natives.map(async nat => {
-            const zipPath = join(Env.librariesDir, nat.path);
+            const zipPath = join(EnvironmentManager.librariesDir, nat.path);
             await Utils.downloadWithSigCheck(nat.url, zipPath, nat.sha1);
             await Utils.extractArchive(zipPath, nativesDir);
 
@@ -155,7 +156,7 @@ export default class ClientInstaller {
         let pct = 0.5;
         minecraftVersion.assets.forEach(asset => totalSize += asset.size);
 
-        const objectsDir = join(Env.assetsDir, "objects");
+        const objectsDir = join(EnvironmentManager.assetsDir, "objects");
         await Utils.mkdirpPromise(objectsDir);
 
         let promises = Array.from(minecraftVersion.assets.values()).sort().map(async asset => {
@@ -172,24 +173,26 @@ export default class ClientInstaller {
         try {
             await Promise.all(promises);
         } catch (e) {
-            Logger.errorImpl("IPCMain", e.message + "\n" + e.stack);
+            Logger.errorImpl("Client Install Manager", e.message + "\n" + e.stack);
             ElectronManager.win.webContents.send("install error", packName, e.message);
             return;
         }
 
-        Logger.debugImpl("IPCMain", "Finished getting assets");
+        Logger.debugImpl("Client Install Manager", "Finished getting assets");
     }
 
     private static async downloadForgeLibs(packName: string, forge: ForgeVersion) {
         //Get forge libraries
 
         let pct = 0.66;
-        let libs = forge.getRequiredLibraries();
+        let libs = forge.getRequiredLibraries(true);
         let totalSize = 0;
         libs.forEach(lib => totalSize += lib.size); //If we're an old version these all have a size of 1, but that's fine.
 
+        let dirtyHaxOldVersionJarToExtractProfileFrom: string;
+
         let promises = libs.map(async lib => {
-            const dest = join(Env.librariesDir, lib.path);
+            const dest = join(EnvironmentManager.librariesDir, lib.path);
             await Utils.mkdirpPromise(dirname(dest));
             if (lib.size !== 1) {
                 //New (1.13+) lib
@@ -201,19 +204,24 @@ export default class ClientInstaller {
                     if (!await Utils.tryExtractFileFromArchive(forge.installerJarPath, dirname(dest), "maven/" + lib.path))
                         throw new Error(`${basename(lib.path)} does not specify a url and couldn't be found in the installer's builtin maven`);
 
-                    Logger.debugImpl("IPCMain", `Extracted ${basename(lib.path)} from installer's builtin maven.`);
+                    Logger.debugImpl("Client Install Manager", `Extracted ${basename(lib.path)} from installer's builtin maven.`);
                 }
             } else if (!existsSync(dest)) {
                 //Old lib, and doesn't exist.
+                if (lib.id.indexOf("minecraftforge:forge:") !== -1) {
+                    //Forge itself, fix url
+                    lib.url = lib.url.replace(".jar", "-universal.jar");
+                    dirtyHaxOldVersionJarToExtractProfileFrom = join(EnvironmentManager.librariesDir, lib.path);
+                }
                 try {
                     await Utils.downloadFile(lib.url, dest); //Old version, no sha1 to check
-                    Logger.debugImpl("IPCMain", `Downloaded forge lib: ${dest}`);
+                    Logger.debugImpl("Client Install Manager", `Downloaded forge lib: ${dest}`);
                 } catch (e) {
-                    Logger.warnImpl("IPCMain", `Failed to get forge library: ${lib.url}. Trying packed...`);
+                    Logger.warnImpl("Client Install Manager", `Failed to get forge library: ${lib.url}. Trying packed...`);
                     await Utils.handlePackedForgeLibrary(lib.url, dest);
                 }
             } else {
-                Logger.debugImpl("IPCMain", `${dest} already exists, but no checksum. Have to assume it's good.`);
+                Logger.debugImpl("Client Install Manager", `${dest} already exists, but no checksum. Have to assume it's good.`);
             }
 
             pct += (forge.needsPatch ? 0.14 : 0.34) * lib.size / totalSize; //Brings us up to ~80% if we need to patch or 100% if we don't
@@ -222,6 +230,9 @@ export default class ClientInstaller {
         });
 
         await Promise.all(promises);
+
+        if (dirtyHaxOldVersionJarToExtractProfileFrom)
+            await Utils.tryExtractFileFromArchive(dirtyHaxOldVersionJarToExtractProfileFrom, EnvironmentManager.tempDir, "version.json");
 
         return forge;
     }
@@ -239,7 +250,7 @@ export default class ClientInstaller {
         return new Promise((ff, rj) => {
             let args = argsList[0];
 
-            Logger.infoImpl("IPCMain", "Running post-processor command 'java " + args.join(" ") + "'");
+            Logger.infoImpl("Client Install Manager", "Running post-processor command 'java " + args.join(" ") + "'");
 
             let process = spawn("java", args, {
                 stdio: "ignore"
@@ -253,7 +264,7 @@ export default class ClientInstaller {
                 if (code !== 0)
                     return rj("Patch failed; exit code " + code);
 
-                Logger.debugImpl("IPCMain", "Success!");
+                Logger.debugImpl("Client Install Manager", "Success!");
 
                 pct += pctPer;
                 ElectronManager.win.webContents.send("install progress", packName, pct);

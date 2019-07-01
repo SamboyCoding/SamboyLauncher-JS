@@ -2,9 +2,8 @@ import {readFileSync} from "jsonfile";
 import fetch from "node-fetch";
 import * as os from "os";
 import * as path from "path";
-import {Open} from "unzipper";
-import Env from "../Env";
-import {Logger} from "../logger";
+import Logger from "../logger";
+import EnvironmentManager from "../managers/EnvironmentManager";
 import Utils from "../util/Utils";
 import ManifestArtifact from "./ManifestArtifact";
 import MCAssetDefinition from "./MCAssetDefinition";
@@ -112,7 +111,7 @@ export default class MCVersion {
                 }
             }
 
-            const indexDir = path.join(Env.assetsDir, "indexes");
+            const indexDir = path.join(EnvironmentManager.assetsDir, "indexes");
             const indexPath = path.join(indexDir, mcVersion.assetIndex.id + ".json");
 
             //This does nothing if the file already exists and the signature is valid.

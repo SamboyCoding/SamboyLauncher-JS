@@ -3,18 +3,20 @@ import {ipcMain, IpcMessageEvent} from "electron";
 import * as isDev from "electron-is-dev";
 import {autoUpdater} from "electron-updater";
 import fetch from "node-fetch";
-import AuthData from "./AuthData";
-import Config from "./config";
-import ElectronManager from "./ElectronManager";
-import {Logger} from "./logger";
-import MainIPCHandler from "./MainIPCHandler";
-import MCVersion from "./objects/MCVersion";
+import Logger from "./logger";
+import AuthenticationManager from "./managers/AuthenticationManager";
+import ConfigurationManager from "./managers/configurationManager";
+import ElectronManager from "./managers/ElectronManager";
+import InstalledPackManager from "./managers/InstalledPackManager";
+import MainIPCHandler from "./managers/MainIPCHandler";
+import MCVersion from "./model/MCVersion";
 //#endregion
 
-Config.load();
-ElectronManager.init();
-AuthData.load();
+ConfigurationManager.LoadFromDisk();
+AuthenticationManager.LoadFromDisk();
 MCVersion.Get(); //Preload these.
+InstalledPackManager.LoadFromDisk();
+ElectronManager.SetupElectron();
 MainIPCHandler.Init();
 
 // ---------------------
@@ -28,7 +30,7 @@ async function login(email: string, password: string, remember: boolean) {
                     name: "Minecraft",
                     version: 1,
                 },
-                clientToken: AuthData.clientToken ? AuthData.clientToken : undefined,
+                clientToken: AuthenticationManager.clientToken ? AuthenticationManager.clientToken : undefined,
                 password,
                 requestUser: true,
                 username: email,
@@ -49,18 +51,18 @@ async function login(email: string, password: string, remember: boolean) {
                     const uid: string = json.selectedProfile.id;
                     const un: string = json.selectedProfile.name;
 
-                    AuthData.accessToken = at;
-                    AuthData.clientToken = ct;
-                    AuthData.uuid = uid;
-                    AuthData.username = un;
-                    AuthData.email = email;
+                    AuthenticationManager.accessToken = at;
+                    AuthenticationManager.clientToken = ct;
+                    AuthenticationManager.uuid = uid;
+                    AuthenticationManager.username = un;
+                    AuthenticationManager.email = email;
                     if (remember) {
-                        AuthData.password = password;
+                        AuthenticationManager.password = password;
                     } else {
-                        AuthData.password = "";
+                        AuthenticationManager.password = "";
                     }
 
-                    AuthData.save();
+                    AuthenticationManager.save();
 
                     ff();
                 }
@@ -72,8 +74,8 @@ async function login(email: string, password: string, remember: boolean) {
 }
 
 ipcMain.on("get profile", (event: IpcMessageEvent) => {
-    if (AuthData.accessToken && AuthData.username && AuthData.uuid) {
-        event.sender.send("profile", AuthData.username, AuthData.uuid);
+    if (AuthenticationManager.accessToken && AuthenticationManager.username && AuthenticationManager.uuid) {
+        event.sender.send("profile", AuthenticationManager.username, AuthenticationManager.uuid);
     } else {
         event.sender.send("no profile");
     }
@@ -83,32 +85,32 @@ ipcMain.on("login", async (event: IpcMessageEvent, email: string, password: stri
     try {
         await login(email, password, remember);
 
-        event.sender.send("profile", AuthData.username, AuthData.uuid);
+        event.sender.send("profile", AuthenticationManager.username, AuthenticationManager.uuid);
     } catch (e) {
         event.sender.send("login error", e);
     }
 });
 
 ipcMain.on("logout", (event: IpcMessageEvent) => {
-    AuthData.accessToken = undefined;
-    AuthData.password = undefined;
-    AuthData.username = undefined;
-    AuthData.uuid = undefined;
+    AuthenticationManager.accessToken = undefined;
+    AuthenticationManager.password = undefined;
+    AuthenticationManager.username = undefined;
+    AuthenticationManager.uuid = undefined;
 
-    AuthData.save();
+    AuthenticationManager.save();
 
     event.sender.send("logged out");
 });
 
 ipcMain.on("validate session", (event: IpcMessageEvent) => {
-    if (!AuthData.accessToken) {
+    if (!AuthenticationManager.accessToken) {
         return;
     }
 
     fetch("https://authserver.mojang.com/validate", {
         body: JSON.stringify({
-            accessToken: AuthData.accessToken,
-            clientToken: AuthData.clientToken,
+            accessToken: AuthenticationManager.accessToken,
+            clientToken: AuthenticationManager.clientToken,
         }),
         headers: {
             "Content-Type": "application/json",
@@ -119,9 +121,9 @@ ipcMain.on("validate session", (event: IpcMessageEvent) => {
             return;
         } // Session valid
 
-        if (AuthData.email && AuthData.password) {
+        if (AuthenticationManager.email && AuthenticationManager.password) {
             try {
-                await login(AuthData.email, AuthData.password, true); // Already set to remember, so remember again
+                await login(AuthenticationManager.email, AuthenticationManager.password, true); // Already set to remember, so remember again
             } catch (e) {
                 event.sender.send("session invalid");
             }
@@ -138,6 +140,9 @@ ipcMain.on("validate session", (event: IpcMessageEvent) => {
 //#region Launcher Updates
 
 autoUpdater.autoDownload = true;
+
+//this is complaining cause the methods are private so I don't accidentally call them.
+// @ts-ignore
 autoUpdater.logger = Logger;
 
 autoUpdater.on("update-downloaded", () => {
@@ -145,18 +150,18 @@ autoUpdater.on("update-downloaded", () => {
 });
 
 ipcMain.on("check updates", (event: IpcMessageEvent) => {
-    Logger.info("Checking for updates...");
+    Logger.infoImpl("Updater", "Checking for updates...");
     if (!isDev) {
         autoUpdater.checkForUpdatesAndNotify().then((update) => {
             if (update) {
-                Logger.info("Update found! " + JSON.stringify(update.updateInfo));
+                Logger.infoImpl("Updater", "Update found! " + JSON.stringify(update.updateInfo));
                 event.sender.send("update available", update.updateInfo.version);
             } else {
-                Logger.info("No update found.");
+                Logger.infoImpl("Updater", "No update found.");
                 event.sender.send("no update");
             }
         }).catch((e) => {
-            Logger.warn("Error checking for updates: " + e);
+            Logger.warnImpl("Updater", "Error checking for updates: " + e);
             event.sender.send("update error");
         });
     } else {

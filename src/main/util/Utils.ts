@@ -8,8 +8,8 @@ import mkdirp from "mkdirp";
 import * as path from "path";
 import {basename, join} from "path";
 import * as rimraf from "rimraf";
-import Env from "../Env";
-import {Logger} from "../logger";
+import Logger from "../logger";
+import EnvironmentManager from "../managers/EnvironmentManager";
 
 export default class Utils {
     public static toBase64(str: string): string {
@@ -112,16 +112,16 @@ export default class Utils {
 
     public static async handlePackedForgeLibrary(url: string, dest: string) {
         url += ".pack.xz";
-        let xzipped = join(Env.tempDir, basename(dest) + ".pack.xz");
+        let xzipped = join(EnvironmentManager.tempDir, basename(dest) + ".pack.xz");
 
         Logger.debugImpl("Packed Forge Lib Handler", "Downloading " + url + "...");
         await Utils.downloadFile(url, xzipped);
         Logger.debugImpl("Packed Forge Lib Handler", "Downloaded pack.xz file. Reversing LZMA...");
 
-        await Utils.extractArchive(xzipped, Env.tempDir);
+        await Utils.extractArchive(xzipped, EnvironmentManager.tempDir);
         Logger.debugImpl("Packed Forge Lib Handler", "LZMA reversed. Stripping checksums...");
 
-        let packFile = join(Env.tempDir, basename(dest) + ".pack");
+        let packFile = join(EnvironmentManager.tempDir, basename(dest) + ".pack");
         let packFileContent = fs.readFileSync(packFile);
         unlinkSync(packFile); //Remove existing one; we're stripping the checksums
 

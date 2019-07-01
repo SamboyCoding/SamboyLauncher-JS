@@ -1,4 +1,4 @@
 export default class User {
-    public id: string;
+    public uuid: string;
     public name: string;
 }

@@ -1,48 +1,49 @@
 import {app, BrowserWindow, ipcMain, IpcMessageEvent, Menu, MenuItem} from "electron";
 import * as isDev from "electron-is-dev";
 import {join} from "path";
-import {format as formatUrl} from "url";
-import Config from "./config";
-import {Logger} from "./logger";
+import Logger from "../logger";
+import ConfigurationManager from "./configurationManager";
 
 export default class ElectronManager {
     public static win: BrowserWindow;
 
-    public static init() {
-        Logger.infoImpl("ElectronManager", "Init");
+    public static SetupElectron() {
+        return new Promise(ff => {
+            Logger.infoImpl("ElectronManager", "Init");
 
-        app.commandLine.appendSwitch("--enable-experimental-web-platform-features");
+            app.commandLine.appendSwitch("--enable-experimental-web-platform-features");
 
-        app.on("ready", async () => {
-            try {
-                await ElectronManager.onReady();
-                await ElectronManager.createWindow();
-            } catch (e) {
-                Logger.errorImpl("ElectronManager", "Exception initializing! " + e);
-            }
-        });
+            app.on("ready", async () => {
+                try {
+                    await ElectronManager.onReady();
+                    ElectronManager.createWindow().then(ff);
+                } catch (e) {
+                    Logger.errorImpl("ElectronManager", "Exception initializing! " + e);
+                }
+            });
 
-        app.on("window-all-closed", () => {
-            if (process.platform !== "darwin") {
-                app.quit();
-            }
-        });
+            app.on("window-all-closed", () => {
+                if (process.platform !== "darwin") {
+                    app.quit();
+                }
+            });
 
-        app.on("activate", async () => {
-            if (ElectronManager.win === null) {
-                await ElectronManager.createWindow();
-            }
-        });
+            app.on("activate", async () => {
+                if (ElectronManager.win === null) {
+                    await ElectronManager.createWindow();
+                }
+            });
 
-        ipcMain.on("maximize", (event: IpcMessageEvent) => {
-            if (ElectronManager.win.isMaximized())
-                ElectronManager.win.restore();
-            else
-                ElectronManager.win.maximize();
-        });
+            ipcMain.on("maximize", (event: IpcMessageEvent) => {
+                if (ElectronManager.win.isMaximized())
+                    ElectronManager.win.restore();
+                else
+                    ElectronManager.win.maximize();
+            });
 
-        ipcMain.on("minimize", (event: IpcMessageEvent) => {
-            ElectronManager.win.minimize();
+            ipcMain.on("minimize", (event: IpcMessageEvent) => {
+                ElectronManager.win.minimize();
+            });
         });
     }
 
@@ -82,7 +83,7 @@ export default class ElectronManager {
 
         ElectronManager.win.once("ready-to-show", () => {
             Logger.infoImpl("ElectronManager", "Showing window...");
-            ElectronManager.win.webContents.send("dark theme", Config.darkTheme);
+            ElectronManager.win.webContents.send("dark theme", ConfigurationManager.darkTheme);
             ElectronManager.win.show();
         });
 
@@ -90,7 +91,7 @@ export default class ElectronManager {
             ElectronManager.win = null;
         });
 
-        await ElectronManager.win.loadFile(join(__dirname, "../../dist/index.html"));
+        await ElectronManager.win.loadFile(join(__dirname, "../../../dist/index.html"));
 
     }
 
