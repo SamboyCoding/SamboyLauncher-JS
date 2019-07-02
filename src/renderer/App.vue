@@ -103,6 +103,14 @@
         background: rgba(200, 200, 200, 0.3);
     }
 
+    ::-webkit-scrollbar-button {
+        display: none;
+    }
+
+    ::-webkit-scrollbar-corner {
+        height: 0;
+    }
+
     #subnav {
         //margin-top: 6rem;
         height: calc(100% - 6rem);

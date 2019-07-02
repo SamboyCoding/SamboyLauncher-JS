@@ -95,6 +95,9 @@ export default class ClientInstallManager {
     private static async downloadVanillaLibs(packName: string, minecraftVersion: MCVersion) {
         let pct = 0;
         let totalSize = 0;
+
+        Logger.infoImpl("Client Install Manager", `Installing libraries for minecraft ${minecraftVersion.name}...`);
+
         minecraftVersion.libraries.forEach(lib => totalSize += lib.size);
 
         let promises = minecraftVersion.libraries.map(async lib => {
@@ -114,6 +117,8 @@ export default class ClientInstallManager {
     private static async downloadVanillaClient(packName: string, minecraftVersion: MCVersion) {
         const versionFolder = join(EnvironmentManager.versionsDir, minecraftVersion.name);
 
+        Logger.infoImpl("Client Install Manager", `Installing minecraft client ${minecraftVersion.name}...`);
+
         let dest = join(versionFolder, minecraftVersion.name + ".jar");
         await Utils.mkdirpPromise(dirname(dest));
         await Utils.downloadWithSigCheck(minecraftVersion.clientJar.url, dest, minecraftVersion.clientJar.sha1);
@@ -126,6 +131,8 @@ export default class ClientInstallManager {
     private static async downloadVanillaNatives(packName: string, minecraftVersion: MCVersion) {
         const versionFolder = join(EnvironmentManager.versionsDir, minecraftVersion.name);
         const nativesDir = join(versionFolder, "natives");
+
+        Logger.infoImpl("Client Install Manager", `Installing natives for minecraft ${minecraftVersion.name}...`);
 
         let totalSize = 0;
         minecraftVersion.natives.forEach(nat => totalSize += nat.size);
@@ -152,6 +159,8 @@ export default class ClientInstallManager {
     }
 
     private static async downloadAssets(packName: string, minecraftVersion: MCVersion) {
+        Logger.infoImpl("Client Install Manager", `Installing assets for minecraft ${minecraftVersion.name}...`);
+
         let totalSize = 0;
         let pct = 0.5;
         minecraftVersion.assets.forEach(asset => totalSize += asset.size);
@@ -184,6 +193,7 @@ export default class ClientInstallManager {
     private static async downloadForgeLibs(packName: string, forge: ForgeVersion) {
         //Get forge libraries
 
+        Logger.infoImpl("Client Install Manager", `Installing libraries for forge ${forge.manifest.id}`);
         let pct = 0.66;
         let libs = forge.getRequiredLibraries(true);
         let totalSize = 0;
@@ -231,8 +241,10 @@ export default class ClientInstallManager {
 
         await Promise.all(promises);
 
-        if (dirtyHaxOldVersionJarToExtractProfileFrom)
+        if (dirtyHaxOldVersionJarToExtractProfileFrom) {
+            Logger.infoImpl("Client Install Manager", "Extracting forge version.json from downloaded library...");
             await Utils.tryExtractFileFromArchive(dirtyHaxOldVersionJarToExtractProfileFrom, EnvironmentManager.tempDir, "version.json");
+        }
 
         return forge;
     }

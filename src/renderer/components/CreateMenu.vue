@@ -229,6 +229,7 @@
     #create {
         display: flex;
         height: 100%;
+        overflow: hidden;
 
         #created-packs {
             display: flex;
@@ -237,6 +238,7 @@
             padding: 3rem 2rem;
             flex-grow: 2;
             transition: flex-grow 0.5s;
+            overflow: scroll;
         }
 
         #edit-pack {

@@ -58,7 +58,9 @@ export default new Vuex.Store({
             state.createdPacks.push(payload);
         },
         removeCreatedPack: (state, payload) => {
-            state.createdPacks.splice(state.createdPacks.findIndex(p => p.packName === payload), 1);
+            let index = state.createdPacks.findIndex(p => p.packName === payload);
+            if (index >= 0)
+                state.createdPacks.splice(index, 1);
         },
         setShowEditPack: (state, payload) => {
             state.showEditPack = payload;

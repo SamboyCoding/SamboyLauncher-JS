@@ -2,9 +2,11 @@ import chalk, {Chalk} from "chalk";
 import moment from "moment";
 
 export default class Logger {
+    private static readonly LOG_DEBUG_MESSAGES = true;
 
     public static debugImpl(source: string, msg: string) {
-        Logger.log(source, msg, chalk.white, "Debug");
+        if (this.LOG_DEBUG_MESSAGES)
+            Logger.log(source, msg, chalk.white, "Debug");
     }
 
     public static infoImpl(source: string, msg: string) {
@@ -20,7 +22,8 @@ export default class Logger {
     }
 
     private static debug(msg: string) {
-        Logger.log("Updater", msg, chalk.white, "Debug");
+        if (this.LOG_DEBUG_MESSAGES)
+            Logger.log("Updater", msg, chalk.white, "Debug");
     }
 
     private static info(msg: string) {

@@ -53,6 +53,7 @@ export default class MainIPCHandler {
         if (existsSync(dir))
             return event.sender.send("pack create failed", name, "Directory already exists");
 
+        Logger.infoImpl("IPCMain", "Creating barebones pack installation in " + dir + "...");
         await Utils.mkdirpPromise(dir);
 
         let install: InstalledPackJSON = {
@@ -72,6 +73,8 @@ export default class MainIPCHandler {
         writeFileSync(join(dir, "install.json"), install);
 
         event.sender.send("pack created", install);
+
+        Logger.infoImpl("IPCMain", "Reloading installed packs...");
         InstalledPackManager.LoadFromDisk();
     }
 
