@@ -1,58 +1,90 @@
 <template>
     <div id="create">
-        <div id="created-packs">
-            <div @click="createPack()" class="pack" id="create-pack">
-                <div class="pack-icon">
-                    +
+        <div :class="{show: !$store.state.editMods}" id="created-packs">
+            <div>
+                <div @click="createPack()" class="pack" id="create-pack">
+                    <div class="pack-icon">
+                        +
+                    </div>
+                    <div class="pack-shade"></div>
+                    <div class="pack-title">Create a Pack</div>
                 </div>
-                <div class="pack-shade"></div>
-                <div class="pack-title">Create a Pack</div>
-            </div>
-            <div class="pack installing" v-for="(percent, name) in installingPacks">
-                <div class="pack-icon">
-                    {{name}}
+                <div class="pack installing" v-for="(percent, name) in installingPacks">
+                    <div class="pack-icon">
+                        {{name}}
+                    </div>
+                    <div class="pack-shade"></div>
+                    <div :style="{height: ((1 - percent) * 225) + 'px'}" class="pack-installation"></div>
+                    <div class="pack-title">Creating "{{name}}" ({{percent * 100}}%)</div>
                 </div>
-                <div class="pack-shade"></div>
-                <div :style="{height: ((1 - percent) * 225) + 'px'}" class="pack-installation"></div>
-                <div class="pack-title">Creating "{{name}}" ({{percent * 100}}%)</div>
-            </div>
-            <div @click="doEditPack(packName)" class="pack installed" v-for="packName in $store.state.createdPacks">
-                <div class="pack-icon">
-                    {{packName}}
+                <div @click="doEditPack(packName)" class="pack installed" v-for="packName in $store.state.createdPacks">
+                    <div class="pack-icon">
+                        {{packName}}
+                    </div>
+                    <div class="pack-shade"></div>
+                    <div class="pack-title">{{packName}}</div>
                 </div>
-                <div class="pack-shade"></div>
-                <div class="pack-title">{{packName}}</div>
             </div>
         </div>
         <div :class="{show: $store.state.showEditPack}" id="edit-pack">
-            <button @click="launchPack()" id="launch-pack-button" v-if="editingPack && editingPack.installedVersion">
-                Playtest
-            </button>
+            <div v-if="$store.state.showEditPack">
+                <button @click="launchPack()" id="launch-pack-button" v-if="editingPack && editingPack.installedVersion">
+                    Playtest
+                </button>
 
-            <input id="edit-pack-name" v-if="editingPack" v-model="editingPack.packName">
-            <textarea id="edit-pack-desc" v-model="editingPack.description" v-if="editingPack"></textarea>
+                <input id="edit-pack-name" v-if="editingPack" v-model="editingPack.packName">
+                <textarea id="edit-pack-desc" v-if="editingPack" v-model="editingPack.description"></textarea>
 
-            <br>
+                <br>
 
-            <label for="edit-pack-mc-ver" v-if="editingPack">Game Version:</label>
-            <select @change="updateForgeVer()" id="edit-pack-mc-ver" v-if="editingPack" v-model="mcVers">
-                <option v-for="ver in mcVersions">{{ver}}</option>
-            </select>
+                <label for="edit-pack-mc-ver" v-if="editingPack">Game Version:</label>
+                <select @change="updateForgeVer()" id="edit-pack-mc-ver" v-if="editingPack" v-model="mcVers">
+                    <option v-for="ver in mcVersions">{{ver}}</option>
+                </select>
 
-            <br><br>
+                <br><br>
 
-            <label for="edit-pack-forge-ver" v-if="editingPack">Forge Version:</label>
-            <select id="edit-pack-forge-ver" v-if="editingPack && editingPack.gameVersion" v-model="fmlVers">
-                <option v-for="ver in forgeVersions[editingPack.gameVersion]">{{ver}}</option>
-            </select>
+                <label for="edit-pack-forge-ver" v-if="editingPack">Forge Version:</label>
+                <select id="edit-pack-forge-ver" v-if="editingPack && editingPack.gameVersion" v-model="fmlVers">
+                    <option v-for="ver in forgeVersions[editingPack.gameVersion]">{{ver}}</option>
+                </select>
 
-            <button @click="editingPack = null; $store.commit('setShowEditPack', false);" id="cancel-edit-pack" v-if="editingPack">
-                Cancel
-            </button>
-            <button @click="savePack()" id="finish-edit-pack" v-if="editingPack">
-                <span v-if="!editingPack.installedVersion">Create & Install</span>
-                <span v-else>Save</span>
-            </button>
+                <br><br>
+
+                <h1>Mods</h1>
+                <p v-if="editingPack && editingPack.installedVersion">Pack currently contains
+                    {{editingPack.installedMods.length}} mod{{(editingPack.installedMods.length !== 1 ? "s" : "")}}.</p>
+                <button @click="editMods()" id="pack-edit-mods" v-if="editingPack && editingPack.installedVersion">Edit
+                    Mods
+                </button>
+
+                <button @click="editingPack = null; $store.commit('setShowEditPack', false);" id="cancel-edit-pack" v-if="editingPack">
+                    Cancel
+                </button>
+                <button @click="savePack()" id="finish-edit-pack" v-if="editingPack">
+                    <span v-if="!editingPack.installedVersion">Create & Install</span>
+                    <span v-else>Save</span>
+                </button>
+            </div>
+        </div>
+        <div :class="{show: $store.state.editMods}" id="edit-mods">
+            <div v-if="$store.state.editMods">
+                <button @click="endEditMods()">Return to Edit Menu</button>
+                <button @click="refreshModList()">Refresh Mods</button>
+
+                <div id="mod-listing">
+                    <span v-if="refreshingModList">Loading...</span>
+                    <div class="mod" v-else v-for="mod in mods">
+                        <img :src="mod.thumbnail">
+                        <div class="title-bit">
+                            <h1 class="mod-name">{{mod.name}}</h1>
+                            <br>
+                            <span class="mod-author">{{mod.author}}</span>
+                        </div>
+                        <p class="mod-desc">{{mod.desc}}</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -70,6 +102,9 @@
     export default class CreateMenu extends Vue {
         public mcVersions = ["Loading version listing..."];
         public forgeVersions = {};
+        public mods: { slug: string, thumbnail: string, name: string, author: string, desc: string }[] = [];
+
+        public refreshingModList: boolean = false;
 
         public newPack: InstalledPackJSON = {
             packName: "[Enter Pack Name]",
@@ -222,6 +257,22 @@
         public launchPack() {
             ipcRenderer.send("launch pack", this.editingPack.packName);
         }
+
+        public editMods() {
+            this.$store.commit("setShowEditPack", false);
+            this.$store.commit("setEditMods", true);
+            this.refreshModList();
+        }
+
+        public endEditMods() {
+            this.$store.commit("setEditMods", false);
+        }
+
+        public async refreshModList() {
+            this.refreshingModList = true;
+            this.mods = await (await fetch(`${Config.API_URL}/mod/popular/${this.editingPack.gameVersion}`)).json();
+            this.refreshingModList = false;
+        }
     }
 </script>
 
@@ -232,13 +283,28 @@
         overflow: hidden;
 
         #created-packs {
-            display: flex;
-            flex-flow: row wrap;
-            justify-content: space-evenly;
-            padding: 3rem 2rem;
-            flex-grow: 2;
             transition: flex-grow 0.5s;
-            overflow: scroll;
+            flex-basis: 0;
+            flex-grow: 0;
+
+            & > div {
+                width: 0;
+                display: flex;
+                flex-flow: row wrap;
+                justify-content: space-evenly;
+                overflow: scroll;
+                transition: width 0.5s;
+            }
+
+            &.show {
+                flex-grow: 2;
+                padding: 3rem 2rem;
+                border-right: 1px solid #222;
+
+                & > div {
+                    width: 100%;
+                }
+            }
         }
 
         #edit-pack {
@@ -247,10 +313,10 @@
             transition: flex-grow 0.5s;
             overflow: hidden;
             height: 100%;
-            border-left: 1px solid #222;
             position: relative;
 
             &.show {
+                //                border-left:
                 flex-grow: 1;
                 padding: 3rem 2rem;
             }
@@ -292,13 +358,10 @@
                 position: absolute;
                 bottom: 1rem;
                 width: calc(50% - 1rem);
-                padding: 1rem;
-                background: none;
-                color: white;
-                font-family: inherit;
-                border: 1px solid #222;
-                font-size: 1rem;
-                outline: none;
+            }
+
+            #pack-edit-mods {
+                width: 100%;
             }
 
             #launch-pack-button {
@@ -341,6 +404,98 @@
                 &:active {
                     background: rgba(0, 255, 0, 0.1);
                 }
+            }
+        }
+
+        #edit-mods {
+            flex-grow: 0;
+            flex-basis: 0;
+            transition: flex-grow 0.5s;
+            overflow: hidden;
+            height: 100%;
+            border-left: 1px solid #222;
+            position: relative;
+            max-height: 100%;
+
+            & > div {
+                max-height: 100%;
+                overflow: scroll;
+            }
+
+            &.show {
+                flex-grow: 1;
+                padding: 3rem 2rem 0;
+            }
+
+            #mod-listing {
+                display: flex;
+                position: relative;
+                flex-flow: row wrap;
+                overflow-y: scroll;
+                max-height: 100%;
+
+                .mod {
+                    padding: 1rem;
+                    flex-basis: 100%;
+                    border: 1px solid #222;
+                    border-radius: 8px;
+                    margin: 1rem;
+                    position: relative;
+
+                    &:not(:last-of-type) {
+                        border-bottom-left-radius: 0;
+                        border-bottom-right-radius: 0;
+                        border-bottom: none;
+                        margin-bottom: 0;
+                    }
+
+                    &:not(:first-of-type) {
+                        margin-top: 0;
+                        border-top-left-radius: 0;
+                        border-top-right-radius: 0;
+                    }
+
+                    .title-bit {
+                        display: inline-block;
+                        transform: translateY(-10px);
+                        margin-left: 10px;
+
+                        .mod-name {
+                            margin: 0;
+                            font-size: 2rem;
+                            font-weight: bold;
+                            left: 80px;
+                            top: 1rem;
+                            display: inline-block;
+                        }
+                    }
+
+                    &:hover {
+                        background: rgba(255, 255, 255, 0.1);
+                    }
+
+                    &:active {
+                        background: rgba(200, 200, 200, 0.1);
+                    }
+                }
+            }
+        }
+
+        button {
+            padding: 1rem;
+            background: none;
+            color: white;
+            font-family: inherit;
+            border: 1px solid #222;
+            font-size: 1rem;
+            outline: none;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.1);
+            }
+
+            &:active {
+                background: rgba(200, 200, 200, 0.1);
             }
         }
 

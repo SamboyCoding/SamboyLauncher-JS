@@ -15,6 +15,7 @@ export default new Vuex.Store({
         mcVersion: "",
         installingPacks: {},
         showEditPack: false,
+        editMods: false,
     },
     mutations: {
         setCurrentPage: (state, payload: Page) => {
@@ -64,6 +65,9 @@ export default new Vuex.Store({
         },
         setShowEditPack: (state, payload) => {
             state.showEditPack = payload;
+        },
+        setEditMods: (state, payload) => {
+            state.editMods = payload;
         }
     },
     actions: {},
