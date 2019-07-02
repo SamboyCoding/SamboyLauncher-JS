@@ -34,10 +34,11 @@ export default class ForgeVersion {
             ret.manifest = readFileSync(jsonPath);
             ret.needsPatch = !!ret.manifest.libraries[0].downloads;
 
-            ret.manifest.arguments = {
-                game: ret.manifest.minecraftArguments.split(" ").map(argString => {return {rules: [], value: argString}}),
-                jvm: [],
-            };
+            if (!ret.needsPatch)
+                ret.manifest.arguments = {
+                    game: ret.manifest.minecraftArguments.split(" "),
+                    jvm: [],
+                };
 
             return ret;
         }

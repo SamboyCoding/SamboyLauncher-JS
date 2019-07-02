@@ -1,3 +1,4 @@
+import {spawn} from "child_process";
 import {ipcMain, IpcMessageEvent} from "electron";
 import {existsSync} from "fs";
 import {writeFileSync} from "jsonfile";
@@ -11,7 +12,6 @@ import ClientInstallManager from "./ClientInstallManager";
 import ElectronManager from "./ElectronManager";
 import EnvironmentManager from "./EnvironmentManager";
 import InstalledPackManager from "./InstalledPackManager";
-import { spawn } from 'child_process';
 
 export default class MainIPCHandler {
     public static Init() {
@@ -100,12 +100,14 @@ export default class MainIPCHandler {
                 classpath.push(artifact);
         });
 
-        let classpathString = classpath
+        //If we're not on a post-patch forge, add the vanilla jar
+        let classpathString = "";
+        if (!pack.forgeVersion.needsPatch)
+            classpathString += join(EnvironmentManager.versionsDir, pack.gameVersion.name, pack.gameVersion.name + ".jar") + (os.platform() === "win32" ? ";" : ":");
+
+        classpathString += classpath
             .map(entry => join(EnvironmentManager.librariesDir, entry.fullPath))
             .join(os.platform() === "win32" ? ";" : ":");
-
-        //If we're not on a post-patch forge, add the vanilla jar
-        classpathString += (os.platform() === "win32" ? ";" : ":") + join(EnvironmentManager.versionsDir, pack.gameVersion.name, pack.gameVersion.name + ".jar");
 
         let args: string[] = []; //["-cp", classpathString, "-Djava.library.path=" + join(EnvironmentManager.versionsDir, pack.gameVersion.name, "natives")];
 
@@ -130,8 +132,12 @@ export default class MainIPCHandler {
         args.push(pack.forgeVersion.manifest.mainClass);
 
         //TODO: Conditional game args like resolution
-        if(pack.gameVersion.arguments)
-            args = args.concat(pack.gameVersion.arguments.game.concat(pack.forgeVersion.manifest.arguments.game).filter(arg => typeof(arg) === 'string') as string[]);
+        if (pack.gameVersion.arguments) {
+            if (pack.forgeVersion.needsPatch) //New
+                args = args.concat(pack.gameVersion.arguments.game.concat(pack.forgeVersion.manifest.arguments.game).filter(arg => typeof (arg) === "string") as string[]);
+            else //Old
+                args = args.concat(pack.forgeVersion.manifest.arguments.game.filter(arg => typeof (arg) === "string") as string[]);
+        }
 
         args = args.map(arg => {
             switch(arg) {
@@ -155,6 +161,8 @@ export default class MainIPCHandler {
                     return pack.forgeVersion.manifest.type;
                 case "${classpath}":
                     return classpathString;
+                case "${user_properties}":
+                    return "{}";
                 default:
                     return arg
                         .replace("${natives_directory}", join(EnvironmentManager.versionsDir, pack.gameVersion.name, "natives"))
@@ -162,8 +170,6 @@ export default class MainIPCHandler {
                         .replace("${launcher_version}", "2.0");
             }
         });
-
-
 
         Logger.debugImpl("Launch", "java " + args.join(" "));
         let process = spawn("java", args, {stdio: "inherit", cwd: pack.packDirectory});
