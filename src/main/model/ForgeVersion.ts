@@ -33,6 +33,12 @@ export default class ForgeVersion {
             Logger.debugImpl("Forge Version Manager", "Loading from local file; version is installed");
             ret.manifest = readFileSync(jsonPath);
             ret.needsPatch = !!ret.manifest.libraries[0].downloads;
+
+            ret.manifest.arguments = {
+                game: ret.manifest.minecraftArguments.split(" ").map(argString => {return {rules: [], value: argString}}),
+                jvm: [],
+            };
+
             return ret;
         }
 
@@ -57,6 +63,12 @@ export default class ForgeVersion {
             if (json.versionInfo) {
                 Logger.debugImpl("Forge Version Manager", "OLD install profile detected.");
                 ret.manifest = json.versionInfo as ForgeVersionManifest;
+
+                ret.manifest.arguments = {
+                    game: ret.manifest.minecraftArguments.split(" "),
+                    jvm: [],
+                };
+
                 ret.data = null;
             } else {
                 Logger.debugImpl("Forge Version Manager", "NEW (1.13+) install profile detected.");

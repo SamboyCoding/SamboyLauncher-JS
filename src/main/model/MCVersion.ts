@@ -87,18 +87,25 @@ export default class MCVersion {
 
             let mfest: MCClientVersionManifest;
             if(existsSync(manifestFile)) {
-                Logger.debugImpl("Minecraft Version Manager", "Loading from local file; version is installed");
+                Logger.debugImpl("Minecraft Version Manager", "Loading from local file; manifest is cached");
                 mfest = readFileSync(manifestFile) as MCClientVersionManifest;
             }
             else {
                 const resp2 = await fetch(mcVersion.manifestUrl);
                 mfest = await resp2.json() as MCClientVersionManifest;
 
+                await Utils.mkdirpPromise(join(EnvironmentManager.versionsDir, name));
                 writeFileSync(manifestFile, mfest, {spaces: 4});
             }
 
             mcVersion.assetIndex = mfest.assetIndex;
-            mcVersion.arguments = mfest.arguments;
+            if(mfest.arguments)
+                mcVersion.arguments = mfest.arguments;
+            else
+                mcVersion.arguments = {
+                    game: mfest.minecraftArguments.split(" "),
+                    jvm: []
+                };
             mcVersion.clientJar = mfest.downloads.client;
 
             //Identify libs and natives.

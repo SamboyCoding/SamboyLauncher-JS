@@ -40,7 +40,6 @@ export default class MainIPCHandler {
                 //And we're done!
                 Logger.infoImpl("IPCMain", "Install complete!");
                 event.sender.send("install complete", packName, gameVersionId, forgeVersionId);
-                InstalledPackManager.LoadFromDisk();
             })
             .catch((e: Error | string) => {
                 Logger.errorImpl("IPCMain", (e instanceof Error ? e.message + "\n" + e.stack : e));
@@ -73,6 +72,7 @@ export default class MainIPCHandler {
         writeFileSync(join(dir, "install.json"), install);
 
         event.sender.send("pack created", install);
+        InstalledPackManager.LoadFromDisk();
     }
 
     private static async launchPack(event: IpcMessageEvent, packName: string) {
@@ -104,26 +104,34 @@ export default class MainIPCHandler {
             .map(entry => join(EnvironmentManager.librariesDir, entry.fullPath))
             .join(os.platform() === "win32" ? ";" : ":");
 
+        //If we're not on a post-patch forge, add the vanilla jar
+        classpathString += (os.platform() === "win32" ? ";" : ":") + join(EnvironmentManager.versionsDir, pack.gameVersion.name, pack.gameVersion.name + ".jar");
+
         let args: string[] = []; //["-cp", classpathString, "-Djava.library.path=" + join(EnvironmentManager.versionsDir, pack.gameVersion.name, "natives")];
 
-        for(let arg of pack.gameVersion.arguments.jvm) {
-            if(typeof(arg) === 'string') {
-                args.push(arg);
-                continue;
-            }
+        if(pack.gameVersion.arguments && pack.gameVersion.arguments.jvm.length) {
+            for (let arg of pack.gameVersion.arguments.jvm) {
+                if (typeof (arg) === 'string') {
+                    args.push(arg);
+                    continue;
+                }
 
-            if(!arg.rules || Utils.handleOSBasedRule(arg.rules)) {
-                if(typeof(arg.value) === 'string')
-                    args.push(arg.value);
-                else
-                    args = args.concat(arg.value);
+                if (!arg.rules || Utils.handleOSBasedRule(arg.rules)) {
+                    if (typeof (arg.value) === 'string')
+                        args.push(arg.value);
+                    else
+                        args = args.concat(arg.value);
+                }
             }
+        } else {
+            args = args.concat(["-cp", "${classpath}", "-Djava.library.path=${natives_directory}"]);
         }
 
         args.push(pack.forgeVersion.manifest.mainClass);
 
         //TODO: Conditional game args like resolution
-        args = args.concat(pack.gameVersion.arguments.game.concat(pack.forgeVersion.manifest.arguments.game).filter(arg => typeof(arg) === 'string') as string[]);
+        if(pack.gameVersion.arguments)
+            args = args.concat(pack.gameVersion.arguments.game.concat(pack.forgeVersion.manifest.arguments.game).filter(arg => typeof(arg) === 'string') as string[]);
 
         args = args.map(arg => {
             switch(arg) {

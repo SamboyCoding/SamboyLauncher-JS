@@ -8,7 +8,7 @@
                 <div class="pack-shade"></div>
                 <div class="pack-title">Create a Pack</div>
             </div>
-            <div class="pack" v-for="(percent, name) in installingPacks">
+            <div class="pack installing" v-for="(percent, name) in installingPacks">
                 <div class="pack-icon">
                     {{name}}
                 </div>
@@ -16,7 +16,7 @@
                 <div :style="{height: ((1 - percent) * 225) + 'px'}" class="pack-installation"></div>
                 <div class="pack-title">Creating "{{name}}" ({{percent * 100}}%)</div>
             </div>
-            <div @click="doEditPack(packName)" class="pack" v-for="packName in $store.state.createdPacks">
+            <div @click="doEditPack(packName)" class="pack installed" v-for="packName in $store.state.createdPacks">
                 <div class="pack-icon">
                     {{packName}}
                 </div>

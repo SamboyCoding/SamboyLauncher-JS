@@ -83,7 +83,6 @@ export default class ElectronManager {
 
         ElectronManager.win.once("ready-to-show", () => {
             Logger.infoImpl("ElectronManager", "Showing window...");
-            ElectronManager.win.webContents.send("dark theme", ConfigurationManager.darkTheme);
             ElectronManager.win.show();
         });
 

@@ -14,7 +14,7 @@ import MCVersion from "./model/MCVersion";
 //#endregion
 
 EnvironmentManager.Init();
-ConfigurationManager.LoadFromDisk();
+//ConfigurationManager.LoadFromDisk();
 AuthenticationManager.LoadFromDisk();
 MCVersion.Get(); //Preload these.
 InstalledPackManager.LoadFromDisk();
