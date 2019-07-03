@@ -3,13 +3,15 @@ import EnvironmentManager from "../managers/EnvironmentManager";
 import ForgeVersion from "./ForgeVersion";
 import InstalledPackJSON from "./InstalledPackJSON";
 import MCVersion from "./MCVersion";
+import ModJar from "./ModJar";
 
 export default class InstalledPack {
     public name: string;
     public installedVersion: string;
 
+    public installedMods: ModJar[];
+
     // TODO
-    // public installedMods: ModJar[];
     // public overrides: OverrideFile[];
     public gameVersion: MCVersion;
     public forgeVersion: ForgeVersion;
@@ -19,7 +21,7 @@ export default class InstalledPack {
     }
 
     get packDirectory(): string {
-        return join(EnvironmentManager.packsDir, this.name.replace(/[\\/:*?"<>|]/g, "_"));
+        return join(EnvironmentManager.packsDir, this.name.replace(/\s/g, "_"));
     }
 
     public static async FromJSON(installJson: InstalledPackJSON) {
@@ -28,8 +30,9 @@ export default class InstalledPack {
         ret.installedVersion = installJson.installedVersion;
         ret.gameVersion = await MCVersion.Get(installJson.gameVersion);
         ret.forgeVersion = await ForgeVersion.Get(installJson.forgeVersion);
+        ret.installedMods = installJson.installedMods;
 
-        //TODO: Load jars, overrides
+        //TODO: Load overrides
 
         return ret;
     }

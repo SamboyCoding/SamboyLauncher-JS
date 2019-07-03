@@ -48,8 +48,8 @@ export default class MainIPCHandler {
     }
 
     private static async createPack(event: IpcMessageEvent, name: string, description: string, gameVersion: string, forgeVersion: string) {
-        name = name.replace(/\s/g, "_").trim();
-        let dir = join(EnvironmentManager.packsDir, name);
+        let dirName = name.replace(/\s/g, "_").trim();
+        let dir = join(EnvironmentManager.packsDir, dirName);
         if (existsSync(dir))
             return event.sender.send("pack create failed", name, "Directory already exists");
 

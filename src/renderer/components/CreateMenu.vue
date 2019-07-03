@@ -74,14 +74,28 @@
 
                 <div id="mod-listing">
                     <span v-if="refreshingModList" id="mod-list-loading">Loading...</span>
-                    <div class="mod" v-else v-for="mod in mods">
+                    <div class="mod" v-else v-for="(mod, idx) in mods">
                         <img :src="mod.thumbnail" class="mod-thumbnail">
                         <div class="title-bit">
                             <h1 class="mod-name">{{mod.name}}</h1>
                             <br>
-                            <span class="mod-author">{{mod.author}}</span>
+                            <span class="mod-author">{{mod.author ? mod.author : mod.authorList[0].username}}</span>
                         </div>
-                        <p class="mod-desc">{{mod.desc}}</p>
+                        <p class="mod-desc" v-if="mod.desc">{{mod.desc}}</p>
+                        <button :disabled="mod.loading" @click="loadModData(idx)" class="install-mod" v-if="!mod.versions">
+                            <span v-if="!mod.loading">Install</span>
+                            <span v-else>Loading...</span>
+                        </button>
+                        <br v-else>
+                        <button @click="installMod(mod, 'RELEASE')" class="install-mod-release" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'RELEASE')">
+                            Latest Release
+                        </button>
+                        <button @click="installMod(mod, 'BETA')" class="install-mod-beta" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'BETA')">
+                            Latest Beta
+                        </button>
+                        <button @click="installMod(mod, 'ALPHA')" class="install-mod-alpha" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'ALPHA')">
+                            Latest Alpha
+                        </button>
                     </div>
                 </div>
             </div>
@@ -94,6 +108,8 @@
     import {Component, Vue} from "vue-property-decorator";
     import InstalledPackJSON from "../../main/model/InstalledPackJSON";
     import Config from "../Config";
+    import ModDetails from "../model/ModDetails";
+    import ModListItem from "../model/ModListItem";
     import parser = require("fast-xml-parser");
 
     @Component({
@@ -102,7 +118,7 @@
     export default class CreateMenu extends Vue {
         public mcVersions = ["Loading version listing..."];
         public forgeVersions = {};
-        public mods: { slug: string, thumbnail: string, name: string, author: string, desc: string }[] = [];
+        public mods: (ModListItem | ModDetails)[] = [];
 
         public refreshingModList: boolean = false;
 
@@ -273,6 +289,18 @@
             this.mods = await (await fetch(`${Config.API_URL}/mod/popular/${this.editingPack.gameVersion}`)).json();
             this.refreshingModList = false;
         }
+
+        public async loadModData(idx: number) {
+            let mod = this.mods[idx] as ModListItem;
+            mod.loading = true;
+            this.mods.splice(idx, 1, mod);
+
+            this.mods.splice(idx, 1, await (await fetch(`${Config.API_URL}/mod/${this.mods[idx].slug}`)).json());
+        }
+
+        public async installMod(mod: ModDetails, type: "RELEASE" | "BETA" | "ALPHA") {
+
+        }
     }
 </script>
 
@@ -433,6 +461,7 @@
                 flex-flow: row wrap;
                 overflow-y: scroll;
                 max-height: 100%;
+                margin-top: 1rem;
 
                 #mod-list-loading {
                     display: block;
@@ -442,23 +471,46 @@
 
                 .mod {
                     padding: 1rem;
-                    flex-basis: 100%;
+                    display: inline-block;
+                    flex-basis: 50%;
                     border: 1px solid #222;
                     border-radius: 8px;
-                    margin: 1rem;
+                    //margin: 1rem;
+                    background: rgba(0, 0, 0, 0.1);
+
                     position: relative;
 
-                    &:not(:last-of-type) {
+                    &:not(:last-of-type):not(:nth-last-of-type(2)) {
                         border-bottom-left-radius: 0;
                         border-bottom-right-radius: 0;
                         border-bottom: none;
                         margin-bottom: 0;
                     }
 
+                    &:nth-of-type(even) {
+                        border-left: none;
+                    }
+
+                    &:last-of-type {
+                        border-bottom-left-radius: 0;
+                    }
+
+                    &:nth-last-of-type(2) {
+                        border-bottom-right-radius: 0;
+                    }
+
                     &:not(:first-of-type) {
                         margin-top: 0;
                         border-top-left-radius: 0;
                         border-top-right-radius: 0;
+                    }
+
+                    &:first-of-type {
+                        border-top-right-radius: 0;
+                    }
+
+                    &:nth-of-type(2) {
+                        border-top-left-radius: 0;
                     }
 
                     .title-bit {
@@ -481,13 +533,33 @@
                         height: 64px;
                     }
 
-                    &:hover {
-                        background: rgba(255, 255, 255, 0.1);
+                    .mod-desc {
+                        margin-right: 3rem;
                     }
 
-                    &:active {
-                        background: rgba(200, 200, 200, 0.1);
+                    .install-mod {
+                        position: absolute;
+                        right: 1rem;
+                        bottom: 1rem;
+
+                        border-color: rgb(50, 60, 50);
                     }
+
+                    .install-mod-release:not(:first-of-type), .install-mod-beta:not(:first-of-type) {
+                        border-left: none;
+                    }
+
+                    .install-mod-release, .install-mod-beta, .install-mod-alpha {
+                        float: right;
+                    }
+
+                    /*&:hover {*/
+                    /*    background: rgba(255, 255, 255, 0.1);*/
+                    /*}*/
+
+                    /*&:active {*/
+                    /*    background: rgba(200, 200, 200, 0.1);*/
+                    /*}*/
                 }
             }
         }
@@ -501,11 +573,11 @@
             font-size: 1rem;
             outline: none;
 
-            &:hover {
+            &:not([disabled]):hover {
                 background: rgba(255, 255, 255, 0.1);
             }
 
-            &:active {
+            &:not([disabled]):active {
                 background: rgba(200, 200, 200, 0.1);
             }
         }

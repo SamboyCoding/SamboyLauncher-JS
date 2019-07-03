@@ -1,4 +1,4 @@
-import {Mod} from "./mod";
+import ModJar from "./ModJar";
 import User from "./User";
 
 export default class InstalledPackJSON {
@@ -9,5 +9,5 @@ export default class InstalledPackJSON {
     public gameVersion: string;
     public id: string;
     public installedVersion: string;
-    public installedMods: Mod[];
+    public installedMods: ModJar[];
 }
