@@ -73,9 +73,9 @@
                 <button @click="refreshModList()">Refresh Mods</button>
 
                 <div id="mod-listing">
-                    <span v-if="refreshingModList">Loading...</span>
+                    <span v-if="refreshingModList" id="mod-list-loading">Loading...</span>
                     <div class="mod" v-else v-for="mod in mods">
-                        <img :src="mod.thumbnail">
+                        <img :src="mod.thumbnail" class="mod-thumbnail">
                         <div class="title-bit">
                             <h1 class="mod-name">{{mod.name}}</h1>
                             <br>
@@ -434,6 +434,12 @@
                 overflow-y: scroll;
                 max-height: 100%;
 
+                #mod-list-loading {
+                    display: block;
+                    width: 100%;
+                    text-align: center;
+                }
+
                 .mod {
                     padding: 1rem;
                     flex-basis: 100%;
@@ -468,6 +474,11 @@
                             top: 1rem;
                             display: inline-block;
                         }
+                    }
+
+                    .mod-thumbnail {
+                        width: 64px;
+                        height: 64px;
                     }
 
                     &:hover {
