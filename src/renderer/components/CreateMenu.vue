@@ -1,5 +1,6 @@
 <template>
     <div id="create">
+        <!--Pack list-->
         <div :class="{show: !$store.state.editMods}" id="created-packs">
             <div>
                 <div @click="createPack()" class="pack" id="create-pack">
@@ -26,6 +27,7 @@
                 </div>
             </div>
         </div>
+        <!--Pack edit sidebar-->
         <div :class="{show: $store.state.showEditPack}" id="edit-pack">
             <div v-if="$store.state.showEditPack">
                 <button @click="launchPack()" id="launch-pack-button" v-if="editingPack && editingPack.installedVersion">
@@ -67,6 +69,7 @@
                 </button>
             </div>
         </div>
+        <!--Mod listing-->
         <div :class="{show: $store.state.editMods}" id="edit-mods">
             <div v-if="$store.state.editMods">
                 <button @click="endEditMods()">Return to Edit Menu</button>
@@ -87,15 +90,40 @@
                             <span v-else>Loading...</span>
                         </button>
                         <br v-else>
-                        <button @click="installMod(mod, 'RELEASE')" class="install-mod-release" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'RELEASE')">
+                        <button @click="installMod(mod, 'RELEASE')" class="install-mod-release" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'RELEASE' && ver.gameVersion === editingPack.gameVersion)">
                             Latest Release
                         </button>
-                        <button @click="installMod(mod, 'BETA')" class="install-mod-beta" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'BETA')">
+                        <button @click="installMod(mod, 'BETA')" class="install-mod-beta" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'BETA' && ver.gameVersion === editingPack.gameVersion)">
                             Latest Beta
                         </button>
-                        <button @click="installMod(mod, 'ALPHA')" class="install-mod-alpha" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'ALPHA')">
+                        <button @click="installMod(mod, 'ALPHA')" class="install-mod-alpha" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'ALPHA' && ver.gameVersion === editingPack.gameVersion)">
                             Latest Alpha
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--Modal-->
+        <div class="modal-cover" v-if="showModal">
+            <div class="modal">
+                <div class="modal-top">
+                    <h1 class="modal-title">{{modalTitle}}</h1>
+                    <a @click="showModal = false" class="modal-dismiss"><i class="fas fa-times"></i></a>
+                </div>
+                <p>{{modalBody}}</p>
+                <div id="mod-deps-list" v-if="modsToAdd.length">
+                    <div id="mod-deps-names-column">
+                        <span v-for="mod in modsToAdd">
+                            <span v-if="mod.name">{{mod.name}}</span>
+                            <span v-else>Loading... ({{mod.slug}})</span>
+                        </span>
+                    </div>
+                    <div id="mod-deps-selects-column">
+                        <select :disabled="!mod.name" @change="updateDepsFromSelected(mod)" v-for="mod in modsToAdd" v-model="mod.selected">
+                            <option v-if="!mod.name" value="-1">Loading...</option>
+                            <option v-else value="-1">Please select...</option>
+                            <option :value="ver.id" v-for="ver in mod.versions">{{ver.name}}</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -107,6 +135,7 @@
     import {IpcMessageEvent, ipcRenderer} from "electron";
     import {Component, Vue} from "vue-property-decorator";
     import InstalledPackJSON from "../../main/model/InstalledPackJSON";
+    import ModJar from "../../main/model/ModJar";
     import Config from "../Config";
     import ModDetails from "../model/ModDetails";
     import ModListItem from "../model/ModListItem";
@@ -136,11 +165,19 @@
             }
         };
 
+        public showModal = false;
+        public modalTitle = "You shouldn't be seeing this";
+        public modalBody = "No, really, you shouldn't be seeing this.";
+
+        public modsToAdd: { slug: string, name: string, versions: { id: number, name: string, gv: string }[], selected: number }[] = [];
+
         public async mounted() {
+            console.info("[Create] Fetching acceptable pack versions for pack creation...");
             let array = await (await fetch(Config.API_URL + "/pack/versions")).json();
             this.mcVersions = array;
             this.newPack.gameVersion = array[array.length - 1];
 
+            console.info("[Create] Fetching forge release info...");
             let xml = await (await fetch("http://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.xml")).text();
             let json = parser.parse(xml);
 
@@ -156,6 +193,8 @@
                 this.editingPack.forgeVersion = forgeVersions[forgeVersions.length - 1];
                 this.$forceUpdate();
             }
+
+            console.info("[Create] Initializing IPC...");
 
             ipcRenderer.removeAllListeners("install error")
                 .removeAllListeners("install progress")
@@ -191,6 +230,9 @@
                 this.$store.commit("cancelInstall", name);
                 this.$forceUpdate();
             });
+
+            if (this.$store.state.editMods)
+                this.refreshModList();
         }
 
         public doEditPack(name) {
@@ -224,7 +266,6 @@
         }
 
         get fmlVers() {
-            console.log(this);
             return this.$store.state.fmlVersion;
         }
 
@@ -285,6 +326,7 @@
         }
 
         public async refreshModList() {
+            console.info(`[Create] Loading popular mod list for version ${this.editingPack.gameVersion}`);
             this.refreshingModList = true;
             this.mods = await (await fetch(`${Config.API_URL}/mod/popular/${this.editingPack.gameVersion}`)).json();
             this.refreshingModList = false;
@@ -292,6 +334,7 @@
 
         public async loadModData(idx: number) {
             let mod = this.mods[idx] as ModListItem;
+            console.info(`[Create] Getting ModDetails from ModListItem for ${mod.name}`);
             mod.loading = true;
             this.mods.splice(idx, 1, mod);
 
@@ -299,7 +342,72 @@
         }
 
         public async installMod(mod: ModDetails, type: "RELEASE" | "BETA" | "ALPHA") {
+            console.info(`[Create] Adding ${mod.name} to the pack at version ${type}`);
+            //Reverse the list, as the first values are the oldest, and we want the newest.
+            let version = Object.values(mod.versions).reverse().find(ver => ver.gameVersion === this.editingPack.gameVersion && ver.type === type);
+            if (!version) return;
 
+            let idx = Object.values(mod.versions).indexOf(version);
+
+            let versionId = Number(Object.keys(mod.versions)[idx]);
+
+            console.info(`[Create] Requested version id: ${versionId}. Loading details...`);
+
+            let desiredVersion = <ModJar> await (await fetch(`${Config.API_URL}/mod/${mod.slug}/${versionId}`)).json();
+
+            console.info(`[Create] Mod has ${desiredVersion.dependencies.length} dep/s`);
+
+            let deps = desiredVersion.dependencies.filter(depSlug => !this.editingPack.installedMods.find(mod => mod.slug === depSlug));
+
+            console.info(`[Create] Of which ${deps.length} aren't installed yet.`);
+
+            this.modsToAdd = [];
+
+            //Add the mod itself
+            this.modsToAdd.push({
+                slug: mod.slug,
+                name: mod.name,
+                versions: this.mapServerVersionsResponseToModalForm(mod.versions).filter(v => v.gv === this.editingPack.gameVersion),
+                selected: versionId
+            });
+
+            if (deps.length) {
+                this.modalBody = `The mod "${mod.name}" has dependencies that must be installed for it to work, and at least one of these you do not currently have. Please select versions to install:`;
+                this.modalTitle = "Mod Dependencies";
+                this.showModal = true;
+
+                deps.forEach(async dep => {
+                    let idx = this.modsToAdd.push({
+                        selected: -1,
+                        name: "",
+                        versions: [],
+                        slug: dep,
+                    }) - 1;
+
+                    let info: ModDetails = await (await fetch(`${Config.API_URL}/mod/${dep}`)).json();
+                    let mod = this.modsToAdd[idx];
+                    mod.versions = this.mapServerVersionsResponseToModalForm(info.versions).filter(v => v.gv === this.editingPack.gameVersion);
+                    mod.name = info.name;
+                    mod.selected = -1;
+
+                    this.modsToAdd.splice(idx, 1, mod);
+                });
+            } else {
+                //Install
+            }
+        }
+
+        public updateDepsFromSelected(mod: { slug: string, name: string, versions: { id: number, name: string, gv: string }[], selected: number }) {
+            let selected = mod.versions.find(ver => ver.id === mod.selected);
+        }
+
+        private mapServerVersionsResponseToModalForm(versions: { [id: number]: { name: string, gameVersion: string, type: string, } }) {
+            let ret: { id: number, name: string, gv: string }[] = [];
+            for (let id in versions) {
+                ret.push({id: Number(id), name: versions[id].name, gv: versions[id].gameVersion});
+            }
+
+            return ret;
         }
     }
 </script>
@@ -309,6 +417,7 @@
         display: flex;
         height: 100%;
         overflow: hidden;
+        position: relative;
 
         #created-packs {
             transition: flex-grow 0.5s;
@@ -560,6 +669,21 @@
                     /*&:active {*/
                     /*    background: rgba(200, 200, 200, 0.1);*/
                     /*}*/
+                }
+            }
+        }
+
+        #mod-deps-list {
+            display: flex;
+            flex-direction: row;
+
+            #mod-deps-names-column, #mod-deps-selects-column {
+                flex-grow: 1;
+                display: flex;
+                flex-flow: column nowrap;
+
+                & > span, & > select {
+                    margin: 8px;
                 }
             }
         }

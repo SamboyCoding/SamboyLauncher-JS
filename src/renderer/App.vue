@@ -27,6 +27,7 @@
     import CreateMenu from "./components/CreateMenu.vue";
     import MainMenu from "./components/MainMenu.vue";
     import TopBar from "./components/TopBar.vue";
+    import Config from "./Config";
     import Page from "./model/Page";
 
     @Component({
@@ -40,11 +41,20 @@
         public Page = Page; //Expose to the view
 
         public mounted() {
+            console.info("[App] SBL Renderer: Main App Mounted");
+            console.info(`[App] Using API URL ${Config.API_URL}`);
+            console.info("[App] Initializing IPC...");
+
+            ipcRenderer.removeAllListeners("installed packs")
+                .removeAllListeners("created packs");
+
             ipcRenderer.on("installed packs", (event, packs: string[]) => {
+                console.info("[App] Received installed pack data.");
                 this.$store.commit("setInstalledPacks", packs);
             });
 
             ipcRenderer.on("created packs", (event, packs: string[]) => {
+                console.info("[App] Received user-created pack data.");
                 this.$store.commit("setCreatedPacks", packs);
             });
 
@@ -194,6 +204,48 @@
 
             &:hover .pack-title {
                 opacity: 1;
+            }
+        }
+    }
+
+    .modal-cover {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.66);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        .modal {
+            padding: 3rem 3rem 2rem;
+            width: 40%;
+            background: #111;
+            border-radius: 8px;
+            position: relative;
+
+            .modal-top {
+                width: 100%;
+                border-bottom: 1px solid #222;
+                display: flex;
+
+                .modal-title {
+                    flex-grow: 1;
+                    display: inline-block;
+                }
+
+                .modal-dismiss {
+                    color: #888;
+                    top: 1.33rem;
+                    right: 1.5rem;
+                    position: absolute;
+
+                    &:hover {
+                        color: #ccc;
+                    }
+                }
             }
         }
     }
