@@ -24,11 +24,14 @@
 <script lang='ts'>
     import {ipcRenderer} from "electron";
     import {Component, Vue} from "vue-property-decorator";
+
     import CreateMenu from "./components/CreateMenu.vue";
     import MainMenu from "./components/MainMenu.vue";
     import TopBar from "./components/TopBar.vue";
     import Config from "./Config";
     import Page from "./model/Page";
+
+    console.clear();
 
     @Component({
         components: {

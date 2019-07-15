@@ -1,7 +1,9 @@
+import {existsSync} from "fs";
 import {readFileSync, writeFileSync} from "jsonfile";
 import fetch from "node-fetch";
 import * as os from "os";
 import * as path from "path";
+import {join} from "path";
 import Logger from "../logger";
 import EnvironmentManager from "../managers/EnvironmentManager";
 import Utils from "../util/Utils";
@@ -9,8 +11,6 @@ import ManifestArtifact from "./ManifestArtifact";
 import MCAssetDefinition from "./MCAssetDefinition";
 import MCAssetIndex from "./MCAssetIndex";
 import MCClientVersionManifest from "./MCClientVersionManifest";
-import { join } from 'path';
-import { existsSync } from 'fs';
 
 export default class MCVersion {
     private static _cache = new Map<string, MCVersion>();
@@ -89,8 +89,7 @@ export default class MCVersion {
             if(existsSync(manifestFile)) {
                 Logger.debugImpl("Minecraft Version Manager", "Loading from local file; manifest is cached");
                 mfest = readFileSync(manifestFile) as MCClientVersionManifest;
-            }
-            else {
+            } else {
                 const resp2 = await fetch(mcVersion.manifestUrl);
                 mfest = await resp2.json() as MCClientVersionManifest;
 
@@ -136,7 +135,7 @@ export default class MCVersion {
             const indexPath = path.join(indexDir, mcVersion.assetIndex.id + ".json");
 
             //This does nothing if the file already exists and the signature is valid.
-            await Utils.downloadWithSigCheck(mcVersion.assetIndex.url, indexPath, mcVersion.assetIndex.sha1);
+            await Utils.downloadWithSHA1(mcVersion.assetIndex.url, indexPath, mcVersion.assetIndex.sha1);
             const index = readFileSync(indexPath) as MCAssetIndex;
 
             for (let filename in index.objects) {

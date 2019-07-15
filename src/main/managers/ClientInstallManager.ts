@@ -103,7 +103,7 @@ export default class ClientInstallManager {
         let promises = minecraftVersion.libraries.map(async lib => {
             const dest = join(EnvironmentManager.librariesDir, lib.path);
             await Utils.mkdirpPromise(dirname(dest));
-            await Utils.downloadWithSigCheck(lib.url, dest, lib.sha1);
+            await Utils.downloadWithSHA1(lib.url, dest, lib.sha1);
             pct += 0.3 * lib.size / totalSize;
 
             ElectronManager.win.webContents.send("install progress", packName, pct * 0.66);
@@ -121,7 +121,7 @@ export default class ClientInstallManager {
 
         let dest = join(versionFolder, minecraftVersion.name + ".jar");
         await Utils.mkdirpPromise(dirname(dest));
-        await Utils.downloadWithSigCheck(minecraftVersion.clientJar.url, dest, minecraftVersion.clientJar.sha1);
+        await Utils.downloadWithSHA1(minecraftVersion.clientJar.url, dest, minecraftVersion.clientJar.sha1);
 
         ElectronManager.win.webContents.send("install progress", packName, 0.4 * 0.66);
 
@@ -143,7 +143,7 @@ export default class ClientInstallManager {
 
         let promises = minecraftVersion.natives.map(async nat => {
             const zipPath = join(EnvironmentManager.librariesDir, nat.path);
-            await Utils.downloadWithSigCheck(nat.url, zipPath, nat.sha1);
+            await Utils.downloadWithSHA1(nat.url, zipPath, nat.sha1);
             await Utils.extractArchive(zipPath, nativesDir);
 
             if (existsSync(join(nativesDir, "META-INF")))
@@ -173,7 +173,7 @@ export default class ClientInstallManager {
             const dest = join(objectsDir, path);
             await Utils.mkdirpPromise(dirname(dest));
 
-            await Utils.downloadWithSigCheck(`https://resources.download.minecraft.net/${path}`, dest, asset.hash);
+            await Utils.downloadWithSHA1(`https://resources.download.minecraft.net/${path}`, dest, asset.hash);
 
             pct += 0.5 * asset.size / totalSize;
             ElectronManager.win.webContents.send("install progress", packName, pct * 0.66);
@@ -208,7 +208,7 @@ export default class ClientInstallManager {
                 //New (1.13+) lib
                 if (lib.url)
                 //Url, just download from there.
-                    await Utils.downloadWithSigCheck(lib.url, dest, lib.sha1);
+                    await Utils.downloadWithSHA1(lib.url, dest, lib.sha1);
                 else {
                     //No url, try to get from inside installer
                     if (!await Utils.tryExtractFileFromArchive(forge.installerJarPath, dirname(dest), "maven/" + lib.path))

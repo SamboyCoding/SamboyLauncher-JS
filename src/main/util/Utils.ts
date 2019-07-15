@@ -25,12 +25,20 @@ export default class Utils {
         return download(url, path.dirname(localPath), {filename: path.basename(localPath)});
     }
 
-    public static async downloadWithSigCheck(url: string, localPath: string, sha1: string) {
+    public static async downloadWithSHA1(url: string, localPath: string, sha1: string) {
+        return this.downloadWithSig(url, localPath, sha1, "sha1");
+    }
+
+    public static async downloadWithMD5(url: string, localPath: string, md5: string) {
+        return this.downloadWithSig(url, localPath, md5, "md5");
+    }
+
+    public static async downloadWithSig(url: string, localPath: string, sig: string, algorithm: string) {
         //First check if it already exists.
         if (existsSync(localPath)) {
-            const hash = hasha.fromFileSync(localPath, {algorithm: "sha1"});
-            if (hash !== sha1) {
-                Logger.warnImpl("Download", "Existing file has mismatched SHA1 for " + localPath + ". Expecting: " + sha1 + "; got: " + hash);
+            const hash = hasha.fromFileSync(localPath, {algorithm});
+            if (hash !== sig) {
+                Logger.warnImpl("Download", "Existing file has mismatched signature for " + localPath + ". Expecting: " + sig + "; got: " + hash);
                 unlinkSync(localPath);
             } else {
                 Logger.debugImpl("Download", `Using existing file for ${localPath} as its SHA1 matches.`);
@@ -52,20 +60,20 @@ export default class Utils {
 
             let hash;
             try {
-                hash = hasha.fromFileSync(localPath, {algorithm: "sha1"});
+                hash = hasha.fromFileSync(localPath, {algorithm});
             } catch (e) {
                 Logger.warnImpl("Download", `${localPath} apparently downloaded but missing. Retrying.`);
                 sanity++;
                 continue;
             }
 
-            if (hash !== sha1) {
-                Logger.warnImpl("Download", `Attempt ${sanity}: Mismatched SHA1 for ${localPath}. Expecting: ${sha1}; got: ${hash}`);
+            if (hash !== sig) {
+                Logger.warnImpl("Download", `Attempt ${sanity}: Mismatched signature for ${localPath}. Expecting: ${sig}; got: ${hash}`);
                 rimraf.sync(localPath);
                 sanity++;
                 await this.sleepMs(1000); //Backoff because deleting isn't actually sync.
             } else {
-                Logger.debugImpl("Download", `Downloaded ${localPath} and verified SHA1 on attempt ${sanity}`);
+                Logger.debugImpl("Download", `Downloaded ${localPath} and verified signature on attempt ${sanity}`);
                 return;
             }
         }

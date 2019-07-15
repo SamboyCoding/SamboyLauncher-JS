@@ -85,8 +85,9 @@
                             <span class="mod-author">{{mod.author ? mod.author : mod.authorList[0].username}}</span>
                         </div>
                         <p class="mod-desc" v-if="mod.desc">{{mod.desc}}</p>
-                        <button :disabled="mod.loading" @click="loadModData(idx)" class="install-mod" v-if="!mod.versions">
-                            <span v-if="!mod.loading">Install</span>
+                        <button :disabled="mod.loading || !!editingPack.installedMods.find(m => m.slug === mod.slug)" @click="loadModData(idx)" class="install-mod" v-if="!mod.versions">
+                            <span v-if="editingPack.installedMods.find(m => m.slug === mod.slug)">Installed</span>
+                            <span v-else-if="!mod.loading">Install</span>
                             <span v-else>Loading...</span>
                         </button>
                         <br v-else>
@@ -119,13 +120,17 @@
                         </span>
                     </div>
                     <div id="mod-deps-selects-column">
-                        <select :disabled="!mod.name" @change="updateDepsFromSelected(mod)" v-for="mod in modsToAdd" v-model="mod.selected">
+                        <select :disabled="!mod.name" @change="updateDepsFromSelected($event, mod, mod.wasSelected)" @click="mod.wasSelected = mod.selected" v-for="mod in modsToAdd" v-model="mod.selected">
                             <option v-if="!mod.name" value="-1">Loading...</option>
                             <option v-else value="-1">Please select...</option>
-                            <option :value="ver.id" v-for="ver in mod.versions">{{ver.name}}</option>
+                            <option :value="ver.id" v-for="ver in mod.versions">{{ver.name}} ({{ver.releaseType}})
+                            </option>
                         </select>
                     </div>
                 </div>
+                <button @click="doInstallMods(modsToAdd)" style="float: right; margin-top: 1rem" v-if="modsToAdd.length && !modsToAdd.filter(mta => mta.selected <= 0 || !mta.depsAdded).length">
+                    Add All
+                </button>
             </div>
         </div>
     </div>
@@ -169,7 +174,7 @@
         public modalTitle = "You shouldn't be seeing this";
         public modalBody = "No, really, you shouldn't be seeing this.";
 
-        public modsToAdd: { slug: string, name: string, versions: { id: number, name: string, gv: string }[], selected: number }[] = [];
+        public modsToAdd: { slug: string, name: string, versions: { id: number, name: string, gv: string }[], selected: number, depsAdded: boolean }[] = [];
 
         public async mounted() {
             console.info("[Create] Fetching acceptable pack versions for pack creation...");
@@ -200,7 +205,8 @@
                 .removeAllListeners("install progress")
                 .removeAllListeners("install complete")
                 .removeAllListeners("pack created")
-                .removeAllListeners("pack create failed");
+                .removeAllListeners("pack create failed")
+                .removeAllListeners("pack versions updated");
 
             ipcRenderer.on("install error", (event, packName, error) => {
                 alert(`Pack ${packName} cannot be installed due to an error: ${error}`);
@@ -218,6 +224,15 @@
 
                 if (!this.editingPack.installedVersion)
                     event.sender.send("create pack", packName, this.editingPack.description, gameVersion, forgeVersion);
+                else {
+                    event.sender.send("update pack versions", packName, gameVersion, forgeVersion);
+
+                }
+            });
+
+            ipcRenderer.on("pack versions updated", (event: IpcMessageEvent, packName: string) => {
+                this.$store.commit("cancelInstall", pack.packName);
+                event.sender.send("get installed packs"); //Reload
             });
 
             ipcRenderer.on("pack created", (event: IpcMessageEvent, pack: InstalledPackJSON) => {
@@ -285,7 +300,7 @@
 
             this.editingPack.packName = this.editingPack.packName.trim();
 
-            if (this.$store.state.createdPacks.find(name => name.toLowerCase() === this.editingPack.packName.toLowerCase()) || this.installingPacks.hasOwnProperty(this.editingPack.packName)) {
+            if (!this.editingPack.installedVersion && this.$store.state.createdPacks.find(name => name.toLowerCase() === this.editingPack.packName.toLowerCase()) || this.installingPacks.hasOwnProperty(this.editingPack.packName)) {
                 alert("Pack name is taken by one you already own.");
                 return;
             }
@@ -297,7 +312,7 @@
             ipcRenderer.send("install pack client", pack.packName, pack.gameVersion, pack.forgeVersion);
 
             if (this.editingPack.installedVersion) {
-                //TODO: Save/install mods.
+
             }
 
             this.$store.commit("setShowEditPack", false);
@@ -330,15 +345,46 @@
             this.refreshingModList = true;
             this.mods = await (await fetch(`${Config.API_URL}/mod/popular/${this.editingPack.gameVersion}`)).json();
             this.refreshingModList = false;
+            console.info(`[Create] Loaded ${this.mods.length} mods`);
+        }
+
+        public async GetModDetails(slug: string) {
+            console.info(`[Create] Getting ModDetails from ModListItem for ${slug}`);
+            return await (await fetch(`${Config.API_URL}/mod/${slug}`)).json();
+        }
+
+        public async GetModVersionDetails(slug: string, versionId: number) {
+            console.info(`[Create] Requested version ${versionId} for mod ${slug}. Loading details...`);
+
+            return <ModJar> await (await fetch(`${Config.API_URL}/mod/${slug}/${versionId}`)).json();
         }
 
         public async loadModData(idx: number) {
             let mod = this.mods[idx] as ModListItem;
-            console.info(`[Create] Getting ModDetails from ModListItem for ${mod.name}`);
             mod.loading = true;
-            this.mods.splice(idx, 1, mod);
+            this.mods.splice(idx, 1, mod); //Update loading for vue
 
-            this.mods.splice(idx, 1, await (await fetch(`${Config.API_URL}/mod/${this.mods[idx].slug}`)).json());
+            this.mods.splice(idx, 1, await this.GetModDetails(mod.slug)); //Fetch details
+        }
+
+        public async AddAndFetchDeps(deps: string[]) {
+            deps.forEach(async dep => {
+                let idx = this.modsToAdd.push({
+                    selected: -1,
+                    name: "",
+                    versions: [],
+                    slug: dep,
+                    depsAdded: false,
+                }) - 1;
+
+                let info: ModDetails = await this.GetModDetails(dep);
+                let mod = this.modsToAdd[idx];
+                mod.versions = this.mapServerVersionsResponseToModalForm(info.versions).filter(v => v.gv === this.editingPack.gameVersion);
+                mod.name = info.name;
+                mod.selected = -1;
+
+                this.modsToAdd.splice(idx, 1, mod);
+            });
         }
 
         public async installMod(mod: ModDetails, type: "RELEASE" | "BETA" | "ALPHA") {
@@ -353,7 +399,7 @@
 
             console.info(`[Create] Requested version id: ${versionId}. Loading details...`);
 
-            let desiredVersion = <ModJar> await (await fetch(`${Config.API_URL}/mod/${mod.slug}/${versionId}`)).json();
+            let desiredVersion = await this.GetModVersionDetails(mod.slug, versionId);
 
             console.info(`[Create] Mod has ${desiredVersion.dependencies.length} dep/s`);
 
@@ -368,7 +414,8 @@
                 slug: mod.slug,
                 name: mod.name,
                 versions: this.mapServerVersionsResponseToModalForm(mod.versions).filter(v => v.gv === this.editingPack.gameVersion),
-                selected: versionId
+                selected: versionId,
+                depsAdded: true,
             });
 
             if (deps.length) {
@@ -376,38 +423,86 @@
                 this.modalTitle = "Mod Dependencies";
                 this.showModal = true;
 
-                deps.forEach(async dep => {
-                    let idx = this.modsToAdd.push({
-                        selected: -1,
-                        name: "",
-                        versions: [],
-                        slug: dep,
-                    }) - 1;
-
-                    let info: ModDetails = await (await fetch(`${Config.API_URL}/mod/${dep}`)).json();
-                    let mod = this.modsToAdd[idx];
-                    mod.versions = this.mapServerVersionsResponseToModalForm(info.versions).filter(v => v.gv === this.editingPack.gameVersion);
-                    mod.name = info.name;
-                    mod.selected = -1;
-
-                    this.modsToAdd.splice(idx, 1, mod);
-                });
+                this.AddAndFetchDeps(deps);
             } else {
                 //Install
+                this.doInstallMods(this.modsToAdd);
             }
         }
 
-        public updateDepsFromSelected(mod: { slug: string, name: string, versions: { id: number, name: string, gv: string }[], selected: number }) {
+        public async updateDepsFromSelected(event: Event, mod: { slug: string, name: string, versions: { id: number, name: string, gv: string }[], selected: number, depsAdded: boolean }, wasSelected: number) {
+            //Selected is a pseudo-version
+            console.info(`[Create] Dependency ${mod.slug} was updated from ${wasSelected} to ${mod.selected}`);
+            if (!mod || !mod.versions || !mod.versions[0] || mod.selected <= 0)
+                return;
+
             let selected = mod.versions.find(ver => ver.id === mod.selected);
+            let old = mod.versions.find(ver => ver.id === wasSelected);
+
+            //Need to fetch the full version data including deps
+            let details = await this.GetModVersionDetails(mod.slug, selected.id);
+            let oldDetails: ModJar;
+            if (old)
+                oldDetails = await this.GetModVersionDetails(mod.slug, old.id);
+
+            if (oldDetails) {
+                //Look for deps needed by the old version but not the new one.
+                let noLongerPresent = oldDetails.dependencies.filter(oldDep => !details.dependencies.find(newDep => newDep === oldDep));
+                if (noLongerPresent.length) {
+                    //Need to remove these?
+                    console.info(`[Create] User changed a dependency version and the new version doesn't require ${noLongerPresent.length} dep/s that the old one did`);
+
+                    //We'll remove these, for now. TODO: Check if we can find any edge case for which this breaks something
+                    noLongerPresent.forEach(slug => {
+                        console.log(`[Created] Removing now-redundant dep ${slug}`);
+                        this.modsToAdd.splice(this.modsToAdd.findIndex(mta => mta.slug === slug), 1);
+                    });
+                }
+            }
+
+            //Find new dependencies
+            let unknownDeps = details.dependencies.filter(dep => !this.modsToAdd.find(mta => mta.slug === dep));
+
+            if (unknownDeps.length) {
+                console.info(`[Create] User selected file ${selected.id} for dependency ${mod.slug}. It requires an additional ${unknownDeps.length} dependency/ies`);
+
+                this.AddAndFetchDeps(unknownDeps);
+            } else {
+                console.info(`[Create] User selected file ${selected.id} for dependency ${mod.slug}. It requires no additional dependencies.`);
+            }
+
+            //Update to show that the deps for this version have been added, and once those are resolved we can add
+            mod.depsAdded = true;
+            this.modsToAdd.splice(this.modsToAdd.findIndex(mta => mta.slug === mod.slug), 1, mod);
         }
 
         private mapServerVersionsResponseToModalForm(versions: { [id: number]: { name: string, gameVersion: string, type: string, } }) {
-            let ret: { id: number, name: string, gv: string }[] = [];
+            let ret: { id: number, name: string, gv: string, releaseType: string }[] = [];
             for (let id in versions) {
-                ret.push({id: Number(id), name: versions[id].name, gv: versions[id].gameVersion});
+                ret.push({
+                    id: Number(id),
+                    name: versions[id].name,
+                    gv: versions[id].gameVersion,
+                    releaseType: versions[id].type
+                });
             }
 
             return ret;
+        }
+
+        private async doInstallMods(modsToAdd: { slug: string; name: string; versions: { id: number; name: string; gv: string }[]; selected: number; depsAdded: boolean }[]) {
+            console.info(`[Create] About to install ${modsToAdd.length} mod/s. Loading all ModJars...`);
+
+            let promises = modsToAdd.map(mta => {
+                return this.GetModVersionDetails(mta.slug, mta.selected);
+            });
+
+            let jars = await Promise.all(promises);
+
+            ipcRenderer.send("install mods", this.editingPack.packName, jars);
+
+            this.showModal = false;
+            this.modsToAdd = [];
         }
     }
 </script>

@@ -5,7 +5,6 @@ import {autoUpdater} from "electron-updater";
 import fetch from "node-fetch";
 import Logger from "./logger";
 import AuthenticationManager from "./managers/AuthenticationManager";
-import ConfigurationManager from "./managers/configurationManager";
 import ElectronManager from "./managers/ElectronManager";
 import EnvironmentManager from "./managers/EnvironmentManager";
 import InstalledPackManager from "./managers/InstalledPackManager";
@@ -176,7 +175,7 @@ ipcMain.on("install update", (event: IpcMessageEvent) => {
 });
 
 process.on("uncaughtException", error => {
-    Logger.errorImpl("Process", "Uncaught Exception: " + error);
+    Logger.errorImpl("Process", "Uncaught Exception: " + error.stack);
 });
 
 //#endregion

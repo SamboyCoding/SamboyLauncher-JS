@@ -1,12 +1,15 @@
 import {spawn} from "child_process";
 import {ipcMain, IpcMessageEvent} from "electron";
-import {existsSync} from "fs";
+import {existsSync, unlinkSync} from "fs";
 import {writeFileSync} from "jsonfile";
 import * as os from "os";
 import {join} from "path";
 import Logger from "../logger";
+import ForgeVersion from "../model/ForgeVersion";
 import InstalledPackJSON from "../model/InstalledPackJSON";
 import MavenArtifact from "../model/MavenArtifact";
+import MCVersion from "../model/MCVersion";
+import ModJar from "../model/ModJar";
 import Utils from "../util/Utils";
 import ClientInstallManager from "./ClientInstallManager";
 import ElectronManager from "./ElectronManager";
@@ -18,6 +21,7 @@ export default class MainIPCHandler {
         ipcMain.on("install pack client", MainIPCHandler.installPackClient);
         ipcMain.on("create pack", MainIPCHandler.createPack);
         ipcMain.on("launch pack", MainIPCHandler.launchPack);
+        ipcMain.on("install mods", MainIPCHandler.installMods);
 
         ipcMain.on("get pack data", async (event: IpcMessageEvent, name: string) => {
             let pack = await InstalledPackManager.GetPackDetails(name);
@@ -30,6 +34,15 @@ export default class MainIPCHandler {
         ipcMain.on("get installed packs", () => {
             ElectronManager.win.webContents.send("installed packs", InstalledPackManager.GetPackNames());
             ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
+        });
+
+        ipcMain.on("update pack versions", async (event: IpcMessageEvent, packName: string, gameVersion: string, forgeVersion: string) => {
+            let pack = await InstalledPackManager.GetPackDetails(packName);
+            pack.gameVersion = await MCVersion.Get(gameVersion);
+            pack.forgeVersion = await ForgeVersion.Get(forgeVersion);
+
+            await InstalledPackManager.SaveModifiedPackData();
+            event.sender.send("pack versions updated", packName);
         });
     }
 
@@ -176,5 +189,40 @@ export default class MainIPCHandler {
 
         Logger.debugImpl("Launch", "java " + args.join(" "));
         let process = spawn("java", args, {stdio: "inherit", cwd: pack.packDirectory});
+    }
+
+    private static async installMods(event: IpcMessageEvent, packName: string, mods: ModJar[]) {
+        Logger.infoImpl("InstallMods", `Renderer requested that we install ${mods.length} mod/s.`);
+
+        let pack = await InstalledPackManager.GetPackDetails(packName);
+
+        let alreadyInstalled = pack.installedMods.filter(im => !!mods.find(m => im.slug === m.slug));
+        Logger.debugImpl("InstallMods", `${alreadyInstalled.length} of those are already installed;`);
+
+        let wrongVersion = alreadyInstalled.filter(im => mods.find(m => im.slug === m.slug).id !== im.id);
+        Logger.debugImpl("InstallMods", `And of those, ${wrongVersion.length} currently have/has the wrong version installed`);
+
+        wrongVersion.forEach(wv => {
+            let installPath = join(pack.modsDirectory, wv.filename);
+            if (!existsSync(installPath)) {
+                Logger.warnImpl("InstallMods", `${wv.slug} is supposedly already installed (but wrong version), but the file ${wv.filename} couldn't be found in the mods dir.`);
+                return;
+            }
+
+            Logger.debugImpl("InstallMods", `Delete file: ${installPath}`);
+            unlinkSync(installPath);
+        });
+
+        //Find any mods where we don't have one installed with the same slug and ver id.
+        let actuallyNeedInstall = mods.filter(m => !pack.installedMods.find(im => im.slug === m.slug && im.id === m.id));
+        Logger.debugImpl("InstallMods", `We're actually about to install ${actuallyNeedInstall.length} mod/s`);
+
+        actuallyNeedInstall.forEach(async jar => {
+            await Utils.downloadWithMD5(`https://www.curseforge.com/minecraft/mc-mods/${jar.slug}/download/${jar.id}/file`, join(pack.modsDirectory, jar.filename), jar.md5);
+            event.sender.send("mod installed", packName, jar.slug, jar.id);
+            pack.installedMods.push(jar);
+
+            InstalledPackManager.SaveModifiedPackData();
+        });
     }
 }

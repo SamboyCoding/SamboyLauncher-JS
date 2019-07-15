@@ -1,5 +1,5 @@
 import {existsSync, lstatSync, readdirSync} from "fs";
-import {readFileSync} from "jsonfile";
+import {readFileSync, writeFileSync} from "jsonfile";
 import {join} from "path";
 import Logger from "../logger";
 import InstalledPack from "../model/InstalledPack";
@@ -57,6 +57,27 @@ export default class InstalledPackManager {
         }
 
         return this.packs.get(name);
+    }
+
+    public static async SaveModifiedPackData() {
+        //Reload the JSONs from the pack instances
+        Logger.infoImpl("Installed Pack Manager", "Saving and reloading all installed packs...");
+        this.packJsons = this.packJsons.map(json => {
+            if (this.packs.has(json.packName)) {
+                return this.packs.get(json.packName).ToJSON();
+            }
+
+            return json;
+        });
+
+        this.packs.forEach(pack => {
+            let json = this.packJsons.find(json => json.packName === pack.name);
+
+            let path = join(pack.packDirectory, "install.json");
+
+            writeFileSync(path, json);
+            Logger.debugImpl("Installed Pack Manager", `Wrote file: ${path}`);
+        });
     }
 
 }

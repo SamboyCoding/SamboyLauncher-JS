@@ -15,6 +15,7 @@ import NewForgeInstallProfile from "./NewForgeInstallProfile";
 export default class ForgeVersion {
     private static _cache = new Map<string, ForgeVersion>();
 
+    public name: string;
     public manifest: ForgeVersionManifest;
     public needsPatch: boolean = false;
     public data?: Map<string, MavenArtifact | string> = new Map<string, MavenArtifact | string>();
@@ -27,6 +28,7 @@ export default class ForgeVersion {
 
         Logger.infoImpl("Forge Version Manager", `Attempting to load data for forge ${name}...`);
         let ret = new ForgeVersion();
+        ret.name = name;
 
         let jsonPath = join(EnvironmentManager.versionsDir, name, name + ".json");
         if (existsSync(jsonPath)) {
