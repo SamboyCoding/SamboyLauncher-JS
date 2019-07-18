@@ -13,7 +13,7 @@
         "build-all": "yarn build-typescript && yarn build-renderer",
         "start": "yarn build-all && electron . --enable-sandbox",
         "start-dev": "electron --inspect=5858 ./src/main",
-        "release": "yarn build-all && electron-builder --publish never"
+        "release": "yarn build-all && electron-builder"
     },
     "keywords": [],
     "author": "",
