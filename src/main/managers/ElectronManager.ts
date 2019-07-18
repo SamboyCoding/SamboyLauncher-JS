@@ -2,7 +2,6 @@ import {app, BrowserWindow, ipcMain, IpcMessageEvent, Menu, MenuItem} from "elec
 import * as isDev from "electron-is-dev";
 import {join} from "path";
 import Logger from "../logger";
-import ConfigurationManager from "./configurationManager";
 
 export default class ElectronManager {
     public static win: BrowserWindow;
@@ -90,7 +89,7 @@ export default class ElectronManager {
             ElectronManager.win = null;
         });
 
-        await ElectronManager.win.loadFile(join(__dirname, "../../../dist/index.html"));
+        await ElectronManager.win.loadFile(join(__dirname, "../../../webContents/index.html"));
 
     }
 
