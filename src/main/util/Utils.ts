@@ -12,6 +12,8 @@ import * as rimraf from "rimraf";
 import Logger from "../logger";
 import EnvironmentManager from "../managers/EnvironmentManager";
 
+require("hazardous"); //Fix 7z in built app.
+
 export default class Utils {
     public static toBase64(str: string): string {
         return Buffer.from(str, "binary").toString("base64");
