@@ -1,8 +1,13 @@
 import chalk, {Chalk} from "chalk";
+import {createWriteStream, WriteStream} from "fs";
 import moment from "moment";
+import {join} from "path";
+import EnvironmentManager from "./managers/EnvironmentManager";
 
 export default class Logger {
     private static readonly LOG_DEBUG_MESSAGES = true;
+    public static stream: WriteStream;
+    private static readonly logFilePath = join(EnvironmentManager.launcherDir, "output.log");
 
     public static debugImpl(source: string, msg: string) {
         if (this.LOG_DEBUG_MESSAGES)
@@ -39,6 +44,13 @@ export default class Logger {
     }
 
     private static log(source: string, msg: string, color: Chalk, type: string) {
-        console.log(color(`[${moment().format("HH:mm:ss")}] [${type}] [${source}] ${msg}`));
+        if (!this.stream)
+            this.stream = createWriteStream(Logger.logFilePath);
+
+        let toLog = `[${moment().format("HH:mm:ss")}] [${type}] [${source}] ${msg}`;
+
+        this.stream.write(toLog + "\n");
+
+        console.log(color(toLog));
     }
 }

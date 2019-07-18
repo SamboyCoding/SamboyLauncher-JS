@@ -4,6 +4,7 @@ import {join} from "path";
 import Logger from "../logger";
 import InstalledPack from "../model/InstalledPack";
 import InstalledPackJSON from "../model/InstalledPackJSON";
+import Utils from "../util/Utils";
 import AuthenticationManager from "./AuthenticationManager";
 import EnvironmentManager from "./EnvironmentManager";
 
@@ -59,7 +60,7 @@ export default class InstalledPackManager {
         return this.packs.get(name);
     }
 
-    public static async SaveModifiedPackData() {
+    public static SaveModifiedPackData() {
         //Reload the JSONs from the pack instances
         Logger.infoImpl("Installed Pack Manager", "Saving and reloading all installed packs...");
         this.packJsons = this.packJsons.map(json => {
@@ -73,11 +74,20 @@ export default class InstalledPackManager {
         this.packs.forEach(pack => {
             let json = this.packJsons.find(json => json.packName === pack.name);
 
+            if (!existsSync(pack.packDirectory))
+                Utils.mkdirpPromise(pack.packDirectory);
+
             let path = join(pack.packDirectory, "install.json");
 
             writeFileSync(path, json);
             Logger.debugImpl("Installed Pack Manager", `Wrote file: ${path}`);
         });
+    }
+
+    public static PostImport(pack: InstalledPack, json: InstalledPackJSON) {
+        this.packJsons.push(json);
+        this.packs.set(pack.name, pack);
+        this.SaveModifiedPackData();
     }
 
 }

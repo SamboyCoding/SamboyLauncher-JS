@@ -1,16 +1,18 @@
 import {spawn} from "child_process";
-import {ipcMain, IpcMessageEvent} from "electron";
+import {dialog, ipcMain, IpcMessageEvent} from "electron";
 import {existsSync, unlinkSync} from "fs";
-import {writeFileSync} from "jsonfile";
+import {readFileSync, writeFileSync} from "jsonfile";
 import * as os from "os";
 import {join} from "path";
 import Logger from "../logger";
 import ForgeVersion from "../model/ForgeVersion";
+import InstalledPack from "../model/InstalledPack";
 import InstalledPackJSON from "../model/InstalledPackJSON";
 import MavenArtifact from "../model/MavenArtifact";
 import MCVersion from "../model/MCVersion";
 import ModJar from "../model/ModJar";
 import Utils from "../util/Utils";
+import AuthenticationManager from "./AuthenticationManager";
 import ClientInstallManager from "./ClientInstallManager";
 import ElectronManager from "./ElectronManager";
 import EnvironmentManager from "./EnvironmentManager";
@@ -23,6 +25,57 @@ export default class MainIPCHandler {
         ipcMain.on("launch pack", MainIPCHandler.launchPack);
         ipcMain.on("install mods", MainIPCHandler.installMods);
 
+        ipcMain.on("sign in", async (event: IpcMessageEvent, email: string, password: string) => {
+            try {
+                await AuthenticationManager.Login(email, password);
+                event.sender.send("username", AuthenticationManager.username);
+            } catch (e) {
+                if (typeof (e) === "string")
+                    event.sender.send("sign in error", e);
+                else {
+                    Logger.errorImpl("IPCMain", `Login process threw exception ${e.stack}`);
+                    event.sender.send("sign in error", "Unexpected error logging you in. Please try again, possibly later.");
+                }
+            }
+        });
+
+        ipcMain.on("import pack", async (event: IpcMessageEvent) => {
+            let files = dialog.showOpenDialog(ElectronManager.win, {
+                filters: [{
+                    extensions: ["json"],
+                    name: "Pack JSON"
+                }],
+                properties: [
+                    "openFile"
+                ],
+                title: "Import Pack JSON..."
+            });
+
+            if (!files.length) return;
+
+            let json: InstalledPackJSON = readFileSync(files[0]);
+            if (!json.packName) return event.sender.send("import failed", "Couldn't import pack, because the specified while was not a pack JSON");
+
+            let pack = await InstalledPack.FromJSON(json);
+
+            event.sender.send("importing pack", pack.name);
+            this.installPackClient(event, pack.name, pack.gameVersion.name, pack.forgeVersion.name).then(async () => {
+                InstalledPackManager.PostImport(pack, json);
+
+                event.sender.send("importing mods", pack.name, pack.installedMods.length);
+
+                await this.installMods(event, pack.name, pack.installedMods);
+
+                event.sender.send("pack imported", pack.name);
+
+                Logger.infoImpl("IPCMain", "Reloading installed packs...");
+                InstalledPackManager.LoadFromDisk();
+
+                ElectronManager.win.webContents.send("installed packs", InstalledPackManager.GetPackNames());
+                ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
+            });
+        });
+
         ipcMain.on("get pack data", async (event: IpcMessageEvent, name: string) => {
             let pack = await InstalledPackManager.GetPackDetails(name);
             event.sender.send("pack data", pack);
@@ -34,6 +87,10 @@ export default class MainIPCHandler {
         ipcMain.on("get installed packs", () => {
             ElectronManager.win.webContents.send("installed packs", InstalledPackManager.GetPackNames());
             ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
+
+            //While we're at it, let's send the username, as this event means we're ready on renderer
+            if (AuthenticationManager.username)
+                ElectronManager.win.webContents.send("username", AuthenticationManager.username);
         });
 
         ipcMain.on("update pack versions", async (event: IpcMessageEvent, packName: string, gameVersion: string, forgeVersion: string) => {
@@ -61,7 +118,8 @@ export default class MainIPCHandler {
     }
 
     private static async createPack(event: IpcMessageEvent, name: string, description: string, gameVersion: string, forgeVersion: string) {
-        let dirName = name.replace(/\s/g, "_").trim();
+        //Replace non alphanumeric
+        let dirName = name.replace(/[^\w\d]/g, "_").trim();
         let dir = join(EnvironmentManager.packsDir, dirName);
         if (existsSync(dir))
             return event.sender.send("pack create failed", name, "Directory already exists");
@@ -76,8 +134,8 @@ export default class MainIPCHandler {
             forgeVersion,
             installedVersion: "1.0",
             author: {
-                uuid: "",
-                name: "Me"
+                uuid: !!AuthenticationManager.uuid ? AuthenticationManager.uuid : "",
+                name: !!AuthenticationManager.username ? AuthenticationManager.username : "Me"
             },
             installedMods: [],
             packName: name,
@@ -89,10 +147,17 @@ export default class MainIPCHandler {
 
         Logger.infoImpl("IPCMain", "Reloading installed packs...");
         InstalledPackManager.LoadFromDisk();
+
+        ElectronManager.win.webContents.send("installed packs", InstalledPackManager.GetPackNames());
+        ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
     }
 
     private static async launchPack(event: IpcMessageEvent, packName: string) {
+        Logger.infoImpl("IPCMain", `Renderer requested pack launch for pack ${packName}`);
+
         let pack = await InstalledPackManager.GetPackDetails(packName);
+
+        Logger.infoImpl("IPCMain", `About to launch MC ${pack.gameVersion.name} + forge ${pack.forgeVersion.name}`);
 
         //Let's build a classpath.
         let classpath: MavenArtifact[] = [];
@@ -158,7 +223,7 @@ export default class MainIPCHandler {
         args = args.map(arg => {
             switch(arg) {
                 case "${auth_player_name}":
-                    return "memes"; //TODO
+                    return !!AuthenticationManager.username ? AuthenticationManager.username : "naughtyboiyoushouldsignin";
                 case "${version_name}":
                     return pack.forgeVersion.manifest.id;
                 case "${game_directory}":
@@ -170,7 +235,7 @@ export default class MainIPCHandler {
                 case "${auth_uuid}":
                     return "dummy"; //TODO
                 case "${auth_access_token}":
-                    return "dummy"; //TODO
+                    return !!AuthenticationManager.accessToken ? AuthenticationManager.accessToken : "dummy";
                 case "${user_type}":
                     return "mojang";
                 case "${version_type}":
@@ -188,7 +253,26 @@ export default class MainIPCHandler {
         });
 
         Logger.debugImpl("Launch", "java " + args.join(" "));
-        let process = spawn("java", args, {stdio: "inherit", cwd: pack.packDirectory});
+        Logger.debugImpl("Launch", "CWD: " + pack.packDirectory);
+        try {
+            let process = spawn("java", args, {stdio: "inherit", cwd: pack.packDirectory});
+
+            process.on("error", err => {
+                Logger.errorImpl("IPCMain", "Exception during launch " + err.stack);
+            });
+
+            process.on("exit", code => {
+                if (code === 0) {
+                    Logger.infoImpl("IPCMain", `Game instance for pack ${packName} exited with code 0.`);
+                    event.sender.send("pack exit", packName);
+                } else {
+                    Logger.warnImpl("IPCMain", `Game instance for pack ${packName} appears to have crashed; exited with code ${code}`);
+                    event.sender.send("pack crash", packName);
+                }
+            });
+        } catch (e) {
+            Logger.errorImpl("IPCMain", "Exception during launch " + e.stack);
+        }
     }
 
     private static async installMods(event: IpcMessageEvent, packName: string, mods: ModJar[]) {
@@ -196,7 +280,7 @@ export default class MainIPCHandler {
 
         let pack = await InstalledPackManager.GetPackDetails(packName);
 
-        let alreadyInstalled = pack.installedMods.filter(im => !!mods.find(m => im.slug === m.slug));
+        let alreadyInstalled = pack.installedMods.filter(im => !!mods.find(m => im.slug === m.slug) && existsSync(join(pack.modsDirectory, im.filename)));
         Logger.debugImpl("InstallMods", `${alreadyInstalled.length} of those are already installed;`);
 
         let wrongVersion = alreadyInstalled.filter(im => mods.find(m => im.slug === m.slug).id !== im.id);
@@ -214,12 +298,12 @@ export default class MainIPCHandler {
         });
 
         //Find any mods where we don't have one installed with the same slug and ver id.
-        let actuallyNeedInstall = mods.filter(m => !pack.installedMods.find(im => im.slug === m.slug && im.id === m.id));
+        let actuallyNeedInstall = mods.filter(m => !existsSync(join(pack.modsDirectory, m.filename)) || !pack.installedMods.find(im => im.slug === m.slug && im.id === m.id));
         Logger.debugImpl("InstallMods", `We're actually about to install ${actuallyNeedInstall.length} mod/s`);
 
         actuallyNeedInstall.forEach(async jar => {
             await Utils.downloadWithMD5(`https://www.curseforge.com/minecraft/mc-mods/${jar.slug}/download/${jar.id}/file`, join(pack.modsDirectory, jar.filename), jar.md5);
-            event.sender.send("mod installed", packName, jar.slug, jar.id);
+            event.sender.send("mod installed", packName, jar);
             pack.installedMods.push(jar);
 
             InstalledPackManager.SaveModifiedPackData();

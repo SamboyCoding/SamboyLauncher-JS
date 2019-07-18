@@ -1,9 +1,9 @@
 <template>
     <div id="top-bar">
-        <h3 @click="page = Page.MAIN_MENU">SamboyLauncher 2.0</h3>
+        <h3 @click="page = Page.MAIN_MENU">SamboyLauncher 2.0 (PRE-RELEASE)</h3>
 
         <div id="window-controls">
-            <i class="material-icons" id="profile-button" @click="showProfile()">account_circle</i>
+            <i @click="showLogin()" class="material-icons" id="profile-button">account_circle</i>
             <i class="material-icons" @click="doMinimize()">minimize</i>
             <i class="material-icons" @click="doMaximize()">crop_din</i>
             <i class="material-icons" @click="doClose()">close</i>
@@ -34,8 +34,9 @@
             window.close();
         }
 
-        public showProfile() {
-
+        public showLogin() {
+            if (!this.$store.state.username)
+                (this.$parent as any).showLogin = true;
         }
 
         get page() {

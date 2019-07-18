@@ -16,6 +16,7 @@ export default new Vuex.Store({
         installingPacks: {},
         showEditPack: false,
         editMods: false,
+        username: "",
     },
     mutations: {
         setCurrentPage: (state, payload: Page) => {
@@ -68,7 +69,10 @@ export default new Vuex.Store({
         },
         setEditMods: (state, payload) => {
             state.editMods = payload;
-        }
+        },
+        setUsername: (state, payload) => {
+            state.username = payload;
+        },
     },
     actions: {},
 });

@@ -25,7 +25,7 @@ export default class InstalledPack {
     }
 
     get packDirectory(): string {
-        return join(EnvironmentManager.packsDir, this.name.replace(/\s/g, "_"));
+        return join(EnvironmentManager.packsDir, this.name.replace(/[^\w\d]/g, "_"));
     }
 
     public static async FromJSON(installJson: InstalledPackJSON) {

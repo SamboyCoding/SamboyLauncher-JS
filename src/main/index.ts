@@ -1,8 +1,12 @@
 //#region Imports
+import {spawnSync} from "child_process";
 import {ipcMain, IpcMessageEvent} from "electron";
 import * as isDev from "electron-is-dev";
 import {autoUpdater} from "electron-updater";
-import fetch from "node-fetch";
+import {existsSync} from "fs";
+import * as os from "os";
+import {join} from "path";
+import * as rimraf from "rimraf";
 import Logger from "./logger";
 import AuthenticationManager from "./managers/AuthenticationManager";
 import ElectronManager from "./managers/ElectronManager";
@@ -13,6 +17,23 @@ import MCVersion from "./model/MCVersion";
 //#endregion
 
 EnvironmentManager.Init();
+
+//BUGFIX: Cleanup old launcher dir
+if (existsSync(join(EnvironmentManager.launcherDir, "config.json"))) {
+    //Invalidate
+    Logger.stream.close();
+    Logger.stream = undefined;
+
+    //Windows is DUMB
+    if (os.platform() === "win32")
+        spawnSync("cmd", ["/c", `rmdir /s /q ${EnvironmentManager.launcherDir}`]);
+    else
+        rimraf.sync(EnvironmentManager.launcherDir);
+    EnvironmentManager.Init(); //Re-make dirs
+
+    Logger.errorImpl("Init", "Removed old incompat launcher dir!");
+}
+
 //ConfigurationManager.LoadFromDisk();
 AuthenticationManager.LoadFromDisk();
 MCVersion.Get(); //Preload these.
@@ -23,116 +44,36 @@ MainIPCHandler.Init();
 // ---------------------
 //#region Authentication
 
-async function login(email: string, password: string, remember: boolean) {
-    return new Promise((ff, rj) => {
-        fetch("https://authserver.mojang.com/authenticate", {
-            body: JSON.stringify({
-                agent: {
-                    name: "Minecraft",
-                    version: 1,
-                },
-                clientToken: AuthenticationManager.clientToken ? AuthenticationManager.clientToken : undefined,
-                password,
-                requestUser: true,
-                username: email,
-            }),
-            headers: {
-                "Content-Type": "application/json",
-            },
-            method: "POST",
-        }).then((resp) => {
-            return resp.json();
-        }).then((json) => {
-            try {
-                if (json.error) {
-                    rj(json.errorMessage);
-                } else {
-                    const at: string = json.accessToken;
-                    const ct: string = json.clientToken;
-                    const uid: string = json.selectedProfile.id;
-                    const un: string = json.selectedProfile.name;
-
-                    AuthenticationManager.accessToken = at;
-                    AuthenticationManager.clientToken = ct;
-                    AuthenticationManager.uuid = uid;
-                    AuthenticationManager.username = un;
-                    AuthenticationManager.email = email;
-                    if (remember) {
-                        AuthenticationManager.password = password;
-                    } else {
-                        AuthenticationManager.password = "";
-                    }
-
-                    AuthenticationManager.save();
-
-                    ff();
-                }
-            } catch (e) {
-                rj(e);
-            }
-        });
-    });
-}
-
-ipcMain.on("get profile", (event: IpcMessageEvent) => {
-    if (AuthenticationManager.accessToken && AuthenticationManager.username && AuthenticationManager.uuid) {
-        event.sender.send("profile", AuthenticationManager.username, AuthenticationManager.uuid);
-    } else {
-        event.sender.send("no profile");
-    }
-});
-
-ipcMain.on("login", async (event: IpcMessageEvent, email: string, password: string, remember: boolean) => {
-    try {
-        await login(email, password, remember);
-
-        event.sender.send("profile", AuthenticationManager.username, AuthenticationManager.uuid);
-    } catch (e) {
-        event.sender.send("login error", e);
-    }
-});
-
-ipcMain.on("logout", (event: IpcMessageEvent) => {
-    AuthenticationManager.accessToken = undefined;
-    AuthenticationManager.password = undefined;
-    AuthenticationManager.username = undefined;
-    AuthenticationManager.uuid = undefined;
-
-    AuthenticationManager.save();
-
-    event.sender.send("logged out");
-});
-
-ipcMain.on("validate session", (event: IpcMessageEvent) => {
-    if (!AuthenticationManager.accessToken) {
-        return;
-    }
-
-    fetch("https://authserver.mojang.com/validate", {
-        body: JSON.stringify({
-            accessToken: AuthenticationManager.accessToken,
-            clientToken: AuthenticationManager.clientToken,
-        }),
-        headers: {
-            "Content-Type": "application/json",
-        },
-        method: "POST",
-    }).then(async (resp) => {
-        if (resp.status === 204) {
-            return;
-        } // Session valid
-
-        if (AuthenticationManager.email && AuthenticationManager.password) {
-            try {
-                await login(AuthenticationManager.email, AuthenticationManager.password, true); // Already set to remember, so remember again
-            } catch (e) {
-                event.sender.send("session invalid");
-            }
-        } else {
-            event.sender.send("session invalid");
-        }
-    });
-});
+// ipcMain.on("validate session", (event: IpcMessageEvent) => {
+//     if (!AuthenticationManager.accessToken) {
+//         return;
+//     }
+//
+//     fetch("https://authserver.mojang.com/validate", {
+//         body: JSON.stringify({
+//             accessToken: AuthenticationManager.accessToken,
+//             clientToken: AuthenticationManager.clientToken,
+//         }),
+//         headers: {
+//             "Content-Type": "application/json",
+//         },
+//         method: "POST",
+//     }).then(async (resp) => {
+//         if (resp.status === 204) {
+//             return;
+//         } // Session valid
+//
+//         if (AuthenticationManager.email && AuthenticationManager.password) {
+//             try {
+//                 await login(AuthenticationManager.email, AuthenticationManager.password, true); // Already set to remember, so remember again
+//             } catch (e) {
+//                 event.sender.send("session invalid");
+//             }
+//         } else {
+//             event.sender.send("session invalid");
+//         }
+//     });
+// });
 
 //#endregion
 // ---------------------

@@ -1,7 +1,7 @@
 import {path7za} from "7zip-bin";
+import {join} from "path";
 import Logger from "../logger";
 import Utils from "../util/Utils";
-import { join } from 'path';
 
 export default class EnvironmentManager {
     private static _appData: string;
@@ -64,6 +64,8 @@ export default class EnvironmentManager {
     }
 
     public static Init() {
+        Utils.mkdirpPromise(EnvironmentManager.launcherDir); //Needed for logger
+
         Logger.infoImpl("Environment", "Setting up environment paths...");
 
         Utils.mkdirpPromise(EnvironmentManager.packsDir);

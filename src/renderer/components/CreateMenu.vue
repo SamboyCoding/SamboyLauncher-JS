@@ -74,10 +74,11 @@
             <div v-if="$store.state.editMods">
                 <button @click="endEditMods()">Return to Edit Menu</button>
                 <button @click="refreshModList()">Refresh Mods</button>
+                <input @keyup.enter="refreshModList()" id="mod-list-search" placeholder="Search" v-model="searchTerm">
 
                 <div id="mod-listing">
                     <span v-if="refreshingModList" id="mod-list-loading">Loading...</span>
-                    <div class="mod" v-else v-for="(mod, idx) in mods">
+                    <div :key="mod.name + '_' + !!editingPack.installedMods.find(m => m.slug === mod.slug)" class="mod" v-else v-for="(mod, idx) in mods">
                         <img :src="mod.thumbnail" class="mod-thumbnail">
                         <div class="title-bit">
                             <h1 class="mod-name">{{mod.name}}</h1>
@@ -91,14 +92,19 @@
                             <span v-else>Loading...</span>
                         </button>
                         <br v-else>
-                        <button @click="installMod(mod, 'RELEASE')" class="install-mod-release" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'RELEASE' && ver.gameVersion === editingPack.gameVersion)">
-                            Latest Release
-                        </button>
-                        <button @click="installMod(mod, 'BETA')" class="install-mod-beta" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'BETA' && ver.gameVersion === editingPack.gameVersion)">
-                            Latest Beta
-                        </button>
-                        <button @click="installMod(mod, 'ALPHA')" class="install-mod-alpha" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'ALPHA' && ver.gameVersion === editingPack.gameVersion)">
-                            Latest Alpha
+                        <div v-if="mod.versions && Object.values(mod.versions).find(ver => ver.gameVersion === editingPack.gameVersion)">
+                            <button @click="installMod(mod, 'RELEASE')" class="install-mod-release" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'RELEASE' && ver.gameVersion === editingPack.gameVersion)">
+                                Latest Release
+                            </button>
+                            <button @click="installMod(mod, 'BETA')" class="install-mod-beta" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'BETA' && ver.gameVersion === editingPack.gameVersion)">
+                                Latest Beta
+                            </button>
+                            <button @click="installMod(mod, 'ALPHA')" class="install-mod-alpha" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'ALPHA' && ver.gameVersion === editingPack.gameVersion)">
+                                Latest Alpha
+                            </button>
+                        </div>
+                        <button disabled style="float: right" v-else-if="mod.versions">
+                            Not for this Version
                         </button>
                     </div>
                 </div>
@@ -176,6 +182,9 @@
 
         public modsToAdd: { slug: string, name: string, versions: { id: number, name: string, gv: string }[], selected: number, depsAdded: boolean }[] = [];
 
+        public packsBeingCreated: string[] = [];
+        public searchTerm = "";
+
         public async mounted() {
             console.info("[Create] Fetching acceptable pack versions for pack creation...");
             let array = await (await fetch(Config.API_URL + "/pack/versions")).json();
@@ -206,7 +215,8 @@
                 .removeAllListeners("install complete")
                 .removeAllListeners("pack created")
                 .removeAllListeners("pack create failed")
-                .removeAllListeners("pack versions updated");
+                .removeAllListeners("pack versions updated")
+                .removeAllListeners("mod installed");
 
             ipcRenderer.on("install error", (event, packName, error) => {
                 alert(`Pack ${packName} cannot be installed due to an error: ${error}`);
@@ -214,6 +224,8 @@
             });
 
             ipcRenderer.on("install progress", (event, packName, progress) => {
+                if (this.packsBeingCreated.indexOf(packName) < 0) return;
+
                 progress = Math.round(progress * 1000) / 1000;
                 this.$store.commit("setInstallProgress", {name: packName, value: progress});
                 this.$forceUpdate();
@@ -231,19 +243,39 @@
             });
 
             ipcRenderer.on("pack versions updated", (event: IpcMessageEvent, packName: string) => {
-                this.$store.commit("cancelInstall", pack.packName);
+                this.$store.commit("cancelInstall", packName);
                 event.sender.send("get installed packs"); //Reload
             });
 
             ipcRenderer.on("pack created", (event: IpcMessageEvent, pack: InstalledPackJSON) => {
                 this.$store.commit("cancelInstall", pack.packName);
                 this.$store.commit("addCreatedPack", pack.packName);
+
+                let idx = this.packsBeingCreated.indexOf(pack.packName);
+                if (idx >= 0)
+                    this.packsBeingCreated.splice(idx, 1);
             });
 
             ipcRenderer.on("pack create failed", (event, name, error) => {
                 alert("Successfully installed the game, but couldn't create the pack due to an error: " + error);
                 this.$store.commit("cancelInstall", name);
                 this.$forceUpdate();
+
+                let idx = this.packsBeingCreated.indexOf(name);
+                if (idx >= 0)
+                    this.packsBeingCreated.splice(idx, 1);
+            });
+
+            ipcRenderer.on("mod installed", (event, name, jar: ModJar) => {
+                if (name !== this.editingPack.packName) return;
+
+                console.info(`[Create] Mod ${jar.slug} was installed`);
+                let pack = this.editingPack;
+                pack.installedMods.push(jar);
+
+                this.$store.commit("setEditingPack", pack);
+
+                this.refreshModList();
             });
 
             if (this.$store.state.editMods)
@@ -293,8 +325,8 @@
         }
 
         public savePack() {
-            if (/[^\w\d\s]/g.test(this.editingPack.packName)) {
-                alert("Pack name must be alphanumeric (spaces are allowed too)");
+            if (/[^\w\d\s.!?]/g.test(this.editingPack.packName)) {
+                alert("Pack name must consist only of letters, numbers, spaces, or any of the following punctuation: .!?");
                 return;
             }
 
@@ -311,9 +343,7 @@
             this.$store.commit("queuePackInstall", pack.packName);
             ipcRenderer.send("install pack client", pack.packName, pack.gameVersion, pack.forgeVersion);
 
-            if (this.editingPack.installedVersion) {
-
-            }
+            this.packsBeingCreated.push(pack.packName);
 
             this.$store.commit("setShowEditPack", false);
         }
@@ -341,11 +371,21 @@
         }
 
         public async refreshModList() {
-            console.info(`[Create] Loading popular mod list for version ${this.editingPack.gameVersion}`);
-            this.refreshingModList = true;
-            this.mods = await (await fetch(`${Config.API_URL}/mod/popular/${this.editingPack.gameVersion}`)).json();
-            this.refreshingModList = false;
-            console.info(`[Create] Loaded ${this.mods.length} mods`);
+            if (!this.searchTerm.trim()) {
+                console.info(`[Create] Loading popular mod list for version ${this.editingPack.gameVersion}`);
+                if (this.mods.length < 1)
+                    this.refreshingModList = true;
+                this.mods = await (await fetch(`${Config.API_URL}/mod/popular/${this.editingPack.gameVersion}`)).json();
+                this.refreshingModList = false;
+                console.info(`[Create] Loaded ${this.mods.length} mods`);
+            } else {
+                console.info(`[Create] Loading search results for search term ${this.searchTerm}`);
+                if (this.mods.length < 1)
+                    this.refreshingModList = true;
+                this.mods = await (await fetch(`${Config.API_URL}/mod/search?query=${this.searchTerm.trim()}`)).json();
+                this.refreshingModList = false;
+                console.info(`[Create] Loaded ${this.mods.length} mods`);
+            }
         }
 
         public async GetModDetails(slug: string) {
@@ -659,6 +699,18 @@
                 padding: 3rem 2rem 0;
             }
 
+            #mod-list-search {
+                background: none;
+                display: inline-block;
+                width: 60%;
+                height: 3.4rem;
+                margin-left: 2rem;
+
+                &:focus {
+                    border-color: #555;
+                }
+            }
+
             #mod-listing {
                 display: flex;
                 position: relative;
@@ -780,24 +832,6 @@
                 & > span, & > select {
                     margin: 8px;
                 }
-            }
-        }
-
-        button {
-            padding: 1rem;
-            background: none;
-            color: white;
-            font-family: inherit;
-            border: 1px solid #222;
-            font-size: 1rem;
-            outline: none;
-
-            &:not([disabled]):hover {
-                background: rgba(255, 255, 255, 0.1);
-            }
-
-            &:not([disabled]):active {
-                background: rgba(200, 200, 200, 0.1);
             }
         }
 
