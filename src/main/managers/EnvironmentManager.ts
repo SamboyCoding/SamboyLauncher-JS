@@ -1,3 +1,5 @@
+require("hazardous"); //Fix 7z in built app.
+
 import {path7za} from "7zip-bin";
 import {join} from "path";
 import Logger from "../logger";
