@@ -1,9 +1,11 @@
 import {spawn} from "child_process";
 import {copyFileSync, existsSync, readdirSync} from "fs";
+import * as os from "os";
 import {basename, dirname, join} from "path";
 import rimraf from "rimraf";
 import Logger from "../logger";
 import ForgeVersion from "../model/ForgeVersion";
+import MCAssetDefinition from "../model/MCAssetDefinition";
 import MCVersion from "../model/MCVersion";
 import Utils from "../util/Utils";
 import ElectronManager from "./ElectronManager";
@@ -168,19 +170,36 @@ export default class ClientInstallManager {
         const objectsDir = join(EnvironmentManager.assetsDir, "objects");
         await Utils.mkdirpPromise(objectsDir);
 
-        let promises = Array.from(minecraftVersion.assets.values()).sort().map(async asset => {
-            const path = `${asset.hash.substr(0, 2)}/${asset.hash}`;
-            const dest = join(objectsDir, path);
-            await Utils.mkdirpPromise(dirname(dest));
+        let assets = Array.from(minecraftVersion.assets.values()).sort((a, b) => a.hash.localeCompare(b.hash));
 
-            await Utils.downloadWithSHA1(`https://resources.download.minecraft.net/${path}`, dest, asset.hash);
+        let threads = os.cpus().length;
+        let threadJobs: MCAssetDefinition[][] = [];
 
-            pct += 0.5 * asset.size / totalSize;
-            ElectronManager.win.webContents.send("install progress", packName, pct * 0.66);
-        });
+        let idx = 0;
+        let amountPer = Math.floor(assets.length / threads);
+
+        Logger.infoImpl("Client Install Manager", `Spawning ${threads} threads to download ${assets.length} assets, each with a workload of ${amountPer}`);
+
+        for (let i = 0; i < threads - 1; i++) {
+            threadJobs.push(assets.slice(idx, idx + amountPer));
+            idx += amountPer;
+        }
+
+        threadJobs.push(assets.slice(idx)); //Grab the remainder for the last thread
 
         try {
-            await Promise.all(promises);
+            await Promise.all(threadJobs.map(async job => {
+                for (let asset of job) {
+                    const path = `${asset.hash.substr(0, 2)}/${asset.hash}`;
+                    const dest = join(objectsDir, path);
+                    await Utils.mkdirpPromise(dirname(dest));
+
+                    await Utils.downloadWithSHA1(`https://resources.download.minecraft.net/${path}`, dest, asset.hash);
+
+                    pct += 0.5 * asset.size / totalSize;
+                    ElectronManager.win.webContents.send("install progress", packName, pct * 0.66);
+                }
+            }));
         } catch (e) {
             Logger.errorImpl("Client Install Manager", e.message + "\n" + e.stack);
             ElectronManager.win.webContents.send("install error", packName, e.message);
