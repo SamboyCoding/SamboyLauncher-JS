@@ -21,14 +21,4 @@ lib/
 \.cache/
 
 yarn-error\.log
-/webContents/4.884addab.jpg
-/webContents/all.3c140d86.js
-/webContents/default_pack_icon.f32baa61.png
-/webContents/index.html
-/webContents/material-icons.4e30841b.css
-/webContents/MaterialIcons-Regular.309c1598.woff
-/webContents/MaterialIcons-Regular.827a59b6.eot
-/webContents/MaterialIcons-Regular.5744d005.ttf
-/webContents/MaterialIcons-Regular.d5b7635d.woff2
-/webContents/renderer.9bf4d48c.js
-/webContents/renderer.f14c975d.css
+/webContents/

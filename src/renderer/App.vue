@@ -148,18 +148,23 @@
             });
 
             ipcRenderer.on("importing pack", (event, name) => {
+                console.log(`[App] Beginning import tracking for pack ${name}`);
                 this.$store.commit("queuePackInstall", name);
                 this.packsBeingImported.set(name, 0);
             });
 
             ipcRenderer.on("importing mods", (event, name, count) => {
+                console.log(`[App] Client install complete, pack ${name} is now having ${count} mods installed.`);
                 this.packsBeingImported.set(name, count);
+                this.$store.commit("setInstallProgress", {name: name, value: 0.5});
             });
 
             ipcRenderer.on("install progress", (event, packName, progress) => {
                 if (!this.packsBeingImported.has(packName)) return;
 
                 progress = Math.round(progress * 1000) / 1000;
+
+                console.info(`[App] Client install for import of pack ${packName} is ${progress} complete.`);
                 this.$store.commit("setInstallProgress", {name: packName, value: progress * 0.5});
                 this.$forceUpdate();
             });
@@ -167,17 +172,20 @@
             ipcRenderer.on("mod installed", (event, name, jar) => {
                 if (!this.packsBeingImported.has(name)) return;
 
+                console.info(`[App] Pack ${name} has had mod ${jar.slug} imported.`);
+
                 let pctPer = (1 / this.packsBeingImported.get(name)) * 0.5;
 
                 this.$store.commit("setInstallProgress", {
                     name,
-                    value: this.installingPacks[name] + pctPer
+                    value: Math.round((this.installingPacks[name] + pctPer) * 1000) / 1000
                 });
 
                 this.$forceUpdate();
             });
 
             ipcRenderer.on("pack imported", (event, name) => {
+                console.info(`[App] Pack ${name} import complete.`);
                 this.packsBeingImported.delete(name);
                 this.$store.commit("cancelInstall", name);
             });

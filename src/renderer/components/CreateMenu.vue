@@ -86,9 +86,11 @@
                             <span class="mod-author">{{mod.author ? mod.author : mod.authorList[0].username}}</span>
                         </div>
                         <p class="mod-desc" v-if="mod.desc">{{mod.desc}}</p>
-                        <button :disabled="mod.loading || !!editingPack.installedMods.find(m => m.slug === mod.slug)" @click="loadModData(idx)" class="install-mod" v-if="!mod.versions">
-                            <span v-if="editingPack.installedMods.find(m => m.slug === mod.slug)">Installed</span>
-                            <span v-else-if="!mod.loading">Install</span>
+                        <button class="install-mod" v-if="!!editingPack.installedMods.find(m => m.slug === mod.slug)" @click="removeMod(idx)">
+                            Uninstall
+                        </button>
+                        <button :disabled="mod.loading" @click="loadModData(idx)" class="install-mod" v-else-if="!mod.versions">
+                            <span v-if="!mod.loading">Install</span>
                             <span v-else>Loading...</span>
                         </button>
                         <br v-else>
@@ -232,6 +234,10 @@
             });
 
             ipcRenderer.on("install complete", (event: IpcMessageEvent, packName: string, gameVersion: string, forgeVersion: string) => {
+                if (this.packsBeingCreated.indexOf(packName) < 0) return;
+
+                console.info(`[Create] Client for pack ${packName} installed successfully`);
+
                 this.$store.commit("setInstallProgress", {name: packName, value: 1});
 
                 if (!this.editingPack.installedVersion)
@@ -272,6 +278,18 @@
                 console.info(`[Create] Mod ${jar.slug} was installed`);
                 let pack = this.editingPack;
                 pack.installedMods.push(jar);
+
+                this.$store.commit("setEditingPack", pack);
+
+                this.refreshModList();
+            });
+
+            ipcRenderer.on("mod removed", (event, name, slug) => {
+                if(name !== this.editingPack.packName) return;
+
+                console.info(`[Create] Mod ${slug} was removed from pack ${name}.`);
+                let pack = this.editingPack;
+                pack.installedMods.splice(pack.installedMods.findIndex(mod => mod.slug === slug), 1);
 
                 this.$store.commit("setEditingPack", pack);
 
@@ -405,6 +423,13 @@
             this.mods.splice(idx, 1, mod); //Update loading for vue
 
             this.mods.splice(idx, 1, await this.GetModDetails(mod.slug)); //Fetch details
+        }
+
+        public async removeMod(idx: number) {
+            let mod = this.mods[idx] as ModListItem;
+
+            console.info(`[Create] Requesting removal of mod ${mod.slug}`);
+            ipcRenderer.send("remove mod", this.editingPack.packName, mod.slug);
         }
 
         public async AddAndFetchDeps(deps: string[]) {

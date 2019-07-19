@@ -64,15 +64,15 @@ export default class MainIPCHandler {
 
                 event.sender.send("importing mods", pack.name, pack.installedMods.length);
 
-                await this.installMods(event, pack.name, pack.installedMods);
+                this.installMods(event, pack.name, pack.installedMods).then(() => {
+                    event.sender.send("pack imported", pack.name);
 
-                event.sender.send("pack imported", pack.name);
+                    Logger.infoImpl("IPCMain", "Reloading installed packs...");
+                    InstalledPackManager.LoadFromDisk();
 
-                Logger.infoImpl("IPCMain", "Reloading installed packs...");
-                InstalledPackManager.LoadFromDisk();
-
-                ElectronManager.win.webContents.send("installed packs", InstalledPackManager.GetPackNames());
-                ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
+                    ElectronManager.win.webContents.send("installed packs", InstalledPackManager.GetPackNames());
+                    ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
+                });
             });
         });
 
@@ -101,20 +101,45 @@ export default class MainIPCHandler {
             await InstalledPackManager.SaveModifiedPackData();
             event.sender.send("pack versions updated", packName);
         });
+
+        ipcMain.on("remove mod", async (event: IpcMessageEvent, packName: string, slug: string) => {
+            Logger.debugImpl("IPCMain", `Renderer requested we remove mod ${slug} from ${packName}`);
+            let pack = await InstalledPackManager.GetPackDetails(packName);
+            let idx = pack.installedMods.findIndex(m => m.slug === slug);
+
+            if (idx < 0)
+                return Logger.warnImpl("IPCMain", `Renderer requested we remove mod ${slug} from ${packName} but it's not present`);
+
+            let file = join(pack.modsDirectory, pack.installedMods[idx].filename);
+            Logger.debugImpl("IPCMain", `Delete file: ${file}`);
+            if (!existsSync(file))
+                Logger.errorImpl("IPCMain", `Renderer requested we remove mod ${slug} from ${packName}, and it's apparently installed, but the file ${file} does not exist!`);
+            else
+                unlinkSync(file);
+
+            pack.installedMods.splice(idx, 1);
+
+            await InstalledPackManager.SaveModifiedPackData();
+
+            event.sender.send("mod removed", packName, slug);
+        });
     }
 
     private static async installPackClient(event: IpcMessageEvent, packName: string, gameVersionId: string, forgeVersionId: string) {
 
-        ClientInstallManager.installClient(packName, gameVersionId, forgeVersionId)
-            .then(() => {
-                //And we're done!
-                Logger.infoImpl("IPCMain", "Install complete!");
-                event.sender.send("install complete", packName, gameVersionId, forgeVersionId);
-            })
-            .catch((e: Error | string) => {
-                Logger.errorImpl("IPCMain", (e instanceof Error ? e.message + "\n" + e.stack : e));
-                ElectronManager.win.webContents.send("install error", packName, (e instanceof Error ? e.message : e));
-            });
+        return new Promise((ff) => {
+            ClientInstallManager.installClient(packName, gameVersionId, forgeVersionId)
+                .then(() => {
+                    //And we're done!
+                    Logger.infoImpl("IPCMain", "Install complete!");
+                    event.sender.send("install complete", packName, gameVersionId, forgeVersionId);
+                    ff();
+                })
+                .catch((e: Error | string) => {
+                    Logger.errorImpl("IPCMain", (e instanceof Error ? e.message + "\n" + e.stack : e));
+                    event.sender.send("install error", packName, (e instanceof Error ? e.message : e));
+                });
+        });
     }
 
     private static async createPack(event: IpcMessageEvent, name: string, description: string, gameVersion: string, forgeVersion: string) {
@@ -192,15 +217,15 @@ export default class MainIPCHandler {
 
         let args: string[] = []; //["-cp", classpathString, "-Djava.library.path=" + join(EnvironmentManager.versionsDir, pack.gameVersion.name, "natives")];
 
-        if(pack.gameVersion.arguments && pack.gameVersion.arguments.jvm.length) {
+        if (pack.gameVersion.arguments && pack.gameVersion.arguments.jvm.length) {
             for (let arg of pack.gameVersion.arguments.jvm) {
-                if (typeof (arg) === 'string') {
+                if (typeof (arg) === "string") {
                     args.push(arg);
                     continue;
                 }
 
                 if (!arg.rules || Utils.handleOSBasedRule(arg.rules)) {
-                    if (typeof (arg.value) === 'string')
+                    if (typeof (arg.value) === "string")
                         args.push(arg.value);
                     else
                         args = args.concat(arg.value);
@@ -221,7 +246,7 @@ export default class MainIPCHandler {
         }
 
         args = args.map(arg => {
-            switch(arg) {
+            switch (arg) {
                 case "${auth_player_name}":
                     return !!AuthenticationManager.username ? AuthenticationManager.username : "naughtyboiyoushouldsignin";
                 case "${version_name}":
@@ -276,37 +301,39 @@ export default class MainIPCHandler {
     }
 
     private static async installMods(event: IpcMessageEvent, packName: string, mods: ModJar[]) {
-        Logger.infoImpl("InstallMods", `Renderer requested that we install ${mods.length} mod/s.`);
+        return new Promise(async ff => {
+            Logger.infoImpl("InstallMods", `Renderer requested that we install ${mods.length} mod/s.`);
 
-        let pack = await InstalledPackManager.GetPackDetails(packName);
+            let pack = await InstalledPackManager.GetPackDetails(packName);
 
-        let alreadyInstalled = pack.installedMods.filter(im => !!mods.find(m => im.slug === m.slug) && existsSync(join(pack.modsDirectory, im.filename)));
-        Logger.debugImpl("InstallMods", `${alreadyInstalled.length} of those are already installed;`);
+            let alreadyInstalled = pack.installedMods.filter(im => !!mods.find(m => im.slug === m.slug) && existsSync(join(pack.modsDirectory, im.filename)));
+            Logger.debugImpl("InstallMods", `${alreadyInstalled.length} of those are already installed;`);
 
-        let wrongVersion = alreadyInstalled.filter(im => mods.find(m => im.slug === m.slug).id !== im.id);
-        Logger.debugImpl("InstallMods", `And of those, ${wrongVersion.length} currently have/has the wrong version installed`);
+            let wrongVersion = alreadyInstalled.filter(im => mods.find(m => im.slug === m.slug).id !== im.id);
+            Logger.debugImpl("InstallMods", `And of those, ${wrongVersion.length} currently have/has the wrong version installed`);
 
-        wrongVersion.forEach(wv => {
-            let installPath = join(pack.modsDirectory, wv.filename);
-            if (!existsSync(installPath)) {
-                Logger.warnImpl("InstallMods", `${wv.slug} is supposedly already installed (but wrong version), but the file ${wv.filename} couldn't be found in the mods dir.`);
-                return;
-            }
+            wrongVersion.forEach(wv => {
+                let installPath = join(pack.modsDirectory, wv.filename);
+                if (!existsSync(installPath)) {
+                    Logger.warnImpl("InstallMods", `${wv.slug} is supposedly already installed (but wrong version), but the file ${wv.filename} couldn't be found in the mods dir.`);
+                    return;
+                }
 
-            Logger.debugImpl("InstallMods", `Delete file: ${installPath}`);
-            unlinkSync(installPath);
-        });
+                Logger.debugImpl("InstallMods", `Delete file: ${installPath}`);
+                unlinkSync(installPath);
+            });
 
-        //Find any mods where we don't have one installed with the same slug and ver id.
-        let actuallyNeedInstall = mods.filter(m => !existsSync(join(pack.modsDirectory, m.filename)) || !pack.installedMods.find(im => im.slug === m.slug && im.id === m.id));
-        Logger.debugImpl("InstallMods", `We're actually about to install ${actuallyNeedInstall.length} mod/s`);
+            //Find any mods where we don't have one installed with the same slug and ver id.
+            let actuallyNeedInstall = mods.filter(m => !existsSync(join(pack.modsDirectory, m.filename)) || !pack.installedMods.find(im => im.slug === m.slug && im.id === m.id));
+            Logger.debugImpl("InstallMods", `We're actually about to install ${actuallyNeedInstall.length} mod/s`);
 
-        actuallyNeedInstall.forEach(async jar => {
-            await Utils.downloadWithMD5(`https://www.curseforge.com/minecraft/mc-mods/${jar.slug}/download/${jar.id}/file`, join(pack.modsDirectory, jar.filename), jar.md5);
-            event.sender.send("mod installed", packName, jar);
-            pack.installedMods.push(jar);
+            Promise.all(actuallyNeedInstall.map(async jar => {
+                await Utils.downloadWithMD5(`https://www.curseforge.com/minecraft/mc-mods/${jar.slug}/download/${jar.id}/file`, join(pack.modsDirectory, jar.filename), jar.md5);
+                event.sender.send("mod installed", packName, jar);
+                pack.installedMods.push(jar);
 
-            InstalledPackManager.SaveModifiedPackData();
+                InstalledPackManager.SaveModifiedPackData();
+            })).then(ff);
         });
     }
 }
