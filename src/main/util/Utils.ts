@@ -119,7 +119,7 @@ export default class Utils {
         });
     }
 
-    public static async handlePackedForgeLibrary(url: string, dest: string) {
+    public static async handlePackedForgeLibrary(url: string, dest: string, up200: string) {
         url += ".pack.xz";
         let xzipped = join(EnvironmentManager.tempDir, basename(dest) + ".pack.xz");
 
@@ -152,12 +152,12 @@ export default class Utils {
         Logger.debugImpl("Packed Forge Lib Handler", "Wrote real pack file. Cleaning up LZMA file...");
         unlinkSync(xzipped);
 
-        Logger.debugImpl("Packed Forge Lib Handler", "Calling unpack200...");
+        Logger.debugImpl("Packed Forge Lib Handler", `Calling ${up200}...`);
 
-        let result = spawnSync("unpack200", [packFile, dest]);
+        let result = spawnSync(up200, [packFile, dest]);
 
         if (result.error || result.status !== 0)
-            throw new Error(`Failed to invoke unpack200 on ${packFile}. Error: ${result.error} | exit code ${result.status}`);
+            throw new Error(`Failed to invoke ${up200} on ${packFile}. Error: ${result.error} | exit code ${result.status}`);
 
         Logger.debugImpl("Packed Forge Lib Handler", `${dest} created successfully.`);
     }

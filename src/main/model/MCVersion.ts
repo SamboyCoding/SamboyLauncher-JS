@@ -1,4 +1,4 @@
-import {existsSync} from "fs";
+import {existsSync, readdirSync} from "fs";
 import {readFileSync, writeFileSync} from "jsonfile";
 import fetch from "node-fetch";
 import * as os from "os";
@@ -23,6 +23,8 @@ export default class MCVersion {
     public libraries: ManifestArtifact[] = [];
     public natives: ManifestArtifact[] = [];
     public assets: Map<string, MCAssetDefinition> = new Map<string, MCAssetDefinition>();
+
+    public isPost113: boolean = false;
 
     public arguments?: {
         game: (string | {
@@ -98,8 +100,10 @@ export default class MCVersion {
             }
 
             mcVersion.assetIndex = mfest.assetIndex;
-            if(mfest.arguments)
+            if(mfest.arguments) {
                 mcVersion.arguments = mfest.arguments;
+                mcVersion.isPost113 = true;
+            }
             else
                 mcVersion.arguments = {
                     game: mfest.minecraftArguments.split(" "),
@@ -143,6 +147,52 @@ export default class MCVersion {
             }
 
             return mcVersion;
+        }
+    }
+
+    private _javaBinDir = "";
+
+    private _findJavaBinDirOnWindows(j8: boolean) {
+        let javaFolder = join(process.env.ProgramFiles, "Java");
+        if(!existsSync(javaFolder)) return;
+
+        let versionFolders = readdirSync(javaFolder);
+
+        if(j8)
+            versionFolders = versionFolders.filter(folderName => folderName.startsWith("jdk1.8") || folderName.startsWith("jre1.8"));
+        else
+            versionFolders = versionFolders.filter(folderName => folderName.startsWith("jdk1.8") || folderName.startsWith("jre1.8") || folderName.startsWith("jdk1.9") || folderName.startsWith("jdk-10"));
+
+        if(!versionFolders.length) return;
+
+        this._javaBinDir = join(javaFolder, versionFolders[0], "bin");
+    }
+
+    get javaBinaryToUse(): string {
+        let mustBeJ8 = !this.isPost113; //Java 8 before 1.13, java 8-10 on 1.13+ pending ASM update.
+
+        if(os.platform() === 'win32') {
+            if(!this._javaBinDir)
+                this._findJavaBinDirOnWindows(mustBeJ8);
+
+            if(!this._javaBinDir) return null;
+
+            return join(this._javaBinDir, "java");
+        } else {
+            return "java";
+        }
+    }
+
+    get unpack200BinaryToUse(): string {
+        if(os.platform() === 'win32') {
+            if(!this._javaBinDir)
+                this._findJavaBinDirOnWindows(false);
+
+            if(!this._javaBinDir) return null;
+
+            return join(this._javaBinDir, "unpack200");
+        } else {
+            return "unpack200";
         }
     }
 }

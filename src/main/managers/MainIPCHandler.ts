@@ -182,6 +182,9 @@ export default class MainIPCHandler {
 
         let pack = await InstalledPackManager.GetPackDetails(packName);
 
+        if(!pack.gameVersion.javaBinaryToUse)
+            throw new Error(`No java version found. Need 64-bit java ${pack.gameVersion.isPost113 ? '8, 9, or 10' : '8'}`);
+
         Logger.infoImpl("IPCMain", `About to launch MC ${pack.gameVersion.name} + forge ${pack.forgeVersion.name}`);
 
         //Let's build a classpath.
@@ -258,7 +261,7 @@ export default class MainIPCHandler {
                 case "${assets_index_name}":
                     return pack.gameVersion.assetIndex.id;
                 case "${auth_uuid}":
-                    return "dummy"; //TODO
+                    return !!AuthenticationManager.uuid ? AuthenticationManager.uuid : "dummy";
                 case "${auth_access_token}":
                     return !!AuthenticationManager.accessToken ? AuthenticationManager.accessToken : "dummy";
                 case "${user_type}":
@@ -277,10 +280,10 @@ export default class MainIPCHandler {
             }
         });
 
-        Logger.debugImpl("Launch", "java " + args.join(" "));
+        Logger.debugImpl("Launch", pack.gameVersion.javaBinaryToUse + " " + args.join(" "));
         Logger.debugImpl("Launch", "CWD: " + pack.packDirectory);
         try {
-            let process = spawn("java", args, {stdio: "inherit", cwd: pack.packDirectory});
+            let process = spawn(pack.gameVersion.javaBinaryToUse, args, {stdio: "inherit", cwd: pack.packDirectory});
 
             process.on("error", err => {
                 Logger.errorImpl("IPCMain", "Exception during launch " + err.stack);

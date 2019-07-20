@@ -19,6 +19,12 @@ export default class ClientInstallManager {
                     if (!minecraftVersion)
                         throw new Error("Couldn't find mc version");
 
+                    let java = minecraftVersion.javaBinaryToUse;
+
+                    if(!java)
+                        throw new Error(`No java version found. Need 64-bit java ${minecraftVersion.isPost113 ? '8, 9, or 10' : '8'}`);
+
+
                     if (existsSync(join(EnvironmentManager.versionsDir, minecraftVersion.name, minecraftVersion.name + ".jar")))
                         throw new Error("ntd"); //Nothing to do
 
@@ -48,7 +54,16 @@ export default class ClientInstallManager {
 
                     return forge;
                 })
-                .then(forge => this.downloadForgeLibs(packName, forge))
+                .then(forge => {
+                    return new Promise<ForgeVersion>((ff, rj) => {
+                        MCVersion.Get(gameVersionId)
+                            .then(mcVersion => {
+                                this.downloadForgeLibs(packName, forge, mcVersion.unpack200BinaryToUse)
+                                    .then(ff)
+                                    .catch(rj);
+                            })
+                    })
+                })
                 .then(forge => {
                     if (forge.needsPatch)
                         return this.runForgePostProcessors(packName, forge);
@@ -209,7 +224,7 @@ export default class ClientInstallManager {
         Logger.debugImpl("Client Install Manager", "Finished getting assets");
     }
 
-    private static async downloadForgeLibs(packName: string, forge: ForgeVersion) {
+    private static async downloadForgeLibs(packName: string, forge: ForgeVersion, up200: string) {
         //Get forge libraries
 
         Logger.infoImpl("Client Install Manager", `Installing libraries for forge ${forge.manifest.id}`);
@@ -247,7 +262,7 @@ export default class ClientInstallManager {
                     Logger.debugImpl("Client Install Manager", `Downloaded forge lib: ${dest}`);
                 } catch (e) {
                     Logger.warnImpl("Client Install Manager", `Failed to get forge library: ${lib.url}. Trying packed...`);
-                    await Utils.handlePackedForgeLibrary(lib.url, dest);
+                    await Utils.handlePackedForgeLibrary(lib.url, dest, up200);
                 }
             } else {
                 Logger.debugImpl("Client Install Manager", `${dest} already exists, but no checksum. Have to assume it's good.`);
