@@ -141,10 +141,17 @@
                 .removeAllListeners("install progress")
                 .removeAllListeners("pack imported");
 
+            ipcRenderer.on("install failed", (event, packName, errorMessage) => {
+                if (!this.packsBeingImported.has(packName)) return;
+
+                alert(errorMessage);
+                console.info(`[App] Pack ${packName} import failed.`);
+                this.packsBeingImported.delete(packName);
+                this.$store.commit("cancelInstall", packName);
+            });
+
             ipcRenderer.on("import failed", (event, errorMessage) => {
                 alert(errorMessage);
-                this.packsBeingImported.delete(name);
-                this.$store.commit("cancelInstall", name);
             });
 
             ipcRenderer.on("importing pack", (event, name) => {

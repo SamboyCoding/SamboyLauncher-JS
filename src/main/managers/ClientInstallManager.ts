@@ -38,12 +38,9 @@ export default class ClientInstallManager {
                     if (e.message === "ntd")
                         return; //Nothing to do
 
-                    return e; //Propagate down
+                    throw e;
                 })
-                .then((e) => {
-                    if (e)
-                        throw e; //Rethrow so we don't attempt forge.
-
+                .then(() => {
                     if (existsSync(join(EnvironmentManager.versionsDir, forgeVersionId, forgeVersionId + ".json")))
                         throw new Error("ntd"); //Nothing to do
                 })
