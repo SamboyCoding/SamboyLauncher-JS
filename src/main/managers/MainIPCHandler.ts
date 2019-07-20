@@ -234,20 +234,18 @@ export default class MainIPCHandler {
                         args = args.concat(arg.value);
                 }
             }
-
-            //Newer version do actual decent memory management.
         } else {
             args = args.concat(["-cp", "${classpath}", "-Djava.library.path=${natives_directory}"]);
+        }
 
-            if (os.platform() === "win32") {
-                let memGig = Math.floor(os.freemem() / 1024 / 1024 / 1024);
-                if (memGig > 6)
-                    args.push("-Xmx6G");
-                else
-                    args.push(`-Xmx${memGig}G`);
-            } else {
-                args.push("-Xmx5G"); //FIXME: Defaults to 5G ram on linux/mac
-            }
+        if (os.platform() === "win32") {
+            let memGig = Math.floor(os.freemem() / 1024 / 1024 / 1024);
+            if (memGig > 6)
+                args.push("-Xmx6G");
+            else
+                args.push(`-Xmx${memGig}G`);
+        } else {
+            args.push("-Xmx5G"); //FIXME: Defaults to 5G ram on linux/mac
         }
 
         args.push(pack.forgeVersion.manifest.mainClass);
