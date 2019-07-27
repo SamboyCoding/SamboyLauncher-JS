@@ -260,8 +260,8 @@ export default class MainIPCHandler {
 
         if (os.platform() === "win32") {
             let memGig = Math.floor(os.freemem() / 1024 / 1024 / 1024);
-            if (memGig > 6)
-                args.push("-Xmx6G");
+            if (memGig > 7)
+                args.push("-Xmx7G");
             else
                 args.push(`-Xmx${memGig}G`);
         } else {

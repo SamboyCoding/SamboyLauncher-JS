@@ -17,6 +17,7 @@ cache:
   - node_modules
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
+  - .cache
 
 script:
 - |
