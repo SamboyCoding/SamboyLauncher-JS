@@ -4,6 +4,7 @@ import {existsSync, unlinkSync} from "fs";
 import {readFileSync, writeFileSync} from "jsonfile";
 import * as os from "os";
 import {join} from "path";
+import * as rimraf from "rimraf";
 import Logger from "../logger";
 import ForgeVersion from "../model/ForgeVersion";
 import InstalledPack from "../model/InstalledPack";
@@ -122,6 +123,25 @@ export default class MainIPCHandler {
             await InstalledPackManager.SaveModifiedPackData();
 
             event.sender.send("mod removed", packName, slug);
+        });
+
+        ipcMain.on("delete pack", async (event: IpcMessageEvent, name: string) => {
+            let pack = await InstalledPackManager.GetPackDetails(name);
+
+            Logger.warnImpl("IPCMain", `Deleting pack ${name}...`);
+            let dir = pack.packDirectory;
+            Logger.debugImpl("IPCMain", `Delete dir: ${dir}`);
+            try {
+                rimraf.sync(dir);
+            } catch (e) {
+                event.sender.send("delete pack failed", name);
+            }
+
+            Logger.infoImpl("IPCMain", "Reloading installed packs...");
+            InstalledPackManager.LoadFromDisk();
+
+            ElectronManager.win.webContents.send("installed packs", InstalledPackManager.GetPackNames());
+            ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
         });
     }
 

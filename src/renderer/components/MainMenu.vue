@@ -57,7 +57,7 @@
 
             &:hover {
                 background: rgba(255, 255, 255, 0.02);
-                flex-grow: 2;
+                //flex-grow: 2;
             }
         }
     }

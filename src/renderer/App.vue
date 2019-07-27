@@ -32,7 +32,7 @@
                         <div :style="{height: ((1 - percent) * 225) + 'px'}" class="pack-installation"></div>
                         <div class="pack-title">Creating "{{name}}" ({{percent * 100}}%)</div>
                     </div>
-                    <div :class="{pack: true, running: runningPacks.indexOf(packName) >= 0}" @click="launchPack(packName)" v-for="packName in $store.state.installedPacks">
+                    <div :class="{pack: true, running: runningPacks.indexOf(packName) >= 0}" @click="launchPack(packName)" @click.right="onPackRightClick(packName, $event)" v-for="packName in $store.state.installedPacks">
                         <div class="pack-icon" style="background-image: url(./resources/default_pack_icon.png);"></div>
                         <div class="pack-shade"></div>
                         <div class="pack-title">{{packName}}</div>
@@ -52,7 +52,7 @@
 </template>
 
 <script lang='ts'>
-    import {ipcRenderer} from "electron";
+    import {IpcMessageEvent, ipcRenderer, remote} from "electron";
     import {Component, Vue} from "vue-property-decorator";
 
     import CreateMenu from "./components/CreateMenu.vue";
@@ -60,7 +60,6 @@
     import TopBar from "./components/TopBar.vue";
     import Config from "./Config";
     import Page from "./model/Page";
-    import IpcMessageEvent = Electron.IpcMessageEvent;
 
     console.clear();
 
@@ -221,6 +220,33 @@
 
         public importPack() {
             ipcRenderer.send("import pack");
+        }
+
+        public onPackRightClick(name: string, event: MouseEvent) {
+            console.info(`[Play] User right-clicked pack ${name}`);
+            remote.Menu.buildFromTemplate([
+                {
+                    label: "Launch",
+                    accelerator: "enter",
+                    click: () => {
+                        this.launchPack(name);
+                    }
+                },
+                {
+                    type: "separator"
+                },
+                {
+                    label: "Delete",
+                    accelerator: "delete",
+                    click: () => {
+                        if (confirm(`Really delete ${name}?`)) //TODO: Modal or smth
+                            ipcRenderer.send("delete pack", name);
+                    }
+                }
+            ]).popup({
+                x: event.x,
+                y: event.y
+            });
         }
     }
 </script>
