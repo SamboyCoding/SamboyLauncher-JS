@@ -55,7 +55,7 @@ export default class MainIPCHandler {
             if (!files.length) return;
 
             let json: InstalledPackJSON = readFileSync(files[0]);
-            if (!json.packName) return event.sender.send("import failed", "Couldn't import pack, because the specified while was not a pack JSON");
+            if (!json.packName) return event.sender.send("import failed", "Couldn't import pack, because the specified file was not a pack JSON");
 
             let pack = await InstalledPack.FromJSON(json);
 
@@ -363,6 +363,10 @@ export default class MainIPCHandler {
             Promise.all(actuallyNeedInstall.map(async jar => {
                 await Utils.downloadWithMD5(`https://www.curseforge.com/minecraft/mc-mods/${jar.slug}/download/${jar.id}/file`, join(pack.modsDirectory, jar.filename), jar.md5);
                 event.sender.send("mod installed", packName, jar);
+
+                //Once again remove any other versions, this is the actually correct one. Fix for importing packs and double-clicking the install button
+                pack.installedMods = pack.installedMods.filter(m => m.slug !== jar.slug);
+
                 pack.installedMods.push(jar);
 
                 InstalledPackManager.SaveModifiedPackData();

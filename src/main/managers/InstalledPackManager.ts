@@ -27,7 +27,12 @@ export default class InstalledPackManager {
 
         for (let path of jsonPaths) {
             try {
-                this.packJsons.push(readFileSync(path));
+                let json = readFileSync(path) as InstalledPackJSON;
+
+                //Bugfix for packs with duplicated mods - we take the first only.
+                json.installedMods = Utils.filterUniqueMods(json.installedMods);
+
+                this.packJsons.push(json);
             } catch (e) {
                 Logger.warnImpl("Installed Pack Manager", `Failed to read ${path}; corrupt file?`);
             }

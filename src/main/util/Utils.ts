@@ -11,6 +11,7 @@ import {basename, join} from "path";
 import * as rimraf from "rimraf";
 import Logger from "../logger";
 import EnvironmentManager from "../managers/EnvironmentManager";
+import ModJar from "../model/ModJar";
 
 export default class Utils {
     public static toBase64(str: string): string {
@@ -194,5 +195,9 @@ export default class Utils {
         return new Promise(ff => {
             setTimeout(ff, ms);
         });
+    }
+
+    public static filterUniqueMods(array: ModJar[]) {
+        return array.filter((mod, index, self) => self.findIndex(m => m.slug === mod.slug) === index);
     }
 }
