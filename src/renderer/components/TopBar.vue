@@ -4,6 +4,7 @@
 
         <div id="window-controls">
             <i @click="showLogin()" class="material-icons" id="profile-button">account_circle</i>
+            <i @click="page = Page.SETTINGS" class="material-icons" id="settings-button">settings</i>
             <i class="material-icons" @click="doMinimize()">minimize</i>
             <i class="material-icons" @click="doMaximize()">crop_din</i>
             <i class="material-icons" @click="doClose()">close</i>
@@ -88,8 +89,13 @@
             }
 
             #profile-button {
-                font-size: 36px;
-                margin-right: 5rem;
+                font-size: 32px;
+                //margin-right: 3rem;
+            }
+
+            #settings-button {
+                font-size: 32px;
+                margin-right: 3rem;
             }
         }
     }

@@ -9,6 +9,7 @@ import {join} from "path";
 import * as rimraf from "rimraf";
 import Logger from "./logger";
 import AuthenticationManager from "./managers/AuthenticationManager";
+import ConfigurationManager from "./managers/ConfigurationManager";
 import ElectronManager from "./managers/ElectronManager";
 import EnvironmentManager from "./managers/EnvironmentManager";
 import InstalledPackManager from "./managers/InstalledPackManager";
@@ -34,7 +35,7 @@ if (existsSync(join(EnvironmentManager.launcherDir, "config.json"))) {
     Logger.errorImpl("Init", "Removed old incompat launcher dir!");
 }
 
-//ConfigurationManager.LoadFromDisk();
+ConfigurationManager.LoadFromDisk();
 AuthenticationManager.LoadFromDisk();
 MCVersion.Get(); //Preload these.
 InstalledPackManager.LoadFromDisk();
@@ -118,6 +119,11 @@ ipcMain.on("install update", (event: IpcMessageEvent) => {
 process.on("uncaughtException", error => {
     Logger.errorImpl("Process", "Uncaught Exception: " + error.stack);
 });
+
+if (!isDev)
+    autoUpdater.checkForUpdatesAndNotify();
+else
+    Logger.warnImpl("Updater", "Not checking for updates in dev");
 
 //#endregion
 // -----------------------

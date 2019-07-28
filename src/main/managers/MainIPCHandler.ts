@@ -15,6 +15,7 @@ import ModJar from "../model/ModJar";
 import Utils from "../util/Utils";
 import AuthenticationManager from "./AuthenticationManager";
 import ClientInstallManager from "./ClientInstallManager";
+import ConfigurationManager from "./ConfigurationManager";
 import ElectronManager from "./ElectronManager";
 import EnvironmentManager from "./EnvironmentManager";
 import InstalledPackManager from "./InstalledPackManager";
@@ -81,6 +82,7 @@ export default class MainIPCHandler {
             let pack = await InstalledPackManager.GetPackDetails(name);
             event.sender.send("pack data", pack);
         });
+
         ipcMain.on("get pack json", async (event: IpcMessageEvent, name: string) => {
             event.sender.send("pack json", InstalledPackManager.GetPackJSON(name));
         });
@@ -92,6 +94,8 @@ export default class MainIPCHandler {
             //While we're at it, let's send the username, as this event means we're ready on renderer
             if (AuthenticationManager.username)
                 ElectronManager.win.webContents.send("username", AuthenticationManager.username);
+
+            ElectronManager.win.webContents.send("gc mode", ConfigurationManager.gcMode);
         });
 
         ipcMain.on("update pack versions", async (event: IpcMessageEvent, packName: string, gameVersion: string, forgeVersion: string) => {
@@ -142,6 +146,10 @@ export default class MainIPCHandler {
 
             ElectronManager.win.webContents.send("installed packs", InstalledPackManager.GetPackNames());
             ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
+        });
+
+        ipcMain.on("set gc mode", (event: IpcMessageEvent, mode: string) => {
+            ConfigurationManager.gcMode = mode;
         });
     }
 
@@ -240,6 +248,18 @@ export default class MainIPCHandler {
 
         let args: string[] = []; //["-cp", classpathString, "-Djava.library.path=" + join(EnvironmentManager.versionsDir, pack.gameVersion.name, "natives")];
 
+        //CMS
+        if (ConfigurationManager.gcMode === "cms") {
+            Logger.debugImpl("Launch", "Using CMS GC");
+            args = args.concat(["-XX:UseSSE=4", "-XX:+UseConcMarkSweepGC", "-XX:+UseCMSCompactAtFullCollection", "-XX:+UseParNewGC", "-XX:+DisableExplicitGC", "-XX:+AggressiveOpts"]);
+        }
+
+        //CPWs G1GC
+        else if (ConfigurationManager.gcMode === "g1") {
+            Logger.debugImpl("Launch", "Using GARBAGE-FIRST GC");
+            args = args.concat(["-XX:+UseG1GC", "-Dsun.rmi.dgc.server.gcInterval=2147483646", "-XX:+UnlockExperimentalVMOptions", "-XX:G1NewSizePercent=20", "-XX:G1ReservePercent=20", "-XX:MaxGCPauseMillis=50", "-XX:G1HeapRegionSize=32M"]);
+        }
+
         if (pack.gameVersion.arguments && pack.gameVersion.arguments.jvm.length) {
             for (let arg of pack.gameVersion.arguments.jvm) {
                 if (typeof (arg) === "string") {
@@ -260,12 +280,19 @@ export default class MainIPCHandler {
 
         if (os.platform() === "win32") {
             let memGig = Math.floor(os.freemem() / 1024 / 1024 / 1024);
-            if (memGig > 7)
+            if (memGig > 7) {
                 args.push("-Xmx7G");
-            else
+                if (ConfigurationManager.gcMode === "g1")
+                    args.push(`-Xms7G`);
+            } else {
                 args.push(`-Xmx${memGig}G`);
+                if (ConfigurationManager.gcMode === "g1")
+                    args.push(`-Xms${memGig}G`);
+            }
         } else {
             args.push("-Xmx5G"); //FIXME: Defaults to 5G ram on linux/mac
+            if (ConfigurationManager.gcMode === "g1")
+                args.push(`-Xms5G`);
         }
 
         args.push(pack.forgeVersion.manifest.mainClass);

@@ -47,6 +47,21 @@
                     a pack if someone's given you one)</small>
             </div>
             <create-menu v-else-if="page === Page.CREATE"></create-menu>
+            <div id="settings" v-else-if="page === Page.SETTINGS">
+                <h1>Settings</h1>
+
+                <br>
+                <h3>GC Mode:</h3>
+                <br>
+                <div class="button-wrapper">
+                    <button :class="{active: gcMode === 'cms'}" @click="setGCMode('cms')" id="cms-gc">Concurrent Sweep
+                        (Optimize memory usage, may affect FPS)
+                    </button>
+                    <button :class="{active: gcMode === 'g1'}" @click="setGCMode('g1')" id="g1-gc">Garbage-First (Higher
+                        memory usage, may give better FPS)
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -81,6 +96,8 @@
 
         public packsBeingImported: Map<string, number> = new Map<string, number>();
 
+        public gcMode = "";
+
         public mounted() {
             console.info("[App] SBL Renderer: Main App Mounted");
             console.info(`[App] Using API URL ${Config.API_URL}`);
@@ -114,7 +131,6 @@
 
             ipcRenderer.send("get installed packs");
 
-            //To be moved to play tab
             ipcRenderer.removeAllListeners("pack exit")
                 .removeAllListeners("pack crash");
 
@@ -131,8 +147,6 @@
 
                 alert(`Uh oh! The pack ${packName} appears to have crashed!`);
             });
-
-            //To be moved to discovery tab
 
             ipcRenderer.removeAllListeners("import failed")
                 .removeAllListeners("importing pack")
@@ -195,6 +209,15 @@
                 this.packsBeingImported.delete(name);
                 this.$store.commit("cancelInstall", name);
             });
+
+            //Settings
+
+            ipcRenderer.removeAllListeners("gc mode");
+
+            ipcRenderer.on("gc mode", (event, mode: string) => {
+                console.info(`[Settings] GC Mode is ${mode}`);
+                this.gcMode = mode;
+            });
         }
 
         get page() {
@@ -247,6 +270,11 @@
                 x: event.x,
                 y: event.y
             });
+        }
+
+        public setGCMode(value: string) {
+            this.gcMode = value;
+            ipcRenderer.send("set gc mode", value);
         }
     }
 </script>
@@ -314,7 +342,7 @@
         font-size: 1rem;
         outline: none;
 
-        &:not([disabled]):hover {
+        &:not([disabled]):hover, &.active {
             background: rgba(255, 255, 255, 0.1);
         }
 
@@ -354,6 +382,25 @@
             display: flex;
             flex-flow: row wrap;
             justify-content: space-evenly;
+        }
+
+        #settings {
+            padding: 3rem 2rem;
+
+            .button-wrapper {
+                display: flex;
+                flex-flow: row wrap;
+
+                #g1-gc {
+                    margin-left: 0;
+                    border-left: 0;
+                }
+
+                #cms-gc {
+                    margin-right: 0;
+                    border-right: none;
+                }
+            }
         }
 
         .pack {
