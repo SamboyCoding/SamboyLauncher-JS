@@ -153,19 +153,23 @@ export default class MCVersion {
     private _javaBinDir = "";
 
     private _findJavaBinDirOnWindows(j8: boolean) {
-        let javaFolder = join(process.env.ProgramFiles, "Java");
-        if(!existsSync(javaFolder)) return;
+        let javaFolders = [join(process.env.ProgramFiles, "Java"), join(process.env.ProgramFiles, "AdoptOpenJDK")];
 
-        let versionFolders = readdirSync(javaFolder);
+        for (let javaFolder of javaFolders) {
+            if (!existsSync(javaFolder)) continue;
 
-        if(j8)
-            versionFolders = versionFolders.filter(folderName => folderName.startsWith("jdk1.8") || folderName.startsWith("jre1.8"));
-        else
-            versionFolders = versionFolders.filter(folderName => folderName.startsWith("jdk1.8") || folderName.startsWith("jre1.8") || folderName.startsWith("jdk1.9") || folderName.startsWith("jdk-10"));
+            let versionFolders = readdirSync(javaFolder);
 
-        if(!versionFolders.length) return;
+            if (j8)
+                versionFolders = versionFolders.filter(folderName => folderName.startsWith("jdk1.8") || folderName.startsWith("jre1.8") || folderName.startsWith("jdk-8"));
+            else
+                versionFolders = versionFolders.filter(folderName => folderName.startsWith("jdk1.8") || folderName.startsWith("jre1.8") || folderName.startsWith("jdk-8") || folderName.startsWith("jdk1.9") || folderName.startsWith("jdk-10"));
 
-        this._javaBinDir = join(javaFolder, versionFolders[0], "bin");
+            if (!versionFolders.length) continue;
+
+            this._javaBinDir = join(javaFolder, versionFolders[0], "bin");
+            return;
+        }
     }
 
     get javaBinaryToUse(): string {
