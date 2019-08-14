@@ -1,4 +1,4 @@
-import {app, BrowserWindow, ipcMain, IpcMessageEvent, Menu, MenuItem} from "electron";
+import {app, BrowserWindow, ipcMain, IpcMainEvent, Menu, MenuItem} from "electron";
 import * as isDev from "electron-is-dev";
 import {join} from "path";
 import Logger from "../logger";
@@ -33,14 +33,14 @@ export default class ElectronManager {
                 }
             });
 
-            ipcMain.on("maximize", (event: IpcMessageEvent) => {
+            ipcMain.on("maximize", (event: IpcMainEvent) => {
                 if (ElectronManager.win.isMaximized())
                     ElectronManager.win.restore();
                 else
                     ElectronManager.win.maximize();
             });
 
-            ipcMain.on("minimize", (event: IpcMessageEvent) => {
+            ipcMain.on("minimize", (event: IpcMainEvent) => {
                 ElectronManager.win.minimize();
             });
         });

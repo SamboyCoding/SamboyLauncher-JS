@@ -1,6 +1,6 @@
 //#region Imports
 import {spawnSync} from "child_process";
-import {ipcMain, IpcMessageEvent} from "electron";
+import {ipcMain} from "electron";
 import * as isDev from "electron-is-dev";
 import {autoUpdater} from "electron-updater";
 import {existsSync} from "fs";
@@ -15,6 +15,7 @@ import EnvironmentManager from "./managers/EnvironmentManager";
 import InstalledPackManager from "./managers/InstalledPackManager";
 import MainIPCHandler from "./managers/MainIPCHandler";
 import MCVersion from "./model/MCVersion";
+import IpcMainEvent = Electron.IpcMainEvent;
 //#endregion
 
 EnvironmentManager.Init();
@@ -92,7 +93,7 @@ autoUpdater.on("update-downloaded", () => {
     ElectronManager.win.webContents.send("update downloaded");
 });
 
-ipcMain.on("check updates", (event: IpcMessageEvent) => {
+ipcMain.on("check updates", (event: IpcMainEvent) => {
     Logger.infoImpl("Updater", "Checking for updates...");
     if (!isDev) {
         autoUpdater.checkForUpdatesAndNotify().then((update) => {
@@ -112,7 +113,7 @@ ipcMain.on("check updates", (event: IpcMessageEvent) => {
     }
 });
 
-ipcMain.on("install update", (event: IpcMessageEvent) => {
+ipcMain.on("install update", (event: IpcMainEvent) => {
     autoUpdater.quitAndInstall();
 });
 

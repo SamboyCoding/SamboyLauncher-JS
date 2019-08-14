@@ -1,5 +1,5 @@
 import {spawn} from "child_process";
-import {dialog, ipcMain, IpcMessageEvent} from "electron";
+import {dialog, ipcMain, IpcMainEvent} from "electron";
 import {existsSync, unlinkSync} from "fs";
 import {readFileSync, writeFileSync} from "jsonfile";
 import * as os from "os";
@@ -27,7 +27,7 @@ export default class MainIPCHandler {
         ipcMain.on("launch pack", MainIPCHandler.launchPack);
         ipcMain.on("install mods", MainIPCHandler.installMods);
 
-        ipcMain.on("sign in", async (event: IpcMessageEvent, email: string, password: string) => {
+        ipcMain.on("sign in", async (event: IpcMainEvent, email: string, password: string) => {
             try {
                 await AuthenticationManager.Login(email, password);
                 event.sender.send("username", AuthenticationManager.username);
@@ -41,8 +41,8 @@ export default class MainIPCHandler {
             }
         });
 
-        ipcMain.on("import pack", async (event: IpcMessageEvent) => {
-            let files = dialog.showOpenDialog(ElectronManager.win, {
+        ipcMain.on("import pack", async (event: IpcMainEvent) => {
+            let result = await dialog.showOpenDialog(ElectronManager.win, {
                 filters: [{
                     extensions: ["json"],
                     name: "Pack JSON"
@@ -53,7 +53,9 @@ export default class MainIPCHandler {
                 title: "Import Pack JSON..."
             });
 
-            if (!files.length) return;
+            let files = result.filePaths;
+
+            if (!files || !files.length) return;
 
             let json: InstalledPackJSON = readFileSync(files[0]);
             if (!json.packName) return event.sender.send("import failed", "Couldn't import pack, because the specified file was not a pack JSON");
@@ -78,12 +80,12 @@ export default class MainIPCHandler {
             });
         });
 
-        ipcMain.on("get pack data", async (event: IpcMessageEvent, name: string) => {
+        ipcMain.on("get pack data", async (event: IpcMainEvent, name: string) => {
             let pack = await InstalledPackManager.GetPackDetails(name);
             event.sender.send("pack data", pack);
         });
 
-        ipcMain.on("get pack json", async (event: IpcMessageEvent, name: string) => {
+        ipcMain.on("get pack json", async (event: IpcMainEvent, name: string) => {
             event.sender.send("pack json", InstalledPackManager.GetPackJSON(name));
         });
 
@@ -98,7 +100,7 @@ export default class MainIPCHandler {
             ElectronManager.win.webContents.send("gc mode", ConfigurationManager.gcMode);
         });
 
-        ipcMain.on("update pack versions", async (event: IpcMessageEvent, packName: string, gameVersion: string, forgeVersion: string) => {
+        ipcMain.on("update pack versions", async (event: IpcMainEvent, packName: string, gameVersion: string, forgeVersion: string) => {
             let pack = await InstalledPackManager.GetPackDetails(packName);
             pack.gameVersion = await MCVersion.Get(gameVersion);
             pack.forgeVersion = await ForgeVersion.Get(forgeVersion);
@@ -107,7 +109,7 @@ export default class MainIPCHandler {
             event.sender.send("pack versions updated", packName);
         });
 
-        ipcMain.on("remove mod", async (event: IpcMessageEvent, packName: string, slug: string) => {
+        ipcMain.on("remove mod", async (event: IpcMainEvent, packName: string, slug: string) => {
             Logger.debugImpl("IPCMain", `Renderer requested we remove mod ${slug} from ${packName}`);
             let pack = await InstalledPackManager.GetPackDetails(packName);
             let idx = pack.installedMods.findIndex(m => m.slug === slug);
@@ -129,7 +131,7 @@ export default class MainIPCHandler {
             event.sender.send("mod removed", packName, slug);
         });
 
-        ipcMain.on("delete pack", async (event: IpcMessageEvent, name: string) => {
+        ipcMain.on("delete pack", async (event: IpcMainEvent, name: string) => {
             let pack = await InstalledPackManager.GetPackDetails(name);
 
             Logger.warnImpl("IPCMain", `Deleting pack ${name}...`);
@@ -148,12 +150,12 @@ export default class MainIPCHandler {
             ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
         });
 
-        ipcMain.on("set gc mode", (event: IpcMessageEvent, mode: string) => {
+        ipcMain.on("set gc mode", (event: IpcMainEvent, mode: string) => {
             ConfigurationManager.gcMode = mode;
         });
     }
 
-    private static async installPackClient(event: IpcMessageEvent, packName: string, gameVersionId: string, forgeVersionId: string) {
+    private static async installPackClient(event: IpcMainEvent, packName: string, gameVersionId: string, forgeVersionId: string) {
 
         return new Promise((ff) => {
             ClientInstallManager.installClient(packName, gameVersionId, forgeVersionId)
@@ -170,7 +172,7 @@ export default class MainIPCHandler {
         });
     }
 
-    private static async createPack(event: IpcMessageEvent, name: string, description: string, gameVersion: string, forgeVersion: string) {
+    private static async createPack(event: IpcMainEvent, name: string, description: string, gameVersion: string, forgeVersion: string) {
         //Replace non alphanumeric
         let dirName = name.replace(/[^\w\d]/g, "_").trim();
         let dir = join(EnvironmentManager.packsDir, dirName);
@@ -205,7 +207,7 @@ export default class MainIPCHandler {
         ElectronManager.win.webContents.send("created packs", InstalledPackManager.GetOwnedPackNames());
     }
 
-    private static async launchPack(event: IpcMessageEvent, packName: string) {
+    private static async launchPack(event: IpcMainEvent, packName: string) {
         Logger.infoImpl("IPCMain", `Renderer requested pack launch for pack ${packName}`);
 
         let pack = await InstalledPackManager.GetPackDetails(packName);
@@ -360,7 +362,7 @@ export default class MainIPCHandler {
         }
     }
 
-    private static async installMods(event: IpcMessageEvent, packName: string, mods: ModJar[]) {
+    private static async installMods(event: IpcMainEvent, packName: string, mods: ModJar[]) {
         return new Promise(async ff => {
             Logger.infoImpl("InstallMods", `Renderer requested that we install ${mods.length} mod/s.`);
 
