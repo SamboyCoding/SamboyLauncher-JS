@@ -21,9 +21,8 @@ export default class ClientInstallManager {
 
                     let java = minecraftVersion.javaBinaryToUse;
 
-                    if(!java)
-                        throw new Error(`No java version found. Need 64-bit java ${minecraftVersion.isPost113 ? '8, 9, or 10' : '8'}`);
-
+                    if (!java)
+                        throw new Error(`No java version found. Need 64-bit java ${minecraftVersion.isPost113 ? "8, 9, or 10" : "8"}`);
 
                     if (existsSync(join(EnvironmentManager.versionsDir, minecraftVersion.name, minecraftVersion.name + ".jar")))
                         throw new Error("ntd"); //Nothing to do
@@ -58,8 +57,8 @@ export default class ClientInstallManager {
                                 this.downloadForgeLibs(packName, forge, mcVersion.unpack200BinaryToUse)
                                     .then(ff)
                                     .catch(rj);
-                            })
-                    })
+                            });
+                    });
                 })
                 .then(forge => {
                     if (forge.needsPatch)
@@ -263,6 +262,9 @@ export default class ClientInstallManager {
                 }
             } else {
                 Logger.debugImpl("Client Install Manager", `${dest} already exists, but no checksum. Have to assume it's good.`);
+
+                if (lib.id.indexOf("minecraftforge:forge:") !== -1)
+                    dirtyHaxOldVersionJarToExtractProfileFrom = join(EnvironmentManager.librariesDir, lib.path);
             }
 
             pct += (forge.needsPatch ? 0.14 : 0.34) * lib.size / totalSize; //Brings us up to ~80% if we need to patch or 100% if we don't
@@ -291,7 +293,7 @@ export default class ClientInstallManager {
 
     private static doPostProcessRecursive(packName: string, pct: number, pctPer: number, argsList: string[][]) {
         return new Promise((ff, rj) => {
-            if(argsList.length === 0)
+            if (argsList.length === 0)
                 return ff();
 
             let args = argsList[0];
