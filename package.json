@@ -57,7 +57,7 @@
         "node-fetch": "^2.6.0",
         "rimraf": "^3.0.0",
         "rmfr": "^2.0.0",
-        "semver": "^6.1.2",
+        "semver": "^7.0.0",
         "source-map-support": "^0.5.12",
         "tslib": "^1.10.0",
         "unzipper": "^0.10.1",
