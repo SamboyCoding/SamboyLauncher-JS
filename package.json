@@ -22,7 +22,7 @@
         "@types/download": "^6.2.2",
         "@types/jsonfile": "^5.0.0",
         "@types/jszip": "^3.1.6",
-        "@types/mkdirp": "^0.5.2",
+        "@types/mkdirp": "^1.0.0",
         "@types/node-fetch": "^2.3.7",
         "@types/rimraf": "^2.0.2",
         "@types/rmfr": "^2.0.0",
