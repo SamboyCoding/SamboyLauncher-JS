@@ -81,15 +81,7 @@ export default class Utils {
     }
 
     public static async mkdirpPromise(location: string): Promise<any> {
-        return new Promise((ff, rj) => {
-            mkdirp(location, (err) => {
-                if (err) {
-                    return rj(err);
-                }
-
-                ff();
-            });
-        });
+        return mkdirp(location);
     }
 
     public static extractArchive(src: string, dest: string) {
