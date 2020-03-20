@@ -24,7 +24,7 @@
         "@types/jszip": "^3.1.6",
         "@types/mkdirp": "^0.5.2",
         "@types/node-fetch": "^2.3.7",
-        "@types/rimraf": "^2.0.2",
+        "@types/rimraf": "^3.0.0",
         "@types/rmfr": "^2.0.0",
         "@types/unzipper": "^0.10.0",
         "@vue/component-compiler-utils": "^3.0.0",
