@@ -81,7 +81,10 @@ export default class Utils {
     }
 
     public static async mkdirpPromise(location: string): Promise<any> {
-        return mkdirp(location);
+        if(existsSync(location)) return;
+
+        await mkdirp(location);
+        Logger.debugImpl("Mkdirp", `Recursively created directory ${location}`);
     }
 
     public static extractArchive(src: string, dest: string) {

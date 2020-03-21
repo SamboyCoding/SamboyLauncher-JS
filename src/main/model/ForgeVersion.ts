@@ -49,7 +49,9 @@ export default class ForgeVersion {
             Logger.debugImpl("Forge Version Manager", `Attempting to download installer...`);
             const installJar = join(EnvironmentManager.tempDir, `forge-${name}-installer.jar`);
             try {
-                await Utils.downloadFile(`http://files.minecraftforge.net/maven/net/minecraftforge/forge/${name}/forge-${name}-installer.jar`, installJar);
+                const url = `http://files.minecraftforge.net/maven/net/minecraftforge/forge/${name}/forge-${name}-installer.jar`;
+                await Utils.downloadFile(url, installJar);
+                Logger.debugImpl("Forge Version Manager", `Downloaded: ${url} => ${installJar}`);
             } catch (e) {
                 Logger.errorImpl("Forge Version Manager", e.message + "\n" + e.stack);
                 return null;
@@ -206,8 +208,8 @@ export default class ForgeVersion {
                 if(processors.length === 0)
                     go = false;
             } else {
-                Logger.debugImpl("Forge Version Manager", `Need to run ${processors.length} processors.`);
                 actualProcessors = actualProcessors.concat(processors); //Add all the remaining ones
+                Logger.debugImpl("Forge Version Manager", `Need to run ${actualProcessors.length} processors.`);
                 go = false;
             }
         }
@@ -233,7 +235,7 @@ export default class ForgeVersion {
             //Specify the class to execute.
             command.push(mainClass);
 
-            for (var arg of processor.args) {
+            for (const arg of processor.args) {
                 if (arg.startsWith("{")) {
                     //Data point
                     command.push(data[arg.replace("{", "").replace("}", "")]);

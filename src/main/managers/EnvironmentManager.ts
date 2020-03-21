@@ -1,6 +1,7 @@
 require("hazardous"); //Fix 7z in built app.
 
 import {path7za} from "7zip-bin";
+import {existsSync} from "fs";
 import {join} from "path";
 import Logger from "../logger";
 import Utils from "../util/Utils";
@@ -65,16 +66,20 @@ export default class EnvironmentManager {
         return EnvironmentManager._temp;
     }
 
-    public static Init() {
-        Utils.mkdirpPromise(EnvironmentManager.launcherDir); //Needed for logger
+    public static async Init() {
+        if(!existsSync(EnvironmentManager.launcherDir)) {
+            console.log("[Pre-Log] Creating launcher dir - first run?");
+            await Utils.mkdirpPromise(EnvironmentManager.launcherDir); //Needed for logger
+            console.log("[Pre-Log] Launcher dir should be initialized now. Switching to main logger.")
+        }
 
         Logger.infoImpl("Environment", "Setting up environment paths...");
 
-        Utils.mkdirpPromise(EnvironmentManager.packsDir);
-        Utils.mkdirpPromise(EnvironmentManager.librariesDir);
-        Utils.mkdirpPromise(EnvironmentManager.assetsDir);
-        Utils.mkdirpPromise(EnvironmentManager.versionsDir);
-        Utils.mkdirpPromise(EnvironmentManager.tempDir);
+        await Utils.mkdirpPromise(EnvironmentManager.packsDir);
+        await Utils.mkdirpPromise(EnvironmentManager.librariesDir);
+        await Utils.mkdirpPromise(EnvironmentManager.assetsDir);
+        await Utils.mkdirpPromise(EnvironmentManager.versionsDir);
+        await Utils.mkdirpPromise(EnvironmentManager.tempDir);
 
         Logger.debugImpl("Environment", "7zip path is " + path7za);
     }

@@ -22,3 +22,4 @@ lib/
 
 yarn-error\.log
 /webContents/
+/.idea/discord.xml
