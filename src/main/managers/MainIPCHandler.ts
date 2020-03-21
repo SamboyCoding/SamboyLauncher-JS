@@ -390,7 +390,10 @@ export default class MainIPCHandler {
             Logger.debugImpl("InstallMods", `We're actually about to install ${actuallyNeedInstall.length} mod/s`);
 
             Promise.all(actuallyNeedInstall.map(async jar => {
-                await Utils.downloadWithMD5(`https://www.curseforge.com/minecraft/mc-mods/${jar.slug}/download/${jar.id}/file`, join(pack.modsDirectory, jar.filename), jar.md5);
+                //TODO: Can we restore MD5 at some point
+                // await Utils.downloadWithMD5(`https://www.curseforge.com/minecraft/mc-mods/${jar.slug}/download/${jar.id}/file`, join(pack.modsDirectory, jar.filename), jar.md5);
+                await Utils.downloadFile(jar.downloadUrl, join(pack.modsDirectory, jar.filename));
+                Logger.debugImpl("InstallMods", `Downloaded ${jar.downloadUrl}`);
                 event.sender.send("mod installed", packName, jar);
 
                 //Once again remove any other versions, this is the actually correct one. Fix for importing packs and double-clicking the install button

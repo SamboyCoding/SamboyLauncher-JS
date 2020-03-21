@@ -16,4 +16,6 @@ export default class ModJar {
     public dependencies: string[];
 
     public incompatibilities: string[];
+
+    public downloadUrl: string;
 }
