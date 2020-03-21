@@ -1,0 +1,32 @@
+.flex {
+    display: flex;
+    position: relative;
+
+    .flex-grow {
+        flex-grow: 1;
+    }
+
+    .flex-double-weight {
+        flex-grow: 2;
+    }
+}
+
+.window-drag {
+    -webkit-app-region: drag;
+
+    .no-window-drag {
+        -webkit-app-region: none;
+    }
+}
+
+.hover-change:hover {
+    color: #aaa;
+}
+
+.fill-height {
+    height: 100%;
+}
+
+.full-border {
+    border: 1px solid #ccc;
+}
