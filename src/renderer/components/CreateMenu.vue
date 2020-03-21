@@ -94,7 +94,7 @@
                             <span v-else>Loading...</span>
                         </button>
                         <br v-else>
-                        <div v-if="mod.versions && Object.values(mod.versions).find(ver => ver.gameVersion === editingPack.gameVersion)">
+                        <div v-if="mod.versions && Object.values(mod.versions).find(ver => ver.gameVersion.indexOf(editingPack.gameVersion) >= 0)">
                             <button @click="installMod(mod, 'RELEASE')" class="install-mod-release" v-if="mod.versions && Object.values(mod.versions).find(ver => ver.type === 'RELEASE' && ver.gameVersion === editingPack.gameVersion)">
                                 Latest Release
                             </button>
@@ -444,7 +444,7 @@
 
                 let info: ModDetails = await this.GetModDetails(dep);
                 let mod = this.modsToAdd[idx];
-                mod.versions = this.mapServerVersionsResponseToModalForm(info.versions).filter(v => v.gv === this.editingPack.gameVersion);
+                mod.versions = this.mapServerVersionsResponseToModalForm(info.versions).filter(v => v.gv.indexOf(this.editingPack.gameVersion) >= 0);
                 mod.name = info.name;
                 mod.selected = -1;
 
@@ -478,7 +478,7 @@
             this.modsToAdd.push({
                 slug: mod.slug,
                 name: mod.name,
-                versions: this.mapServerVersionsResponseToModalForm(mod.versions).filter(v => v.gv === this.editingPack.gameVersion),
+                versions: this.mapServerVersionsResponseToModalForm(mod.versions).filter(v => v.gv.indexOf(this.editingPack.gameVersion) >= 0),
                 selected: versionId,
                 depsAdded: true,
             });
