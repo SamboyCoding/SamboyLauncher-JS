@@ -76,11 +76,11 @@ export default class InstalledPackManager {
             return json;
         });
 
-        this.packs.forEach(pack => {
+        this.packs.forEach(async pack => {
             let json = this.packJsons.find(json => json.packName === pack.name);
 
             if (!existsSync(pack.packDirectory))
-                Utils.mkdirpPromise(pack.packDirectory);
+                await Utils.mkdirpPromise(pack.packDirectory);
 
             let path = join(pack.packDirectory, "install.json");
 

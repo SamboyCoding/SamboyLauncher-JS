@@ -153,6 +153,7 @@
     import ModDetails from "../model/ModDetails";
     import ModListItem from "../model/ModListItem";
     import parser = require("fast-xml-parser");
+    import IpcRendererEvent = Electron.IpcRendererEvent;
 
     @Component({
         components: {},
@@ -233,7 +234,7 @@
                 this.$forceUpdate();
             });
 
-            ipcRenderer.on("install complete", (event: IpcMessageEvent, packName: string, gameVersion: string, forgeVersion: string) => {
+            ipcRenderer.on("install complete", (event: IpcRendererEvent, packName: string, gameVersion: string, forgeVersion: string) => {
                 if (this.packsBeingCreated.indexOf(packName) < 0) return;
 
                 console.info(`[Create] Client for pack ${packName} installed successfully`);
@@ -248,12 +249,12 @@
                 }
             });
 
-            ipcRenderer.on("pack versions updated", (event: IpcMessageEvent, packName: string) => {
+            ipcRenderer.on("pack versions updated", (event: IpcRendererEvent, packName: string) => {
                 this.$store.commit("cancelInstall", packName);
                 event.sender.send("get installed packs"); //Reload
             });
 
-            ipcRenderer.on("pack created", (event: IpcMessageEvent, pack: InstalledPackJSON) => {
+            ipcRenderer.on("pack created", (event: IpcRendererEvent, pack: InstalledPackJSON) => {
                 this.$store.commit("cancelInstall", pack.packName);
                 this.$store.commit("addCreatedPack", pack.packName);
 
