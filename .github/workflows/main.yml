@@ -22,7 +22,7 @@ jobs:
       uses: samuelmeuli/action-electron-builder@v1.3.0
       with:
         # GitHub authentication token
-        github_token: secrets.GITHUB_TOKEN
+        github_token: secrets.RELEASE_TOKEN
         # Whether the app should be released after a successful build
         release: true 
         # Name of the optional NPM build script which is executed before `electron-builder`
