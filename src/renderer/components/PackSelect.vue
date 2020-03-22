@@ -1,6 +1,6 @@
 <template>
     <div id="pack-select">
-        <div class="full-border no-left fill-height">
+        <div class="fill-height">
             <pack-select-entry v-for="(pack, idx) in packs" :pack-name="pack" :selected="selectedPack === idx" @click.native="selectPack(idx)"></pack-select-entry>
         </div>
     </div>

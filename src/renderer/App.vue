@@ -12,7 +12,7 @@
 </template>
 
 <script lang='ts'>
-    import {Component, Vue} from "vue-property-decorator";
+    import {Component, Vue, Watch} from "vue-property-decorator";
     import LaunchControls from "./components/LaunchControls.vue";
     import PackSelect from "./components/PackSelect.vue";
     import TopBar from "./components/TopBar.vue";
@@ -29,8 +29,13 @@
         public packs = ["Pack 1", "Pack 2", "Pack 3", "Pack 4", "Pack 5"];
 
         public mounted() {
-            console.info("[App] SBL Renderer: Main App Mounted");
+            console.info("[App] SBL Renderer: Main App Mounted.");
             console.info(`[App] Using API URL ${Config.API_URL}`);
+        }
+
+        @Watch("$store.state.darkMode")
+        public saveDarkMode(value: boolean) {
+            localStorage.setItem("darkMode", value ? "1" : "0");
         }
     }
 </script>
@@ -47,9 +52,11 @@
         background-size: cover !important;
     }
 
+    //Dark theme
     #root.dark-theme {
-        background: url("resources/backgrounds/3.png") no-repeat fixed;
+        background: url("resources/backgrounds/bg_dark_mode_play.png") no-repeat fixed;
         --highlight-color: #3e3e3e;
+        --muted-highlight: #1e1e1e;
         --transparant-highlight: rgba(50, 50, 50, 0.75);
 
         #app {
@@ -58,10 +65,14 @@
         }
     }
 
+    //Light theme
     #root:not(.dark-theme) {
-        background: url("resources/backgrounds/1.jpg") no-repeat fixed;
-        --highlight-color: #eee;
-        --transparant-highlight: rgba(220, 220, 220, 0.75);
+        background: url("resources/backgrounds/bg_light_mode_play.jpg") no-repeat fixed;
+        --highlight-color: #ddd;
+        /*--highlight-color: transparent;*/
+        --muted-highlight: #cacaca;
+        /*--muted-highlight: transparent;*/
+        --transparant-highlight: rgba(220, 220, 220, 0.4);
 
         #app {
             background: radial-gradient(rgba(200, 200, 200, 0.75), rgba(200, 200, 200, 0.9) 90%) no-repeat fixed;

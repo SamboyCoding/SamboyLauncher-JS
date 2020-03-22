@@ -6,6 +6,9 @@ Vue.use(Vuex);
 
 import store from "./store";
 
+if(localStorage.getItem("darkMode") === "1")
+    store.commit("toggleDark");
+
 new Vue({
     store,
     el: "#app",

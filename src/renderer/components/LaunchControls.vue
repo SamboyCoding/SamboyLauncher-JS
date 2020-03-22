@@ -1,7 +1,7 @@
 <template>
-    <div id="launch-controls" class="no-left no-right full-border">
+    <div id="launch-controls" class="">
         <div class="flex">
-            <h2 class="flex-grow">{{selectedPack}}</h2>
+            <h1 class="flex-grow">{{selectedPack}}</h1>
             <sbl-button label="Launch"></sbl-button>
         </div>
         <p>

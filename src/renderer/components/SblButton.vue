@@ -21,11 +21,12 @@
 <style scoped lang="scss">
     .sbl-button {
         vertical-align: middle;
-        padding: 4px 8px;
+        padding: 1rem 1.88rem;
         height: 100%;
+        transition: background-color 0.25s;
 
         &:hover {
-            background: var(--highlight-color);
+            background-color: var(--transparant-highlight);
         }
     }
 </style>
