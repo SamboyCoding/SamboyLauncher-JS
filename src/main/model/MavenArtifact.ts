@@ -1,5 +1,4 @@
 import {basename, dirname} from "path";
-import {Open} from "unzipper";
 
 export default class MavenArtifact {
     public domain: String;

@@ -33,13 +33,13 @@ async function InitializeApp() {
             Logger.errorImpl("Init", "Removed old incompat launcher dir!");
         }
 
-        ConfigurationManager.LoadFromDisk();
+        await ConfigurationManager.LoadFromDisk();
         AuthenticationManager.LoadFromDisk();
-        MCVersion.Get(); //Preload these.
+        await MCVersion.Get(); //Preload these.
         InstalledPackManager.LoadFromDisk();
-        ElectronManager.SetupElectron();
         MainIPCHandler.Init();
         UpdateManager.Init();
+        ElectronManager.SetupElectron();
     } catch(e) {
         try {
             Logger.errorImpl("Init", "Failed to initialize app: " + e);

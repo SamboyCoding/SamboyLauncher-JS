@@ -4,6 +4,7 @@
 
         <!--Window controls-->
         <div class="no-window-drag">
+            <i @click="$store.commit('toggleDark')" class="material-icons hover-change margin-right-1rem">brightness_6</i>
             <i @click="MainProcessActions.minimizeWindow()" class="material-icons hover-change">minimize</i>
             <i @click="MainProcessActions.toggleMaximize()" class="material-icons hover-change">crop_din</i>
             <i @click="close" class="material-icons hover-change">close</i>

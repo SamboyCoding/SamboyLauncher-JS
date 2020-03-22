@@ -13,6 +13,7 @@ export default class InstalledPackManager {
     private static packJsons: InstalledPackJSON[] = [];
 
     public static LoadFromDisk() {
+        Logger.debugImpl("Install Pack Manager", "Loading installed packs...");
         this.packs = new Map<string, InstalledPack>();
         this.packJsons = [];
 

@@ -14,43 +14,31 @@ export default class AuthenticationManager {
     public static uuid: string;
     public static email: string;
 
+    private static authDataPath: string;
+
     public static LoadFromDisk() {
-        if (existsSync(join(EnvironmentManager.launcherDir, "authdata"))) {
+        this.authDataPath = join(EnvironmentManager.launcherDir, "authdata");
+
+        if (existsSync(this.authDataPath)) {
             try {
                 Logger.debugImpl("Authentication Manager", "Try load auth data.");
-                const content: any = readFileSync(join(EnvironmentManager.launcherDir, "authdata"));
+                const content: any = readFileSync(this.authDataPath);
 
-                if (content.accessToken) {
-                    this.accessToken = content.accessToken;
-                }
+                if (content.accessToken) this.accessToken = content.accessToken;
+                if (content.clientToken) this.clientToken = content.clientToken;
+                if (content.hash) this.password = Utils.fromBase64(content.hash);
+                if (content.username) this.username = content.username;
+                if (content.uuid) this.uuid = content.uuid;
+                if (content.email) this.email = content.email;
 
-                if (content.clientToken) {
-                    this.clientToken = content.clientToken;
-                }
-
-                if (content.hash) {
-                    this.password = Utils.fromBase64(content.hash);
-                }
-
-                if (content.username) {
-                    this.username = content.username;
-                }
-
-                if (content.uuid) {
-                    this.uuid = content.uuid;
-                }
-
-                if (content.email) {
-                    this.email = content.email;
-                }
                 Logger.infoImpl("Authentication Manager", "Read auth data.");
             } catch (e) {
                 Logger.warnImpl("Authentication Manager", "Corrupt auth data! Overwriting...");
-                writeFileSync(join(EnvironmentManager.launcherDir, "authdata"), {});
+                writeFileSync(this.authDataPath, {});
             }
         } else {
             Logger.warnImpl("Authentication Manager", "Auth data missing, creating default");
-            writeFileSync(join(EnvironmentManager.launcherDir, "authdata"), {});
+            writeFileSync(this.authDataPath, {});
         }
     }
 
@@ -83,7 +71,7 @@ export default class AuthenticationManager {
         }
 
         Logger.debugImpl("Authentication Manager", "Saving auth data.");
-        writeFileSync(join(EnvironmentManager.launcherDir, "authdata"), content);
+        writeFileSync(this.authDataPath, content);
     }
 
     public static async Login(email: string, password: string) {

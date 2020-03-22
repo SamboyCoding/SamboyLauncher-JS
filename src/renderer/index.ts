@@ -1,11 +1,16 @@
 import Vue from "vue";
+import Vuex from "vuex";
 import App from "./App.vue";
-import store from "./store";
 
-Vue.config.productionTip = false;
-Vue.config.devtools = false;
+Vue.use(Vuex);
+
+import store from "./store";
 
 new Vue({
     store,
-    render: (render) => render(App),
-}).$mount('#app');
+    el: "#app",
+    render: h => h(App),
+    components: {
+        App
+    }
+});

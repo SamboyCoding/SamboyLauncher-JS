@@ -20,14 +20,14 @@ export default class ConfigurationManager {
         ConfigurationManager.save();
     }
 
-    public static LoadFromDisk() {
+    public static async LoadFromDisk() {
         if (existsSync(ConfigurationManager.fileLoc)) {
             Logger.infoImpl("ConfigManager", "Loading config from " + ConfigurationManager.fileLoc);
             const data = jsonfile.readFileSync(ConfigurationManager.fileLoc);
             Object.assign(ConfigurationManager.config, data);
         } else {
             Logger.infoImpl("ConfigManager", "Creating default config file " + ConfigurationManager.fileLoc);
-            ConfigurationManager.save();
+            await ConfigurationManager.save();
         }
     }
 

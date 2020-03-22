@@ -6,44 +6,39 @@ import Logger from "../logger";
 export default class ElectronManager {
     public static win: BrowserWindow;
 
-    public static SetupElectron() {
-        return new Promise(ff => {
-            Logger.infoImpl("ElectronManager", "Init");
+    public static async SetupElectron() {
+        Logger.infoImpl("ElectronManager", "Init");
 
-            app.commandLine.appendSwitch("--enable-experimental-web-platform-features");
+        app.commandLine.appendSwitch("--enable-experimental-web-platform-features");
 
-            app.on("ready", async () => {
-                try {
-                    await ElectronManager.onReady();
-                    ElectronManager.createWindow().then(ff);
-                } catch (e) {
-                    Logger.errorImpl("ElectronManager", "Exception initializing! " + e);
-                }
-            });
+        await app.whenReady();
 
-            app.on("window-all-closed", () => {
-                if (process.platform !== "darwin") {
-                    app.quit();
-                }
-            });
-
-            app.on("activate", async () => {
-                if (ElectronManager.win === null) {
-                    await ElectronManager.createWindow();
-                }
-            });
-
-            ipcMain.on("maximize", (event: IpcMainEvent) => {
-                if (ElectronManager.win.isMaximized())
-                    ElectronManager.win.restore();
-                else
-                    ElectronManager.win.maximize();
-            });
-
-            ipcMain.on("minimize", (event: IpcMainEvent) => {
-                ElectronManager.win.minimize();
-            });
+        app.on("window-all-closed", () => {
+            if (process.platform !== "darwin") {
+                app.quit();
+            }
         });
+
+        app.on("activate", async () => {
+            if (ElectronManager.win === null) {
+                await ElectronManager.createWindow();
+            }
+        });
+
+        ipcMain.on("maximize", (event: IpcMainEvent) => {
+            if (ElectronManager.win.isMaximized())
+                ElectronManager.win.restore();
+            else
+                ElectronManager.win.maximize();
+        });
+
+        ipcMain.on("minimize", (event: IpcMainEvent) => {
+            ElectronManager.win.minimize();
+        });
+
+        await ElectronManager.onReady();
+
+        await ElectronManager.createWindow();
     }
 
     private static async createWindow() {
@@ -80,17 +75,15 @@ export default class ElectronManager {
 
         ElectronManager.win.setMenu(menu);
 
-        ElectronManager.win.once("ready-to-show", () => {
-            Logger.infoImpl("ElectronManager", "Showing window...");
-            ElectronManager.win.show();
-        });
-
         ElectronManager.win.on("closed", () => {
             ElectronManager.win = null;
         });
 
+        Logger.debugImpl("ElectronManager", "Loading renderer html...");
         await ElectronManager.win.loadFile(join(__dirname, "../../../webContents/index.html"));
 
+        Logger.debugImpl("ElectronManager", "Renderer HTML Loaded, showing window...");
+        ElectronManager.win.show();
     }
 
     private static async onReady() {
