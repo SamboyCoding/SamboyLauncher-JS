@@ -2,6 +2,8 @@ import {app, BrowserWindow, ipcMain, IpcMainEvent, Menu, MenuItem} from "electro
 import * as isDev from "electron-is-dev";
 import {join} from "path";
 import Logger from "../logger";
+import MCVersion from "../model/MCVersion";
+import InstalledPackManager from "./InstalledPackManager";
 
 export default class ElectronManager {
     public static win: BrowserWindow;
@@ -9,6 +11,7 @@ export default class ElectronManager {
     public static async SetupElectron() {
         Logger.infoImpl("ElectronManager", "Init");
 
+        app.allowRendererProcessReuse = true;
         app.commandLine.appendSwitch("--enable-experimental-web-platform-features");
 
         await app.whenReady();
@@ -82,8 +85,11 @@ export default class ElectronManager {
         Logger.debugImpl("ElectronManager", "Loading renderer html...");
         await ElectronManager.win.loadFile(join(__dirname, "../../../webContents/index.html"));
 
-        Logger.debugImpl("ElectronManager", "Renderer HTML Loaded, showing window...");
+        Logger.debugImpl("ElectronManager", "Renderer HTML Loaded, showing window and sending initial ipc messages...");
         ElectronManager.win.show();
+
+        ElectronManager.win.webContents.send("pack list", InstalledPackManager.GetPackNames());
+        ElectronManager.win.webContents.send("mc versions", MCVersion.GetAllVersionNames());
     }
 
     private static async onReady() {

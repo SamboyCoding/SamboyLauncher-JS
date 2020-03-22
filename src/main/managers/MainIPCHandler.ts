@@ -22,6 +22,8 @@ import InstalledPackManager from "./InstalledPackManager";
 
 export default class MainIPCHandler {
     public static Init() {
+        ipcMain.on("renderer log", (event, message) => Logger.infoImpl("Renderer", message));
+
         ipcMain.on("install pack client", MainIPCHandler.installPackClient);
         ipcMain.on("create pack", MainIPCHandler.createPack);
         ipcMain.on("launch pack", MainIPCHandler.launchPack);

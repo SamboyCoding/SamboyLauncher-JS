@@ -17,6 +17,7 @@
     import PackSelect from "./components/PackSelect.vue";
     import TopBar from "./components/TopBar.vue";
     import Config from "./Config";
+    import MainProcessActions from "./MainProcessActions";
 
     @Component({
         components: {
@@ -26,11 +27,24 @@
         },
     })
     export default class App extends Vue {
-        public packs = ["Pack 1", "Pack 2", "Pack 3", "Pack 4", "Pack 5"];
-
         public mounted() {
+            MainProcessActions.logMessage("[App.vue] Mounted.");
+
+            MainProcessActions.onPackList = (packs) => {
+                MainProcessActions.logMessage("[App.vue] Received pack list over ipc.");
+                this.$store.commit("setPackNames", packs);
+            };
+
+            MainProcessActions.onMcVersionList = (versions) => {
+                MainProcessActions.logMessage(`[App.vue] Received ${versions.length} installable mc versions`);
+            }
+
             console.info("[App] SBL Renderer: Main App Mounted.");
             console.info(`[App] Using API URL ${Config.API_URL}`);
+        }
+
+        public get packs() {
+            return this.$store.state.packNames;
         }
 
         @Watch("$store.state.darkMode")

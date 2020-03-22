@@ -35,7 +35,7 @@ async function InitializeApp() {
 
         await ConfigurationManager.LoadFromDisk();
         AuthenticationManager.LoadFromDisk();
-        await MCVersion.Get(); //Preload these.
+        await MCVersion.InitCache(); //Preload these.
         InstalledPackManager.LoadFromDisk();
         MainIPCHandler.Init();
         UpdateManager.Init();

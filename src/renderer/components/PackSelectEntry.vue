@@ -26,14 +26,14 @@
 <style scoped lang="scss">
     .pack-select-entry {
         //cursor: pointer;
-        padding: 1.5rem 6px;
+        padding: 1.5rem 10px;
         transition: background-color 0.25s;
 
         &:not(:last-of-type) {
             /*border-bottom: 1px solid var(--muted-highlight)*/
         }
 
-        &.selected {
+        &:hover, &.selected {
             background-color: var(--transparant-highlight);
             /*color: white;*/
         }

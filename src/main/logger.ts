@@ -47,7 +47,7 @@ export default class Logger {
         if (!this.stream)
             this.stream = createWriteStream(Logger.logFilePath);
 
-        let toLog = `[${moment().format("HH:mm:ss")}] [${type}] [${source}] ${msg}`;
+        let toLog = `[${moment().format("HH:mm:ss.SSS")}] [${type}] [${source}] ${msg}`;
 
         this.stream.write(toLog + "\n");
 
