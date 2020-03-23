@@ -13,6 +13,7 @@
 
 <script lang='ts'>
     import {Component, Vue, Watch} from "vue-property-decorator";
+    import InstalledPackJSON from "../main/model/InstalledPackJSON";
     import LaunchControls from "./components/LaunchControls.vue";
     import PackSelect from "./components/PackSelect.vue";
     import TopBar from "./components/TopBar.vue";
@@ -44,7 +45,7 @@
         }
 
         public get packs() {
-            return this.$store.state.packNames;
+            return this.$store.state.packJsons;
         }
 
         @Watch("$store.state.darkMode")

@@ -1,7 +1,9 @@
 export default class ModJar {
-    public id: number;
+    public addonId: number;
 
-    public slug: string;
+    public fileId: number;
+
+    public addonSlug: string;
 
     public filename: string;
 
@@ -9,13 +11,17 @@ export default class ModJar {
 
     public releaseType: string;
 
-    public gameVersion: string;
+    public gameVersions: string[];
 
-    public md5: string;
+    public dependencies: number[];
 
-    public dependencies: string[];
-
-    public incompatibilities: string[];
+    public incompatibilities: number[];
 
     public downloadUrl: string;
+
+    public addonPopularityScore: number;
+
+    public addonThumbnail: string;
+
+    public addonName: string;
 }

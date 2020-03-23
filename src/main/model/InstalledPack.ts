@@ -1,6 +1,8 @@
 import {join} from "path";
+import ApiClient from "../ApiClient";
 import EnvironmentManager from "../managers/EnvironmentManager";
 import ForgeVersion from "./ForgeVersion";
+import InstalledModRecord from "./InstalledModRecord";
 import InstalledPackJSON from "./InstalledPackJSON";
 import MCVersion from "./MCVersion";
 import ModJar from "./ModJar";
@@ -13,7 +15,7 @@ export default class InstalledPack {
     public author: User;
     public installedVersion: string;
 
-    public installedMods: ModJar[];
+    public installedMods: InstalledModRecord[];
 
     // TODO
     // public overrides: OverrideFile[];
@@ -59,5 +61,9 @@ export default class InstalledPack {
 
     get modsDirectory(): string {
         return join(this.packDirectory, "mods");
+    }
+
+    get modJars(): Promise<ModJar[]> {
+        return Promise.all(this.installedMods.map(async fileSpec => await ApiClient.getModJar(fileSpec.addonId, fileSpec.fileId)))
     }
 }

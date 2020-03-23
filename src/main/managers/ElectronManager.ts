@@ -88,7 +88,7 @@ export default class ElectronManager {
         Logger.debugImpl("ElectronManager", "Renderer HTML Loaded, showing window and sending initial ipc messages...");
         ElectronManager.win.show();
 
-        ElectronManager.win.webContents.send("pack list", InstalledPackManager.GetPackNames());
+        ElectronManager.win.webContents.send("pack list", InstalledPackManager.InstalledPacks);
         ElectronManager.win.webContents.send("mc versions", MCVersion.GetAllVersionNames());
     }
 

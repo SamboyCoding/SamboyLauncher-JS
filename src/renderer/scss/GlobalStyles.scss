@@ -11,6 +11,10 @@
     }
 }
 
+.flex-vertical {
+    flex-flow: column nowrap;
+}
+
 .window-drag {
     -webkit-app-region: drag;
 

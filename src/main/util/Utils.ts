@@ -192,7 +192,7 @@ export default class Utils {
         });
     }
 
-    public static filterUniqueMods(array: ModJar[]) {
-        return array.filter((mod, index, self) => self.findIndex(m => m.slug === mod.slug) === index);
+    public static filterUniqueMods(array: { addonId: number, fileId: number, }[]) {
+        return array.filter((mod, index, self) => self.indexOf(mod) === index);
     }
 }

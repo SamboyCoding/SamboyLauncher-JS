@@ -42,6 +42,10 @@ export default class InstalledPackManager {
         Logger.infoImpl("Installed Pack Manager", `Loaded ${this.packJsons.length} installed pack JSON(s)`);
     }
 
+    public static get InstalledPacks() {
+        return this.packJsons;
+    }
+
     public static GetPackNames(): string[] {
         return this.packJsons.map(json => json.packName);
     }

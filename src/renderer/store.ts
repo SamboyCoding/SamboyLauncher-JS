@@ -4,7 +4,7 @@ export default new Vuex.Store({
     strict: true,
     state: {
         selectedPack: 0,
-        packNames: [],
+        packJsons: [],
         darkMode: false
     },
     mutations: {
@@ -14,7 +14,7 @@ export default new Vuex.Store({
             console.log(JSON.stringify(state));
         },
         setPackNames: function(state, payload) {
-            state.packNames = payload;
+            state.packJsons = payload;
         },
         toggleDark: function(state) {
             state.darkMode = !state.darkMode;

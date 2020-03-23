@@ -70,7 +70,7 @@ export default class MainIPCHandler {
 
                 event.sender.send("importing mods", pack.name, pack.installedMods.length);
 
-                this.installMods(event, pack.name, pack.installedMods).then(() => {
+                this.installMods(event, pack.name, await pack.modJars).then(() => {
                     event.sender.send("pack imported", pack.name);
 
                     Logger.infoImpl("IPCMain", "Reloading installed packs...");
@@ -114,12 +114,13 @@ export default class MainIPCHandler {
         ipcMain.on("remove mod", async (event: IpcMainEvent, packName: string, slug: string) => {
             Logger.debugImpl("IPCMain", `Renderer requested we remove mod ${slug} from ${packName}`);
             let pack = await InstalledPackManager.GetPackDetails(packName);
-            let idx = pack.installedMods.findIndex(m => m.slug === slug);
+            let jars = await pack.modJars;
+            let idx = jars.findIndex(m => m.addonSlug === slug);
 
             if (idx < 0)
                 return Logger.warnImpl("IPCMain", `Renderer requested we remove mod ${slug} from ${packName} but it's not present`);
 
-            let file = join(pack.modsDirectory, pack.installedMods[idx].filename);
+            let file = join(pack.modsDirectory, jars[idx].filename);
             Logger.debugImpl("IPCMain", `Delete file: ${file}`);
             if (!existsSync(file))
                 Logger.errorImpl("IPCMain", `Renderer requested we remove mod ${slug} from ${packName}, and it's apparently installed, but the file ${file} does not exist!`);
@@ -370,16 +371,18 @@ export default class MainIPCHandler {
 
             let pack = await InstalledPackManager.GetPackDetails(packName);
 
-            let alreadyInstalled = pack.installedMods.filter(im => !!mods.find(m => im.slug === m.slug) && existsSync(join(pack.modsDirectory, im.filename)));
+            let jars = await pack.modJars;
+
+            let alreadyInstalled = jars.filter(im => !!mods.find(m => im.addonSlug === m.addonSlug) && existsSync(join(pack.modsDirectory, im.filename)));
             Logger.debugImpl("InstallMods", `${alreadyInstalled.length} of those are already installed;`);
 
-            let wrongVersion = alreadyInstalled.filter(im => mods.find(m => im.slug === m.slug).id !== im.id);
+            let wrongVersion = alreadyInstalled.filter(im => mods.find(m => im.addonSlug === m.addonSlug).fileId !== im.fileId);
             Logger.debugImpl("InstallMods", `And of those, ${wrongVersion.length} currently have/has the wrong version installed`);
 
             wrongVersion.forEach(wv => {
                 let installPath = join(pack.modsDirectory, wv.filename);
                 if (!existsSync(installPath)) {
-                    Logger.warnImpl("InstallMods", `${wv.slug} is supposedly already installed (but wrong version), but the file ${wv.filename} couldn't be found in the mods dir.`);
+                    Logger.warnImpl("InstallMods", `${wv.addonSlug} is supposedly already installed (but wrong version), but the file ${wv.filename} couldn't be found in the mods dir.`);
                     return;
                 }
 
@@ -388,7 +391,7 @@ export default class MainIPCHandler {
             });
 
             //Find any mods where we don't have one installed with the same slug and ver id.
-            let actuallyNeedInstall = mods.filter(m => !existsSync(join(pack.modsDirectory, m.filename)) || !pack.installedMods.find(im => im.slug === m.slug && im.id === m.id));
+            let actuallyNeedInstall = mods.filter(m => !existsSync(join(pack.modsDirectory, m.filename)) || !jars.find(im => im.addonSlug === m.addonSlug && im.fileId === m.fileId));
             Logger.debugImpl("InstallMods", `We're actually about to install ${actuallyNeedInstall.length} mod/s`);
 
             Promise.all(actuallyNeedInstall.map(async jar => {
@@ -399,7 +402,7 @@ export default class MainIPCHandler {
                 event.sender.send("mod installed", packName, jar);
 
                 //Once again remove any other versions, this is the actually correct one. Fix for importing packs and double-clicking the install button
-                pack.installedMods = pack.installedMods.filter(m => m.slug !== jar.slug);
+                pack.installedMods = jars.filter(m => m.addonSlug !== jar.addonSlug);
 
                 pack.installedMods.push(jar);
 

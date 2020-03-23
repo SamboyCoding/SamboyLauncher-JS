@@ -1,13 +1,14 @@
 <template>
     <div id="pack-select">
         <div class="fill-height">
-            <pack-select-entry v-for="(pack, idx) in packs" :pack-name="pack" :selected="selectedPack === idx" @click.native="selectPack(idx)"></pack-select-entry>
+            <pack-select-entry v-for="(pack, idx) in packs" :pack-name="pack.packName" :selected="selectedPackIndex === idx" @click.native="selectPack(idx)"></pack-select-entry>
         </div>
     </div>
 </template>
 
 <script lang='ts'>
     import {Component, Prop, Vue} from "vue-property-decorator";
+    import InstalledPackJSON from "../../main/model/InstalledPackJSON";
     import PackSelectEntry from "./PackSelectEntry.vue";
 
     @Component({
@@ -18,13 +19,13 @@
         @Prop({
             type: Array
         })
-        public packs;
+        public packs: InstalledPackJSON[];
 
         public selectPack(idx: number) {
             this.$store.commit("setSelectedPack", idx);
         }
 
-        get selectedPack() {
+        get selectedPackIndex() {
             return this.$store.state.selectedPack;
         }
     }

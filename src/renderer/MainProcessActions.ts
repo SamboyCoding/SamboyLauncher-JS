@@ -1,6 +1,7 @@
 import {ipcRenderer} from "electron";
+import InstalledPackJSON from "../main/model/InstalledPackJSON";
 
-ipcRenderer.on("pack list", (event, packs: string[]) => {
+ipcRenderer.on("pack list", (event, packs: InstalledPackJSON[]) => {
     if(MainProcessActions.onPackList)
         MainProcessActions.onPackList(packs);
 });
@@ -11,7 +12,7 @@ ipcRenderer.on("mc versions", (event, versions: string[]) => {
 });
 
 export default class MainProcessActions {
-    public static onPackList: (packs: string[]) => void = null;
+    public static onPackList: (packs: InstalledPackJSON[]) => void = null;
     public static onMcVersionList: (mcVersions: string[]) => void = null;
 
     public static minimizeWindow() {
