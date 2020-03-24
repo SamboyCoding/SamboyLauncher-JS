@@ -9,10 +9,26 @@
     .flex-double-weight {
         flex-grow: 2;
     }
+
+    .flex-wrap {
+        flex-wrap: wrap !important;
+    }
 }
 
 .flex-vertical {
     flex-flow: column nowrap;
+}
+
+.flex-center-content {
+    justify-content: center;
+}
+
+.bottom-separator {
+    border-bottom: 1px solid var(--muted-highlight);
+}
+
+.align-center {
+    text-align: center;
 }
 
 .window-drag {

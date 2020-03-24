@@ -1,5 +1,5 @@
 <template>
-    <div class="mod-with-image">
+    <div class="mod-with-image flex flex-vertical flex-center-content align-center">
         <img :src="mod.addonThumbnail" :alt="`Thumbnail for ` + mod.addonName">
         <h3>{{mod.addonName}}</h3>
     </div>
@@ -21,5 +21,16 @@
 </script>
 
 <style scoped lang="scss">
+    .mod-with-image {
+        padding: 1rem;
+        max-width: 33%;
+        height: 200px;
+        position: relative;
 
+        img {
+            height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+    }
 </style>
