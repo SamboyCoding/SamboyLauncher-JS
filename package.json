@@ -44,7 +44,7 @@
         "chalk": "^3.0.0",
         "download": "^7.1.0",
         "electron-is-dev": "^1.1.0",
-        "electron-updater": "^4.2.5",
+        "electron-updater": "^4.3.0",
         "fast-xml-parser": "^3.16.0",
         "hasha": "5.2.0",
         "hazardous": "^0.3.0",
