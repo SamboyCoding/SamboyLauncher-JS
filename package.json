@@ -29,7 +29,7 @@
         "concurrently": "^5.1.0",
         "electron": "^8.2.0",
         "electron-builder": "^22.4.1",
-        "parcel": "^2.0.0-nightly.189",
+        "parcel": "^2.0.0-nightly.194",
         "parcel-bundler": "^1.12.4",
         "sass": "^1.26.3",
         "tslint": "^6.1.0",
