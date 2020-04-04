@@ -28,17 +28,52 @@
         },
     })
     export default class App extends Vue {
+        private testPacks: InstalledPackJSON[] = [
+            {
+                packName: "1.15Test",
+                gameVersion: "1.15.2",
+                forgeVersion: "1.15.2-31.1.27",
+                installedMods: [
+                    {"fileId": 2866141, "addonId": 238222},
+                    {"fileId": 2894436, "addonId": 32274},
+                    {"fileId": 2849221, "addonId": 60089},
+                    {"fileId": 2887674, "addonId": 223852}
+                ],
+                installedVersion: "1.0",
+                description: "[Enter Pack Description]",
+                id: "",
+                author: {"uuid": "", "name": "Me"},
+            },
+            {
+                packName: "InstallationTest",
+                gameVersion: "1.15.2",
+                forgeVersion: "1.15.2-31.1.27",
+                installedMods: [
+                    {"fileId": 2866141, "addonId": 238222},
+                    {"fileId": 2894436, "addonId": 32274},
+                    {"fileId": 2849221, "addonId": 60089},
+                    {"fileId": 2887674, "addonId": 223852}
+                ],
+                installedVersion: "1.0",
+                description: "[Enter Pack Description]",
+                id: "",
+                author: {"uuid": "", "name": "Me"},
+                installationProgress: 0.5,
+            }
+        ];
         public mounted() {
             MainProcessActions.logMessage("[App.vue] Mounted.");
 
+            this.$store.commit("setPackNames", this.testPacks);
+
             MainProcessActions.onPackList = (packs) => {
-                MainProcessActions.logMessage("[App.vue] Received pack list over ipc.");
-                this.$store.commit("setPackNames", packs);
+                // MainProcessActions.logMessage("[App.vue] Received pack list over ipc.");
+                // this.$store.commit("setPackNames", packs);
             };
 
             MainProcessActions.onMcVersionList = (versions) => {
                 MainProcessActions.logMessage(`[App.vue] Received ${versions.length} installable mc versions`);
-            }
+            };
 
             console.info("[App] SBL Renderer: Main App Mounted.");
             console.info(`[App] Using API URL ${Config.API_URL}`);
@@ -73,6 +108,7 @@
         --highlight-color: #3e3e3e;
         --muted-highlight: #1e1e1e;
         --transparant-highlight: rgba(50, 50, 50, 0.75);
+        --install-highlight: rgba(75, 75, 75, 0.75);
 
         #app {
             background: radial-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.9) 90%) no-repeat fixed;
@@ -84,10 +120,9 @@
     #root:not(.dark-theme) {
         background: url("resources/backgrounds/bg_light_mode_play.jpg") no-repeat fixed;
         --highlight-color: #ddd;
-        /*--highlight-color: transparent;*/
         --muted-highlight: #cacaca;
-        /*--muted-highlight: transparent;*/
         --transparant-highlight: rgba(220, 220, 220, 0.4);
+        --install-highlight: rgba(150, 150, 150, 0.4);
 
         #app {
             background: radial-gradient(rgba(200, 200, 200, 0.75), rgba(200, 200, 200, 0.9) 90%) no-repeat fixed;

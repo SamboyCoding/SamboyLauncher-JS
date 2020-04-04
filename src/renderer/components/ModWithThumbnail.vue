@@ -22,14 +22,12 @@
 
 <style scoped lang="scss">
     .mod-with-image {
-        padding: 1rem;
-        max-width: 33%;
         height: 200px;
         position: relative;
 
         img {
+            display: block;
             height: 100%;
-            max-width: 100%;
             object-fit: contain;
         }
     }

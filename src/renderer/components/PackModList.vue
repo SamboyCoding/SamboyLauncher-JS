@@ -5,14 +5,15 @@
         <br>
         <div class="flex flex-vertical" id="pack-mods" v-if="modJars.length">
             <div class="flex mod-row">
-                <!--Row-->
+                <!--Top Row-->
                 <ModWithThumbnail class="flex-grow" v-for="(mod, idx) in modJars.slice(0, 3)" :mod="mod" v-if="modJars.length > idx"></ModWithThumbnail>
             </div>
 
             <div class="flex flex-wrap">
-            <h3 class="flex-grow align-center mod-list-label" v-for="modJar in modJars.slice(3)">{{modJar.addonName}}</h3>
+                <h3 class="flex-grow align-center mod-list-label" v-for="modJar in modJars.slice(3)">
+                    {{modJar.addonName}}
+                </h3>
             </div>
-
         </div>
 
     </div>
@@ -71,6 +72,7 @@
 
     .mod-row {
         margin-bottom: 1rem;
+        position: relative;
     }
 
     .mod-list-label {

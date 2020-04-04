@@ -9,9 +9,7 @@ export default new Vuex.Store({
     },
     mutations: {
         setSelectedPack: function(state, payload) {
-            console.log(JSON.stringify(state));
             state.selectedPack = payload;
-            console.log(JSON.stringify(state));
         },
         setPackNames: function(state, payload) {
             state.packJsons = payload;
