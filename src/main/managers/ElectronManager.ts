@@ -3,6 +3,8 @@ import * as isDev from "electron-is-dev";
 import {join} from "path";
 import Logger from "../logger";
 import MCVersion from "../model/MCVersion";
+import installExtension, {VUEJS_DEVTOOLS} from "electron-devtools-installer";
+
 import InstalledPackManager from "./InstalledPackManager";
 
 export default class ElectronManager {
@@ -13,6 +15,15 @@ export default class ElectronManager {
 
         app.allowRendererProcessReuse = true;
         app.commandLine.appendSwitch("--enable-experimental-web-platform-features");
+
+        if(isDev) {
+            try {
+                await installExtension(VUEJS_DEVTOOLS)
+                Logger.infoImpl("ElectronManager", "Installed VueJS devtools");
+            } catch(e) {
+                Logger.errorImpl("ElectronManager", "Failed to install VueJS devtools: " + e);
+            }
+        }
 
         await app.whenReady();
 

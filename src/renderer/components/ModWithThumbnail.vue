@@ -28,6 +28,7 @@
         img {
             display: block;
             height: 100%;
+            min-width: 33%;
             object-fit: contain;
         }
     }

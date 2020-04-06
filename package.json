@@ -20,6 +20,7 @@
     "license": "ISC",
     "devDependencies": {
         "@types/download": "^6.2.2",
+        "@types/electron-devtools-installer": "^2.2.0",
         "@types/jsonfile": "^5.0.0",
         "@types/mkdirp": "^1.0.0",
         "@types/node": "12.12.30",
@@ -29,6 +30,7 @@
         "concurrently": "^5.1.0",
         "electron": "^8.2.0",
         "electron-builder": "^22.4.1",
+        "electron-devtools-installer": "^2.2.4",
         "parcel": "^2.0.0-nightly.189",
         "parcel-bundler": "^1.12.4",
         "sass": "^1.26.3",
