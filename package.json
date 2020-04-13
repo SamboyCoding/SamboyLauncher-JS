@@ -24,7 +24,7 @@
         "@types/jsonfile": "^5.0.0",
         "@types/mkdirp": "^1.0.0",
         "@types/node": "12.12.30",
-        "@types/node-fetch": "^2.5.5",
+        "@types/node-fetch": "^2.5.6",
         "@types/rimraf": "^3.0.0",
         "@vue/component-compiler-utils": "^3.1.1",
         "concurrently": "^5.1.0",
