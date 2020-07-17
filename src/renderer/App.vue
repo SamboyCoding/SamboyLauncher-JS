@@ -1,12 +1,9 @@
 <template>
     <div id="root" :class="{'dark-theme': $store.state.darkMode}">
-        <div id="app">
+        <div id="app" class="flex flex-vertical">
             <top-bar></top-bar>
-            <div class="flex fill-height">
-                <!--Main content wrapper-->
-                <pack-select class="flex-grow" :packs="packs"></pack-select>
-                <launch-controls class="flex-double-weight" :packs="packs"></launch-controls>
-            </div>
+            <component class="flex flex-grow" :is="tabName"></component>
+            <bottom-navigation-bar></bottom-navigation-bar>
         </div>
     </div>
 </template>
@@ -14,17 +11,27 @@
 <script lang='ts'>
     import {Component, Vue, Watch} from "vue-property-decorator";
     import InstalledPackJSON from "../main/model/InstalledPackJSON";
+    import BottomNavigationBar from "./components/BottomNavigationBar.vue";
     import LaunchControls from "./components/LaunchControls.vue";
     import PackSelect from "./components/PackSelect.vue";
+    import TabBuildModpacks from "./components/TabBuildModpacks.vue";
+    import TabPlayModded from "./components/TabPlayModded.vue";
+    import TabPlayVanilla from "./components/TabPlayVanilla.vue";
+    import TabSettings from "./components/TabSettings.vue";
     import TopBar from "./components/TopBar.vue";
     import Config from "./Config";
     import MainProcessActions from "./MainProcessActions";
 
     @Component({
         components: {
+            BottomNavigationBar,
             LaunchControls,
             PackSelect,
-            TopBar
+            TopBar,
+            TabPlayModded,
+            TabPlayVanilla,
+            TabBuildModpacks,
+            TabSettings,
         },
     })
     export default class App extends Vue {
@@ -67,7 +74,8 @@
             this.$store.commit("setPackNames", this.testPacks);
 
             MainProcessActions.onPackList = (packs) => {
-                // MainProcessActions.logMessage("[App.vue] Received pack list over ipc.");
+                MainProcessActions.logMessage("[App.vue] Received pack list over ipc.");
+                //TODO Re-enable
                 // this.$store.commit("setPackNames", packs);
             };
 
@@ -79,13 +87,13 @@
             console.info(`[App] Using API URL ${Config.API_URL}`);
         }
 
-        public get packs() {
-            return this.$store.state.packJsons;
-        }
-
         @Watch("$store.state.darkMode")
         public saveDarkMode(value: boolean) {
             localStorage.setItem("darkMode", value ? "1" : "0");
+        }
+
+        public get tabName() {
+            return "tab-" + this.$store.state.selectedTab;
         }
     }
 </script>

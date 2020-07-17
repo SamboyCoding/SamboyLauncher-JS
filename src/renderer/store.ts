@@ -5,7 +5,8 @@ export default new Vuex.Store({
     state: {
         selectedPack: 0,
         packJsons: [],
-        darkMode: false
+        darkMode: false,
+        selectedTab: 'play-modded',
     },
     mutations: {
         setSelectedPack: function(state, payload) {
@@ -16,6 +17,9 @@ export default new Vuex.Store({
         },
         toggleDark: function(state) {
             state.darkMode = !state.darkMode;
+        },
+        setSelectedTab: function(state, payload) {
+            state.selectedTab = payload;
         }
     },
     actions: {},

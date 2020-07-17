@@ -1,5 +1,5 @@
 <template>
-    <div class="mod-with-image flex flex-vertical flex-center-content align-center">
+    <div class="mod-with-image flex">
         <img :src="mod.addonThumbnail" :alt="`Thumbnail for ` + mod.addonName">
         <h3>{{mod.addonName}}</h3>
     </div>
@@ -12,7 +12,7 @@
     @Component({
         components: {},
     })
-    export default class ModWithThumbnail extends Vue {
+    export default class ModListRow extends Vue {
         @Prop({
             type: Object
         })
@@ -22,14 +22,22 @@
 
 <style scoped lang="scss">
     .mod-with-image {
-        height: 200px;
+        height: 3rem;
+        width: 100%;
         position: relative;
+        margin-bottom: 1rem;
 
         img {
             display: block;
             height: 100%;
-            min-width: 33%;
+            width: 50px;
             object-fit: contain;
+            margin-right: 1rem;
+        }
+
+        h3 {
+            display: inline-block;
+            margin: auto 0;
         }
     }
 </style>

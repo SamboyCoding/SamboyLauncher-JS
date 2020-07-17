@@ -2,7 +2,7 @@
     "compilerOptions": {
         "strict": false,
         "target": "esnext",
-        "module": "none",
+        "module": "commonjs",
         "importHelpers": true,
         "experimentalDecorators": true,
         "esModuleInterop": true,

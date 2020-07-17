@@ -1,19 +1,10 @@
 <template>
     <div id="pack-mod-list" class="fill-height">
-        <h2 v-if="modJars.length">Mods (Most Popular First)</h2>
+        <h2 v-if="modJars.length">Mods ({{sortTypeName}})</h2>
         <h2 v-else>Mods (loading...)</h2>
         <br>
         <div class="flex flex-vertical" id="pack-mods" v-if="modJars.length">
-            <div class="flex mod-row">
-                <!--Top Row-->
-                <ModWithThumbnail class="flex-grow" v-for="(mod, idx) in modJars.slice(0, 3)" :mod="mod" v-if="modJars.length > idx"></ModWithThumbnail>
-            </div>
-
-            <div class="flex flex-wrap">
-                <h3 class="flex-grow align-center mod-list-label" v-for="modJar in modJars.slice(3)">
-                    {{modJar.addonName}}
-                </h3>
-            </div>
+            <ModWithThumbnail class="flex-grow" v-for="(mod) in modJars" :mod="mod"></ModWithThumbnail>
         </div>
 
     </div>
@@ -25,10 +16,11 @@
     import InstalledModRecord from "../../main/model/InstalledModRecord";
     import ModJar from "../../main/model/ModJar";
     import Config from "../Config";
-    import ModWithThumbnail from "./ModWithThumbnail.vue";
+    import ModJarSorts from "../ModJarSorts";
+    import ModListRow from "./ModWithThumbnail.vue";
 
     @Component({
-        components: {ModWithThumbnail},
+        components: {ModWithThumbnail: ModListRow},
     })
     export default class PackModList extends Vue {
         @Prop({
@@ -37,6 +29,8 @@
         public mods: InstalledModRecord[];
 
         private modJars: ModJar[] = [];
+
+        public sortTypeName: string = "A-Z";
 
         public mounted() {
             this.onModsChange(this.mods);
@@ -48,7 +42,7 @@
 
             let promises = newMods.map(newMod => this.getModJar(newMod.addonId, newMod.fileId));
 
-            this.modJars = (await Promise.all(promises)).filter(jar => !!jar).sort((a, b) => b.addonPopularityScore - a.addonPopularityScore);
+            this.modJars = (await Promise.all(promises)).filter(jar => !!jar).sort(ModJarSorts.byName);
         }
 
         private async getModJar(addonId: number, fileId: number): Promise<ModJar | null> {
@@ -67,7 +61,7 @@
 
 <style scoped lang="scss">
     #pack-mods {
-        padding: 0 2rem;
+        padding: 0 0rem;
     }
 
     .mod-row {
