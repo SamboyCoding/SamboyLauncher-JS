@@ -1,5 +1,8 @@
 <template>
     <div id="root" :class="{'dark-theme': $store.state.darkMode}">
+
+        <div id="bg-1" :style="{'background-image': `url(${bg1Url})`}" :class="{shown: showBg1}"></div>
+        <div id="bg-2"  :style="{'background-image': `url(${bg2Url})`}" :class="{shown: showBg2}"></div>
         <div id="app" class="flex flex-vertical">
             <top-bar></top-bar>
             <component class="flex flex-grow" :is="tabName"></component>
@@ -21,6 +24,7 @@
     import TopBar from "./components/TopBar.vue";
     import Config from "./Config";
     import MainProcessActions from "./MainProcessActions";
+    import Utils from "./Utils";
 
     @Component({
         components: {
@@ -35,6 +39,8 @@
         },
     })
     export default class App extends Vue {
+        public static instance: App;
+
         private testPacks: InstalledPackJSON[] = [
             {
                 packName: "1.15Test",
@@ -68,9 +74,36 @@
                 installationProgress: 0.5,
             }
         ];
-        public mounted() {
+
+        public bg1Url: string = "";
+        public bg2Url: string = "";
+
+        public showBg1: boolean = true;
+        public showBg2: boolean = false;
+
+        public setBackground(target: string) {
+            if(!this.$store.state.backgroundUrls.hasOwnProperty(target)) return;
+
+            if(this.showBg1) {
+                this.bg2Url = this.$store.state.backgroundUrls[target];
+                this.showBg2 = true;
+                this.showBg1 = false;
+            } else {
+                this.bg1Url = this.$store.state.backgroundUrls[target];
+                this.showBg1 = true;
+                this.showBg2 = false;
+            }
+        }
+
+        constructor() {
+            super();
+            App.instance = this;
+        }
+
+        public async mounted() {
             MainProcessActions.logMessage("[App.vue] Mounted.");
 
+            console.log(this.$store.state.backgroundUrls);
             this.$store.commit("setPackNames", this.testPacks);
 
             MainProcessActions.onPackList = (packs) => {
@@ -85,6 +118,11 @@
 
             console.info("[App] SBL Renderer: Main App Mounted.");
             console.info(`[App] Using API URL ${Config.API_URL}`);
+        }
+
+        @Watch("$store.state.backgroundUrls")
+        public onBGUrlsLoad() {
+            this.bg1Url = this.$store.state.backgroundUrls[this.$store.state.darkMode ? "dark_modded" : "light_modded"];
         }
 
         @Watch("$store.state.darkMode")
@@ -110,9 +148,26 @@
         background-size: cover !important;
     }
 
+    #bg-1, #bg-2 {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -10;
+        background: transparent no-repeat fixed;
+        transition: opacity 0.5s;
+        opacity: 0;
+        background-size: cover;
+
+        &.shown {
+            opacity: 1;
+        }
+    }
+
     //Dark theme
     #root.dark-theme {
-        background: url("resources/backgrounds/bg_dark_mode_play.png") no-repeat fixed;
+        background: transparent;
         --highlight-color: #3e3e3e;
         --muted-highlight: #1e1e1e;
         --transparant-highlight: rgba(50, 50, 50, 0.75);
@@ -126,14 +181,15 @@
 
     //Light theme
     #root:not(.dark-theme) {
-        background: url("resources/backgrounds/bg_light_mode_play.jpg") no-repeat fixed;
+        /*background: url("resources/backgrounds/bg_light_mode_play.jpg") no-repeat fixed;*/
+        background: transparent;
         --highlight-color: #ddd;
         --muted-highlight: #cacaca;
         --transparant-highlight: rgba(220, 220, 220, 0.4);
         --install-highlight: rgba(150, 150, 150, 0.4);
 
         #app {
-            background: radial-gradient(rgba(200, 200, 200, 0.75), rgba(200, 200, 200, 0.9) 90%) no-repeat fixed;
+            background: radial-gradient(rgba(200, 200, 200, 0.75), rgba(200, 200, 200, 0.85) 90%) no-repeat fixed;
         }
     }
 

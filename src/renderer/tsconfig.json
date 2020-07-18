@@ -8,6 +8,7 @@
         "sourceMap": true,
         "noImplicitThis": true,
         "moduleResolution": "node",
+        "esModuleInterop": true,
         "lib": [
             "es2018",
             "dom"

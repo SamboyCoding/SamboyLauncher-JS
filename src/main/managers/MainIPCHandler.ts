@@ -1,9 +1,10 @@
 import {spawn} from "child_process";
-import {dialog, ipcMain, IpcMainEvent} from "electron";
+import datauri from "datauri";
+import {app, dialog, ipcMain, IpcMainEvent} from "electron";
 import {existsSync, unlinkSync} from "fs";
 import {readFileSync, writeFileSync} from "jsonfile";
 import * as os from "os";
-import {join} from "path";
+import {isAbsolute, join} from "path";
 import * as rimraf from "rimraf";
 import Logger from "../logger";
 import ForgeVersion from "../model/ForgeVersion";
@@ -21,6 +22,8 @@ import EnvironmentManager from "./EnvironmentManager";
 import InstalledPackManager from "./InstalledPackManager";
 
 export default class MainIPCHandler {
+    private static dataUrlMap: Map<string, string> = new Map<string, string>();
+
     public static Init() {
         ipcMain.on("renderer log", (event, message) => Logger.infoImpl("Renderer", message));
 
@@ -28,6 +31,7 @@ export default class MainIPCHandler {
         ipcMain.on("create pack", MainIPCHandler.createPack);
         ipcMain.on("launch pack", MainIPCHandler.launchPack);
         ipcMain.on("install mods", MainIPCHandler.installMods);
+        ipcMain.on("generate data url", MainIPCHandler.generateDataUrl);
 
         ipcMain.on("sign in", async (event: IpcMainEvent, email: string, password: string) => {
             try {
@@ -409,5 +413,28 @@ export default class MainIPCHandler {
                 InstalledPackManager.SaveModifiedPackData();
             })).then(ff);
         });
+    }
+
+    private static async generateDataUrl(event: IpcMainEvent, key: string) {
+        let ret: string;
+        try {
+            let path = isAbsolute(key) ? key : join(app.getAppPath(), "..", "..", key);
+
+            if(MainIPCHandler.dataUrlMap.has(path))
+                ret = MainIPCHandler.dataUrlMap.get(path);
+            else {
+
+                Logger.infoImpl("GDU", "Load file " + path);
+                ret = await datauri(path);
+                Logger.infoImpl("GDU", "Loaded");
+
+                MainIPCHandler.dataUrlMap.set(path, ret);
+            }
+        } catch(e) {
+            Logger.warnImpl("GDU", "Couldn't handle request: " + e.message);
+            ret = null;
+        }
+
+        event.sender.send("data url generated", key, ret);
     }
 }

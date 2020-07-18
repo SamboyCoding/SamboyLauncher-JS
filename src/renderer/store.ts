@@ -1,4 +1,6 @@
 import Vuex from "vuex";
+import MainProcessActions from "./MainProcessActions";
+import Utils from "./Utils";
 
 export default new Vuex.Store({
     strict: true,
@@ -7,19 +9,24 @@ export default new Vuex.Store({
         packJsons: [],
         darkMode: false,
         selectedTab: 'play-modded',
+        backgroundUrls: {},
     },
     mutations: {
-        setSelectedPack: function(state, payload) {
+        setSelectedPack: (state, payload) => {
             state.selectedPack = payload;
         },
-        setPackNames: function(state, payload) {
+        setPackNames: (state, payload) => {
             state.packJsons = payload;
         },
-        toggleDark: function(state) {
+        toggleDark: state => {
             state.darkMode = !state.darkMode;
         },
-        setSelectedTab: function(state, payload) {
+        setSelectedTab: (state, payload) => {
             state.selectedTab = payload;
+        },
+        loadBackgrounds: async (state, payload) => {
+            console.log("Loading background URLs")
+            state.backgroundUrls = payload;
         }
     },
     actions: {},
