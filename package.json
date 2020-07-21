@@ -28,7 +28,7 @@
         "@types/rimraf": "^3.0.0",
         "@vue/component-compiler-utils": "^3.1.2",
         "concurrently": "^5.2.0",
-        "electron": "^9.1.0",
+        "electron": "^9.1.1",
         "electron-builder": "^22.7.0",
         "electron-devtools-installer": "^3.1.1",
         "parcel": "^1.12.4",
