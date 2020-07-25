@@ -18,7 +18,7 @@ export default class ElectronManager {
 
         if(isDev) {
             try {
-                await installExtension(VUEJS_DEVTOOLS)
+                await installExtension(VUEJS_DEVTOOLS);
                 Logger.infoImpl("ElectronManager", "Installed VueJS devtools");
             } catch(e) {
                 Logger.errorImpl("ElectronManager", "Failed to install VueJS devtools: " + e);
@@ -93,14 +93,20 @@ export default class ElectronManager {
             ElectronManager.win = null;
         });
 
+        ElectronManager.win.show();
+        ipcMain.on("renderer ready", this.sendInitialIPCData);
+
         Logger.debugImpl("ElectronManager", "Loading renderer html...");
         await ElectronManager.win.loadFile(join(__dirname, "../../../webContents/index.html"));
+    }
 
-        Logger.debugImpl("ElectronManager", "Renderer HTML Loaded, showing window and sending initial ipc messages...");
-        ElectronManager.win.show();
+    private static sendInitialIPCData() {
+        Logger.debugImpl("ElectronManager", "Renderer HTML Loaded, sending initial ipc messages...");
 
         ElectronManager.win.webContents.send("pack list", InstalledPackManager.InstalledPacks);
-        ElectronManager.win.webContents.send("mc versions", MCVersion.GetAllVersionNames());
+
+        let versions = MCVersion.GetVersionDataForRenderer();
+        ElectronManager.win.webContents.send("mc versions", versions);
     }
 
     private static async onReady() {

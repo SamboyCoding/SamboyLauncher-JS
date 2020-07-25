@@ -11,6 +11,7 @@ import ManifestArtifact from "./ManifestArtifact";
 import MCAssetDefinition from "./MCAssetDefinition";
 import MCAssetIndex from "./MCAssetIndex";
 import MCClientVersionManifest from "./MCClientVersionManifest";
+import RendererBoundVersionListing from "./RendererBoundVersionListing";
 
 export default class MCVersion {
     private static _cache = new Map<string, MCVersion>();
@@ -77,8 +78,19 @@ export default class MCVersion {
         Logger.infoImpl("Minecraft Version Manager", `Loaded ${json.versions.length} versions, of which ${releases.length} are release builds, ${releases[0].id} being the most recent, ${snapshots.length} are snapshots, ${snapshots[0].id} being the most recent, ${oldBetas.length} are beta builds, and ${oldAlphas.length} are alpha builds.`);
     }
 
-    public static GetAllVersionNames(): string[] {
-        return Array.from(MCVersion._cache.keys());
+    public static GetVersionDataForRenderer(): RendererBoundVersionListing {
+        let versionArray = Array.from(this._cache.values());
+        let releases = versionArray.filter(v => v.type === "release");
+        let snapshots = versionArray.filter(v => v.type === "snapshot");
+        let oldBetas = versionArray.filter(v => v.type === "old_beta");
+        let oldAlphas = versionArray.filter(v => v.type === "old_alpha");
+
+        return {
+            release: releases.map(r => r.name),
+            snapshot: snapshots.map(s => s.name),
+            oldBeta: oldBetas.map(b => b.name),
+            oldAlpha: oldAlphas.map(a => a.name),
+        };
     }
 
     public static async Get(name: string): Promise<MCVersion | null> {

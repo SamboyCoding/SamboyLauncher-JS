@@ -27,8 +27,11 @@
 </script>
 
 <style scoped lang="scss">
+    @import "../scss/GlobalStyles";
+
     #top-bar {
         padding: 1rem;
+        height: $top-bar-height;
         /*box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.75);*/
     }
 </style>

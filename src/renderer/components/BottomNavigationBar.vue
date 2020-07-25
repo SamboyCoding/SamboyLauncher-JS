@@ -30,8 +30,10 @@
 </script>
 
 <style scoped lang="scss">
+    @import "../scss/GlobalStyles";
+
     #bottom-navigation-bar {
-        height: 64px;
+        height: $bottom-bar-height;
         width: 100%;
     }
 </style>

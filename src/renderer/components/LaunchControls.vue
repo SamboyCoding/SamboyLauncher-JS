@@ -19,7 +19,6 @@
 
 <script lang='ts'>
     import {Component, Prop, Vue} from "vue-property-decorator";
-    import InstalledPack from "../../main/model/InstalledPack";
     import InstalledPackJSON from "../../main/model/InstalledPackJSON";
     import PackModList from "./PackModList.vue";
     import SblButton from "./SblButton.vue";

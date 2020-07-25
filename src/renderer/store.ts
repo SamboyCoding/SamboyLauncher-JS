@@ -1,12 +1,11 @@
 import Vuex from "vuex";
-import MainProcessActions from "./MainProcessActions";
-import Utils from "./Utils";
 
 export default new Vuex.Store({
     strict: true,
     state: {
         selectedPack: 0,
         packJsons: [],
+        vanillaMCVersions: {},
         darkMode: false,
         selectedTab: 'play-modded',
         backgroundUrls: {},
@@ -24,9 +23,11 @@ export default new Vuex.Store({
         setSelectedTab: (state, payload) => {
             state.selectedTab = payload;
         },
-        loadBackgrounds: async (state, payload) => {
-            console.log("Loading background URLs")
+        loadBackgrounds: (state, payload) => {
             state.backgroundUrls = payload;
+        },
+        setMCVersions: (state, payload) => {
+            state.vanillaMCVersions = payload;
         }
     },
     actions: {},

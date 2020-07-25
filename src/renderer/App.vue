@@ -1,5 +1,5 @@
 <template>
-    <div id="root" :class="{'dark-theme': $store.state.darkMode}">
+    <div id="root" :class="{'dark-theme': this.$store.state.darkMode}">
 
         <div id="bg-1" :style="{'background-image': `url(${bg1Url})`}" :class="{shown: showBg1}"></div>
         <div id="bg-2"  :style="{'background-image': `url(${bg2Url})`}" :class="{shown: showBg2}"></div>
@@ -14,6 +14,7 @@
 <script lang='ts'>
     import {Component, Vue, Watch} from "vue-property-decorator";
     import InstalledPackJSON from "../main/model/InstalledPackJSON";
+    import RendererBoundVersionListing from "../main/model/RendererBoundVersionListing";
     import BottomNavigationBar from "./components/BottomNavigationBar.vue";
     import LaunchControls from "./components/LaunchControls.vue";
     import PackSelect from "./components/PackSelect.vue";
@@ -24,7 +25,6 @@
     import TopBar from "./components/TopBar.vue";
     import Config from "./Config";
     import MainProcessActions from "./MainProcessActions";
-    import Utils from "./Utils";
 
     @Component({
         components: {
@@ -102,18 +102,19 @@
 
         public async mounted() {
             MainProcessActions.logMessage("[App.vue] Mounted.");
+            MainProcessActions.notifyLoaded();
 
-            console.log(this.$store.state.backgroundUrls);
             this.$store.commit("setPackNames", this.testPacks);
 
-            MainProcessActions.onPackList = (packs) => {
+            MainProcessActions.onPackList = (packs: InstalledPackJSON[]) => {
                 MainProcessActions.logMessage("[App.vue] Received pack list over ipc.");
                 //TODO Re-enable
                 // this.$store.commit("setPackNames", packs);
             };
 
-            MainProcessActions.onMcVersionList = (versions) => {
-                MainProcessActions.logMessage(`[App.vue] Received ${versions.length} installable mc versions`);
+            MainProcessActions.onMcVersionList = (versions: RendererBoundVersionListing) => {
+                MainProcessActions.logMessage(`[App.vue] Received installable mc versions.`);
+                this.$store.commit("setMCVersions", versions);
             };
 
             console.info("[App] SBL Renderer: Main App Mounted.");
@@ -174,7 +175,7 @@
         --install-highlight: rgba(75, 75, 75, 0.75);
 
         #app {
-            background: radial-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.9) 90%) no-repeat fixed;
+            background: radial-gradient(rgba(0, 0, 0, 0.89), rgba(0, 0, 0, 0.99) 90%) no-repeat fixed;
             color: white;
         }
     }

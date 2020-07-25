@@ -21,8 +21,8 @@
 <style scoped lang="scss">
     .sbl-button {
         vertical-align: middle;
-        padding: 1rem 1.88rem;
-        height: 100%;
+        padding: 0.5rem 1.88rem;
+        //height: 100%;
         transition: background-color 0.25s;
 
         &:hover {
