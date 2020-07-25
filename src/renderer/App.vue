@@ -19,6 +19,7 @@
     import LaunchControls from "./components/LaunchControls.vue";
     import PackSelect from "./components/PackSelect.vue";
     import TabBuildModpacks from "./components/TabBuildModpacks.vue";
+    import TabDownloads from "./components/TabDownloads.vue";
     import TabPlayModded from "./components/TabPlayModded.vue";
     import TabPlayVanilla from "./components/TabPlayVanilla.vue";
     import TabSettings from "./components/TabSettings.vue";
@@ -35,6 +36,7 @@
             TabPlayModded,
             TabPlayVanilla,
             TabBuildModpacks,
+            TabDownloads,
             TabSettings,
         },
     })

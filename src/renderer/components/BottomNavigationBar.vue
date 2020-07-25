@@ -16,6 +16,7 @@
             "play-modded": "Play Modpacks",
             "play-vanilla": "Play Vanilla",
             "build-modpacks": "Creator Tools",
+            "downloads": "Downloads",
             "settings": "Settings",
         };
 
