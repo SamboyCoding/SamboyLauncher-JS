@@ -58,22 +58,6 @@
                 description: "[Enter Pack Description]",
                 id: "",
                 author: {"uuid": "", "name": "Me"},
-            },
-            {
-                packName: "InstallationTest",
-                gameVersion: "1.15.2",
-                forgeVersion: "1.15.2-31.1.27",
-                installedMods: [
-                    {"fileId": 2866141, "addonId": 238222},
-                    {"fileId": 2894436, "addonId": 32274},
-                    {"fileId": 2849221, "addonId": 60089},
-                    {"fileId": 2887674, "addonId": 223852}
-                ],
-                installedVersion: "1.0",
-                description: "[Enter Pack Description]",
-                id: "",
-                author: {"uuid": "", "name": "Me"},
-                installationProgress: 0.5,
             }
         ];
 

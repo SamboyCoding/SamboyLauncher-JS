@@ -2,19 +2,20 @@
     "compilerOptions": {
         "strict": false,
         "target": "esnext",
-        "module": "none",
+        "module": "commonjs",
         "importHelpers": true,
         "experimentalDecorators": true,
+        "esModuleInterop": true,
         "sourceMap": true,
         "noImplicitThis": true,
         "moduleResolution": "node",
-        "esModuleInterop": true,
         "lib": [
             "es2018",
             "dom"
         ]
     },
     "exclude": [
-        "../../node_modules"
+        "../../node_modules",
+        "../main/**"
     ]
 }

@@ -1,7 +1,7 @@
 <template>
     <div id="pack-select">
         <div class="fill-height">
-            <pack-select-entry v-for="(pack, idx) in packs" :pack-name="pack.packName" :selected="selectedPackIndex === idx" :install-progress="pack.installationProgress" @click.native="selectPack(idx)"></pack-select-entry>
+            <pack-select-entry v-for="(pack, idx) in packs" :pack-name="pack.packName" :selected="selectedPackIndex === idx" @click.native="selectPack(idx)"></pack-select-entry>
         </div>
     </div>
 </template>

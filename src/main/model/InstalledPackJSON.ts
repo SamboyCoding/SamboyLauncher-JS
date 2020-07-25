@@ -10,7 +10,4 @@ export default class InstalledPackJSON {
     public id: string;
     public installedVersion: string;
     public installedMods: InstalledModRecord[];
-
-    //Shouldn't be serialized
-    public installationProgress?: number;
 }
