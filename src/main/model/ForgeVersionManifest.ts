@@ -1,26 +1,10 @@
 import ManifestArtifact from "./ManifestArtifact";
+import {RestrictedGameArgument, RestrictedJavaArgument} from "./MinecraftVersionManifest";
 
 export default class ForgeVersionManifest {
-    public arguments?: {
-        game: (string | {
-            rules: {
-                action: "allow" | "deny",
-                features: {
-                    [key: string]: boolean
-                }
-            }[],
-            value: string | string[]
-        })[],
-        jvm: (string | {
-            rules: {
-                action: "allow" | "deny",
-                os: {
-                    name?: "windows" | "osx" | "linux",
-                    version?: string
-                }
-            }[],
-            value: string | string[]
-        })[]
+    public arguments?: { //Post-1.13
+        game: (string | RestrictedGameArgument)[],
+        jvm: (string | RestrictedJavaArgument)[]
     };
     public minecraftArguments?: string;
     public libraries: {

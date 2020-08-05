@@ -10,6 +10,10 @@ import InstalledPackManager from "./InstalledPackManager";
 export default class ElectronManager {
     public static win: BrowserWindow;
 
+    public static SendIPCToMain(channel: string, ...args: any[]) {
+        this.win.webContents.send(channel, ...args);
+    }
+
     public static async SetupElectron() {
         Logger.infoImpl("ElectronManager", "Init");
 

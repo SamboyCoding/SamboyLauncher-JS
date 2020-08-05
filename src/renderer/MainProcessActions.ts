@@ -1,6 +1,9 @@
 import {ipcRenderer, IpcRendererEvent} from "electron";
+import DownloadQueueEntry from "../main/model/DownloadQueueEntry";
 import InstalledPackJSON from "../main/model/InstalledPackJSON";
+import MainProcessBoundDownloadRequest from "../main/model/MainProcessBoundDownloadRequest";
 import RendererBoundVersionListing from "../main/model/RendererBoundVersionListing";
+import App from "./App.vue";
 
 ipcRenderer.on("pack list", (event, packs: InstalledPackJSON[]) => {
     if(MainProcessActions.onPackList)
@@ -10,6 +13,11 @@ ipcRenderer.on("pack list", (event, packs: InstalledPackJSON[]) => {
 ipcRenderer.on("mc versions", (event, versions: RendererBoundVersionListing) => {
     if(MainProcessActions.onMcVersionList)
         MainProcessActions.onMcVersionList(versions);
+});
+
+ipcRenderer.on("download queue", (event, queue: DownloadQueueEntry[]) => {
+    console.log("Got queue", queue);
+    App.instance.$store.commit("setInstalls", queue);
 });
 
 export default class MainProcessActions {
@@ -27,7 +35,7 @@ export default class MainProcessActions {
 
     public static logMessage(message: string, ...args) {
         if(args.length)
-            console.log(message, args);
+            console.log(message, ...args);
         else
             console.log(message);
         ipcRenderer.send("renderer log", message);
@@ -53,5 +61,9 @@ export default class MainProcessActions {
 
     public static notifyLoaded() {
         ipcRenderer.send("renderer ready");
+    }
+
+    static requestInstall(data: MainProcessBoundDownloadRequest) {
+        ipcRenderer.send("process download request", data);
     }
 }

@@ -6,7 +6,7 @@
             </div>
             <div class="vanilla-version is-release flex flex-align-center" v-for="version in mcVersions.release">
                 <span class="vanilla-version-name">{{version}}</span>
-                <sbl-button class="vanilla-install-button" label="Install"></sbl-button>
+                <sbl-button class="vanilla-install-button" label="Install" @click.native="install(version)"></sbl-button>
             </div>
         </div>
         <div class="vanilla-column flex-grow">
@@ -15,7 +15,7 @@
             </div>
             <div class="vanilla-version is-release flex flex-align-center" v-for="version in mcVersions.snapshot">
                 <span class="vanilla-version-name">{{version}}</span>
-                <sbl-button class="vanilla-install-button" label="Install"></sbl-button>
+                <sbl-button class="vanilla-install-button" label="Install" @click.native="install(version)"></sbl-button>
             </div>
         </div>
         <div class="vanilla-column flex-grow">
@@ -24,7 +24,7 @@
             </div>
             <div class="vanilla-version is-release flex flex-align-center" v-for="version in mcVersions.oldBeta">
                 <span class="vanilla-version-name">{{version}}</span>
-                <sbl-button class="vanilla-install-button" label="Install"></sbl-button>
+                <sbl-button class="vanilla-install-button" label="Install" @click.native="install(version)"></sbl-button>
             </div>
         </div>
         <div class="vanilla-column flex-grow">
@@ -33,7 +33,7 @@
             </div>
             <div class="vanilla-version is-release flex flex-align-center" v-for="version in mcVersions.oldAlpha">
                 <span class="vanilla-version-name">{{version}}</span>
-                <sbl-button class="vanilla-install-button" label="Install"></sbl-button>
+                <sbl-button class="vanilla-install-button" label="Install" @click.native="install(version)"></sbl-button>
             </div>
         </div>
     </div>
@@ -44,6 +44,7 @@ import {Component, Vue, Watch} from "vue-property-decorator";
 import MCVersion from "../../main/model/MCVersion";
 import RendererBoundVersionListing from "../../main/model/RendererBoundVersionListing";
 import App from "../App.vue";
+import MainProcessActions from "../MainProcessActions";
 import SblButton from "./SblButton.vue";
 
 @Component({
@@ -63,6 +64,15 @@ export default class TabPlayVanilla extends Vue {
     @Watch("$store.state.darkMode")
     private updateBG() {
         App.instance.setBackground(this.$store.state.darkMode ? "dark_vanilla" : "light_vanilla");
+    }
+
+    public install(version: string) {
+        MainProcessActions.requestInstall({
+            packName: null,
+            gameVersionId: version,
+            forgeVersionId: null,
+            mods: [],
+        })
     }
 }
 </script>

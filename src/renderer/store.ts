@@ -9,6 +9,7 @@ export default new Vuex.Store({
         darkMode: false,
         selectedTab: 'play-modded',
         backgroundUrls: {},
+        installs: [],
     },
     mutations: {
         setSelectedPack: (state, payload) => {
@@ -28,7 +29,10 @@ export default new Vuex.Store({
         },
         setMCVersions: (state, payload) => {
             state.vanillaMCVersions = payload;
-        }
+        },
+        setInstalls: ((state, payload) => {
+            state.installs = payload;
+        })
     },
     actions: {},
 });

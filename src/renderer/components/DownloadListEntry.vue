@@ -1,21 +1,22 @@
 <template>
     <div :class="{'download-list-entry': true, 'flex': true, 'flex-vertical': true, expanded: showLog}">
         <div class="download-list-entry-fields flex" @click="showLog = !showLog">
-            <span class="download-list-entry-name">{{record.packName}}</span>
-            <span class="download-list-entry-status">{{record.statusLabel}}</span>
-            <span class="download-list-entry-downloaded">{{record.downloadedMib}}MiB / {{record.totalMib ? record.totalMib : '__'}}MiB</span>
-            <span class="download-list-entry-speed">{{record.speedMib}}MiB/sec</span>
-            <span class="download-list-entry-threads">{{record.threadCount}} thread{{record.threadCount === 1 ? '' : 's'}} downloading</span>
+            <span class="download-list-entry-name">{{record.initialRequest.packName}}</span>
+            <span class="download-list-entry-status">{{record.downloadStats.statusLabel}}</span>
+            <span class="download-list-entry-downloaded">{{record.downloadStats.downloadedMib}}MiB / {{record.downloadStats.totalMib ? record.downloadStats.totalMib : '__'}}MiB</span>
+            <span class="download-list-entry-speed">{{record.downloadStats.speedMib}}MiB/sec</span>
+            <span class="download-list-entry-threads">{{record.downloadStats.threadCount}} thread{{record.downloadStats.threadCount === 1 ? '' : 's'}} downloading</span>
             <i class="download-list-entry-expand-icon fa fa-2x fa-angle-right"></i>
         </div>
         <div class="downloads-list-entry-log-wrapper">
-            <textarea readonly class="downloads-list-entry-log" v-text="`Lorem ipsum dolor sit amet\nHello world\nHola mundo\nBonjour`"></textarea>
+            <textarea readonly class="downloads-list-entry-log" v-text="record.log"></textarea>
         </div>
     </div>
 </template>
 
 <script lang='ts'>
 import {Component, Prop, Vue} from "vue-property-decorator";
+import DownloadQueueEntry from "../../main/model/DownloadQueueEntry";
 import DownloadRecord from "../../main/model/DownloadRecord";
 
 @Component({
@@ -28,7 +29,7 @@ export default class DownloadListEntry extends Vue {
         required: true,
         type: Object
     })
-    public record: DownloadRecord;
+    public record: DownloadQueueEntry;
 }
 </script>
 

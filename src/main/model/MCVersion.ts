@@ -8,9 +8,9 @@ import Logger from "../logger";
 import EnvironmentManager from "../managers/EnvironmentManager";
 import Utils from "../util/Utils";
 import ManifestArtifact from "./ManifestArtifact";
-import MCAssetDefinition from "./MCAssetDefinition";
-import MCAssetIndex from "./MCAssetIndex";
-import MCClientVersionManifest from "./MCClientVersionManifest";
+import MinecraftAssetDefinition from "./MinecraftAssetDefinition";
+import MinecraftAssetIndex from "./MinecraftAssetIndex";
+import MinecraftVersionManifest, {RestrictedGameArgument, RestrictedJavaArgument} from "./MinecraftVersionManifest";
 import RendererBoundVersionListing from "./RendererBoundVersionListing";
 
 export default class MCVersion {
@@ -23,30 +23,13 @@ export default class MCVersion {
     public clientJar: ManifestArtifact;
     public libraries: ManifestArtifact[] = [];
     public natives: ManifestArtifact[] = [];
-    public assets: Map<string, MCAssetDefinition> = new Map<string, MCAssetDefinition>();
+    public assets: Map<string, MinecraftAssetDefinition> = new Map<string, MinecraftAssetDefinition>();
 
     public isPost113: boolean = false;
 
-    public arguments?: {
-        game: (string | {
-            rules: {
-                action: "allow" | "deny",
-                features: {
-                    [key: string]: boolean
-                }
-            }[],
-            value: string | string[]
-        })[],
-        jvm: (string | {
-            rules: {
-                action: "allow" | "deny",
-                os: {
-                    name?: "windows" | "osx" | "linux",
-                    version?: string
-                }
-            }[],
-            value: string | string[]
-        })[]
+    public arguments?: { //Post-1.13
+        game: (string | RestrictedGameArgument)[],
+        jvm: (string | RestrictedJavaArgument)[]
     };
 
     constructor(data: { id: string, type: "release" | "snapshot" | "old_alpha" | "old_beta", url: string }) {
@@ -102,13 +85,13 @@ export default class MCVersion {
 
         const manifestFile = join(EnvironmentManager.versionsDir, name, name + ".json");
 
-        let mfest: MCClientVersionManifest;
+        let mfest: MinecraftVersionManifest;
         if (existsSync(manifestFile)) {
             Logger.debugImpl("Minecraft Version Manager", "Loading from local file; manifest is cached");
-            mfest = readFileSync(manifestFile) as MCClientVersionManifest;
+            mfest = readFileSync(manifestFile) as MinecraftVersionManifest;
         } else {
             const resp2 = await fetch(mcVersion.manifestUrl);
-            mfest = await resp2.json() as MCClientVersionManifest;
+            mfest = await resp2.json() as MinecraftVersionManifest;
 
             await Utils.mkdirpPromise(join(EnvironmentManager.versionsDir, name));
             writeFileSync(manifestFile, mfest, {spaces: 4});
@@ -154,7 +137,7 @@ export default class MCVersion {
 
         //This does nothing if the file already exists and the signature is valid.
         await Utils.downloadWithSHA1(mcVersion.assetIndex.url, indexPath, mcVersion.assetIndex.sha1);
-        const index = readFileSync(indexPath) as MCAssetIndex;
+        const index = readFileSync(indexPath) as MinecraftAssetIndex;
 
         for (let filename in index.objects) {
             mcVersion.assets.set(filename, index.objects[filename]);

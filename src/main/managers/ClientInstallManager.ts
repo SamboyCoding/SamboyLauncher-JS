@@ -5,7 +5,7 @@ import {basename, dirname, join} from "path";
 import rimraf from "rimraf";
 import Logger from "../logger";
 import ForgeVersion from "../model/ForgeVersion";
-import MCAssetDefinition from "../model/MCAssetDefinition";
+import MinecraftAssetDefinition from "../model/MinecraftAssetDefinition";
 import MCVersion from "../model/MCVersion";
 import Utils from "../util/Utils";
 import ElectronManager from "./ElectronManager";
@@ -184,7 +184,7 @@ export default class ClientInstallManager {
         let assets = Array.from(minecraftVersion.assets.values()).sort((a, b) => a.hash.localeCompare(b.hash));
 
         let threads = os.cpus().length;
-        let threadJobs: MCAssetDefinition[][] = [];
+        let threadJobs: MinecraftAssetDefinition[][] = [];
 
         let idx = 0;
         let amountPer = Math.floor(assets.length / threads);

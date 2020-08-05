@@ -10,6 +10,7 @@ import Logger from "../logger";
 import ForgeVersion from "../model/ForgeVersion";
 import InstalledPack from "../model/InstalledPack";
 import InstalledPackJSON from "../model/InstalledPackJSON";
+import MainProcessBoundDownloadRequest from "../model/MainProcessBoundDownloadRequest";
 import MavenArtifact from "../model/MavenArtifact";
 import MCVersion from "../model/MCVersion";
 import ModJar from "../model/ModJar";
@@ -17,6 +18,7 @@ import Utils from "../util/Utils";
 import AuthenticationManager from "./AuthenticationManager";
 import ClientInstallManager from "./ClientInstallManager";
 import ConfigurationManager from "./ConfigurationManager";
+import DownloadManager from "./DownloadManager";
 import ElectronManager from "./ElectronManager";
 import EnvironmentManager from "./EnvironmentManager";
 import InstalledPackManager from "./InstalledPackManager";
@@ -32,6 +34,11 @@ export default class MainIPCHandler {
         ipcMain.on("launch pack", MainIPCHandler.launchPack);
         ipcMain.on("install mods", MainIPCHandler.installMods);
         ipcMain.on("generate data url", MainIPCHandler.generateDataUrl);
+        ipcMain.on("process download request", (event, request: MainProcessBoundDownloadRequest) => {
+            DownloadManager.HandleRequest(request).catch(e => {
+                Logger.errorImpl("IPCMain", "Download Manager threw exception: " + e.stack);
+            });
+        })
 
         ipcMain.on("sign in", async (event: IpcMainEvent, email: string, password: string) => {
             try {

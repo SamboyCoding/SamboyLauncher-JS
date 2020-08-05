@@ -1,6 +1,7 @@
 <template>
     <div id="downloads-tab" class="flex flex-vertical">
-        <DownloadListEntry v-for="record in data" :record="record"></DownloadListEntry>
+        <DownloadListEntry v-for="record in installs" :record="record"></DownloadListEntry>
+        <span id="no-downloads" v-if="installs.length === 0">You have no installations in progress.</span>
     </div>
 </template>
 
@@ -13,24 +14,9 @@ import DownloadListEntry from "./DownloadListEntry.vue";
     components: {DownloadListEntry},
 })
 export default class TabDownloads extends Vue {
-    public data: DownloadRecord[] = [
-        {
-            packName: "Pack that's downloading",
-            statusLabel: "Downloading Files",
-            downloadedMib: 84,
-            totalMib: 368,
-            speedMib: 18,
-            threadCount: 8
-        },
-        {
-            packName: "Pack that's pulling",
-            statusLabel: "Pulling Manifests",
-            downloadedMib: 6,
-            totalMib: null,
-            speedMib: 1,
-            threadCount: 1,
-        }
-    ]
+    public get installs(): DownloadRecord[] {
+        return this.$store.state.installs;
+    }
 }
 </script>
 
@@ -39,5 +25,12 @@ export default class TabDownloads extends Vue {
         overflow-x: hidden;
         overflow-y: auto;
         height: 100%;
+    }
+
+    #no-downloads {
+        display: block;
+        width: 100%;
+        text-align: center;
+        margin-top: 5%;
     }
 </style>
