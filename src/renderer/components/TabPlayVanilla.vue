@@ -41,7 +41,6 @@
 
 <script lang='ts'>
 import {Component, Vue, Watch} from "vue-property-decorator";
-import MCVersion from "../../main/model/MCVersion";
 import RendererBoundVersionListing from "../../main/model/RendererBoundVersionListing";
 import App from "../App.vue";
 import MainProcessActions from "../MainProcessActions";
@@ -56,9 +55,7 @@ export default class TabPlayVanilla extends Vue {
     }
 
     public get mcVersions(): RendererBoundVersionListing {
-        let result = this.$store.state.vanillaMCVersions;
-        console.log(result);
-        return result;
+        return this.$store.state.vanillaMCVersions;
     }
 
     @Watch("$store.state.darkMode")

@@ -57,14 +57,15 @@ export default class MinecraftVersionManager {
     static async GetFileListForGameVersion(downloadQueueEntry: DownloadQueueEntry, versionSpecification: VersionSpecification): Promise<FileToDownload[]> {
         //Let's pull down the files we need, first.
         //Namely, the game manifest, and the asset manifest
-        downloadQueueEntry.log += `\nPulling version manifest for ${versionSpecification.id}...`;
+        downloadQueueEntry.log += `\nCalculating files we need to download for vanilla client version ${versionSpecification.id}...`;
+        downloadQueueEntry.log += `\n\tPulling version manifest for ${versionSpecification.id}...`;
         const manifest = await this.GetOrDownloadVersionManifest(downloadQueueEntry, versionSpecification.url);
-        downloadQueueEntry.log += `\nPulling asset index "${manifest.assets}"...`;
+        downloadQueueEntry.log += `\n\tPulling asset index "${manifest.assets}"...`;
         const assetIndex = await this.GetOrDownloadAssetIndex(downloadQueueEntry, manifest.assetIndex.url);
 
         const ret: FileToDownload[] = [];
 
-        downloadQueueEntry.log += `\nCalculating assets we are missing...`;
+        downloadQueueEntry.log += `\n\tCalculating assets we are missing...`;
         let promises = Object.keys(assetIndex.objects).map(async relativePath => {
             let assetData = assetIndex.objects[relativePath];
             let localPath = join(EnvironmentManager.assetsDir, "objects", assetData.hash.substr(0, 2), assetData.hash);
@@ -90,11 +91,11 @@ export default class MinecraftVersionManager {
         //Filter out the null values - those we don't need.
         const assetsToDownload = (await Promise.all<FileToDownload>(promises)).filter(f => !!f);
         const totalAssetsSizeBytes = assetsToDownload.map(f => f.sizeBytes).reduce((previousValue, currentValue) => previousValue + currentValue, 0);
-        downloadQueueEntry.log += `\nNeed to download ${assetsToDownload.length} asset(s) totalling ${DownloadManager.BytesToMiB(totalAssetsSizeBytes)}MiB.`;
+        downloadQueueEntry.log += `\n\tNeed to download ${assetsToDownload.length} asset(s) totalling ${DownloadManager.BytesToMiB(totalAssetsSizeBytes)}MiB.`;
 
         ret.push(...assetsToDownload);
 
-        downloadQueueEntry.log += "\nCalculating libraries that we are missing...";
+        downloadQueueEntry.log += "\n\tCalculating libraries that we are missing...";
 
         //For god knows what reason, mojang double-up on libraries that include natives (they're in the manifest twice)
         //Filter it down a bit.
@@ -109,7 +110,7 @@ export default class MinecraftVersionManager {
 
         const entriesMatchingRules = deDupedLibraries.filter(lib => {
             if(!lib.rules || RuleHelper.ProcessOSRules(lib.rules)) return true;
-            downloadQueueEntry.log += `\nSkipping library "${lib.name}" due to an OS-restriction`;
+            downloadQueueEntry.log += `\n\t\tSkipping library "${lib.name}" due to an OS-restriction`;
         });
 
         //Work out which ones are libraries (i.e. have an artifact)
@@ -136,10 +137,10 @@ export default class MinecraftVersionManager {
 
         const librariesToDownload = (await Promise.all(promises)).filter(f => !!f);
         const totalLibrarySizeBytes = librariesToDownload.map(f => f.sizeBytes).reduce((previousValue, currentValue) => previousValue + currentValue, 0);
-        downloadQueueEntry.log += `\nNeed to download ${librariesToDownload.length} libraries totalling ${DownloadManager.BytesToMiB(totalLibrarySizeBytes)}MiB`;
+        downloadQueueEntry.log += `\n\tNeed to download ${librariesToDownload.length} libraries totalling ${DownloadManager.BytesToMiB(totalLibrarySizeBytes)}MiB`;
         ret.push(...librariesToDownload);
 
-        downloadQueueEntry.log += "\nWorking out which natives we need to download...";
+        downloadQueueEntry.log += "\n\tWorking out which natives we need to download...";
         const requiredNatives = entriesMatchingRules.filter(lib => !!lib.natives && !!lib.natives[RuleHelper.GetOurOsName()]);
 
         const artifacts = requiredNatives.map(nat => nat.downloads.classifiers[nat.natives[RuleHelper.GetOurOsName()].replace("${arch}", RuleHelper.GetOurArchWithoutX())]);
@@ -164,14 +165,14 @@ export default class MinecraftVersionManager {
 
         const nativesToDownload = (await Promise.all(promises)).filter(f => !!f);
         const totalNativeSizeBytes = nativesToDownload.map(f => f.sizeBytes).reduce((previousValue, currentValue) => previousValue + currentValue, 0);
-        downloadQueueEntry.log += `\nNeed to download ${nativesToDownload.length} natives totalling ${DownloadManager.BytesToMiB(totalNativeSizeBytes)}MiB`;
+        downloadQueueEntry.log += `\n\tNeed to download ${nativesToDownload.length} natives totalling ${DownloadManager.BytesToMiB(totalNativeSizeBytes)}MiB`;
         ret.push(...nativesToDownload);
 
-        downloadQueueEntry.log += "\nChecking if game platform jar exists...";
+        downloadQueueEntry.log += "\n\tChecking if game platform jar exists...";
         const pathForPlatformJar = join(EnvironmentManager.versionsDir, downloadQueueEntry.initialRequest.gameVersionId, downloadQueueEntry.initialRequest.gameVersionId + ".jar");
         let shouldDownload = true;
         try {
-            const actualHash = await hasha.fromFile(pathForPlatformJar);
+            const actualHash = await hasha.fromFile(pathForPlatformJar, {algorithm: "sha1"});
             downloadQueueEntry.log += `It does. SHA1 is ${actualHash}, expected is ${manifest.downloads.client.sha1}...`
             if(actualHash === manifest.downloads.client.sha1) {
                 downloadQueueEntry.log += "Which matches, so we're not downloading again.";
@@ -185,7 +186,7 @@ export default class MinecraftVersionManager {
 
         if(shouldDownload) {
             const sizeBytes = manifest.downloads.client.size;
-            downloadQueueEntry.log += `\nGame platform jar is ${DownloadManager.BytesToMiB(sizeBytes)}MiB.`;
+            downloadQueueEntry.log += `\n\tGame platform jar is ${DownloadManager.BytesToMiB(sizeBytes)}MiB.`;
             ret.push({
                 sha1: manifest.downloads.client.sha1,
                 sourceUrl: manifest.downloads.client.url,

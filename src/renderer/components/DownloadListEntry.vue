@@ -3,8 +3,8 @@
         <div class="download-list-entry-fields flex" @click="showLog = !showLog">
             <span class="download-list-entry-name">{{record.initialRequest.packName}}</span>
             <span class="download-list-entry-status">{{record.downloadStats.statusLabel}}</span>
-            <span class="download-list-entry-downloaded">{{record.downloadStats.downloadedMib}}MiB / {{record.downloadStats.totalMib ? record.downloadStats.totalMib : '__'}}MiB</span>
-            <span class="download-list-entry-speed">{{record.downloadStats.speedMib}}MiB/sec</span>
+            <span class="download-list-entry-downloaded">{{clampTo2Dp(downloadedMib)}}MiB / {{ totalMib ? clampTo2Dp(totalMib) : '__' }}MiB</span>
+            <span class="download-list-entry-speed">{{clampTo2Dp(record.downloadStats.speedMib)}}MiB/sec</span>
             <span class="download-list-entry-threads">{{record.downloadStats.threadCount}} thread{{record.downloadStats.threadCount === 1 ? '' : 's'}} downloading</span>
             <i class="download-list-entry-expand-icon fa fa-2x fa-angle-right"></i>
         </div>
@@ -30,6 +30,18 @@ export default class DownloadListEntry extends Vue {
         type: Object
     })
     public record: DownloadQueueEntry;
+
+    get downloadedMib() {
+        return this.record.downloadStats.downloadedBytes / 1024 / 1024;
+    }
+
+    get totalMib() {
+        return this.record.downloadStats.totalBytes == null ? null : this.record.downloadStats.totalBytes / 1024 / 1024;
+    }
+
+    public clampTo2Dp(value: number): string {
+        return value.toFixed(2);
+    }
 }
 </script>
 

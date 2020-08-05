@@ -16,7 +16,6 @@ ipcRenderer.on("mc versions", (event, versions: RendererBoundVersionListing) => 
 });
 
 ipcRenderer.on("download queue", (event, queue: DownloadQueueEntry[]) => {
-    console.log("Got queue", queue);
     App.instance.$store.commit("setInstalls", queue);
 });
 
@@ -63,7 +62,7 @@ export default class MainProcessActions {
         ipcRenderer.send("renderer ready");
     }
 
-    static requestInstall(data: MainProcessBoundDownloadRequest) {
+    public static requestInstall(data: MainProcessBoundDownloadRequest) {
         ipcRenderer.send("process download request", data);
     }
 }

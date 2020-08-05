@@ -4,8 +4,8 @@ import DownloadWrapper from "./DownloadWrapper";
 export default class DownloadRecord {
     public packName: string;
     public statusLabel: string;
-    public downloadedMib: number = 0;
-    public totalMib: number | null;
+    public downloadedBytes: number = 0;
+    public totalBytes: number | null;
     public speedMib: number = 0;
     public downloadingTimeMs: number = 0;
     public threadCount: number = 1;
@@ -25,10 +25,10 @@ export default class DownloadRecord {
         return new DownloadRecord({
             packName: other.packName,
             statusLabel: other.statusLabel,
-            downloadedMib: other.downloadedMib,
-            totalMib: other.totalMib,
+            downloadedBytes: other.downloadedBytes,
+            totalBytes: other.totalBytes,
             speedMib: other.speedMib,
-            downloadingTimeMs: other.downloadedMib,
+            downloadingTimeMs: other.downloadedBytes,
             threadCount: other.threadCount,
             filesDownloaded: []
         });
@@ -37,11 +37,12 @@ export default class DownloadRecord {
     public PushCompletedFile(record: DownloadWrapper<any>) {
         this.filesDownloaded.push(record);
 
-        this.downloadedMib += DownloadManager.BytesToMiB(record.downloadedBytes);
+        this.downloadedBytes += record.downloadedBytes;
         this.downloadingTimeMs += record.timeTakenMs;
 
+        let downloadedMib = DownloadManager.BytesToMiB(this.downloadedBytes);
         //Recalculate speed
-        this.speedMib = Math.round(10 * this.downloadedMib * 1000 / this.downloadingTimeMs) / 10;
+        this.speedMib = Math.round(100 * downloadedMib * 1000 / this.downloadingTimeMs) / 100;
 
         DownloadManager.SendFullQueueUpdate();
     }
