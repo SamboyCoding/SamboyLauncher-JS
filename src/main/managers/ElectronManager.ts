@@ -5,8 +5,6 @@ import Logger from "../logger";
 import MCVersion from "../model/MCVersion";
 import installExtension, {VUEJS_DEVTOOLS} from "electron-devtools-installer";
 
-import InstalledPackManager from "./InstalledPackManager";
-
 export default class ElectronManager {
     public static win: BrowserWindow;
 
@@ -107,7 +105,7 @@ export default class ElectronManager {
     private static sendInitialIPCData() {
         Logger.debugImpl("ElectronManager", "Renderer HTML Loaded, sending initial ipc messages...");
 
-        ElectronManager.win.webContents.send("pack list", InstalledPackManager.InstalledPacks);
+        // ElectronManager.win.webContents.send("pack list", InstalledPackManager.InstalledPacks);
 
         let versions = MCVersion.GetVersionDataForRenderer();
         ElectronManager.win.webContents.send("mc versions", versions);

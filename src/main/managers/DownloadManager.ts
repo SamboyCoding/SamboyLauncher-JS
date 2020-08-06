@@ -212,7 +212,11 @@ export default class DownloadManager {
 
                 queueEntry.log += "\nFinished downloading files.";
 
-                //TODO: Forge transformers.
+                if(ForgeVersionManager.ShouldRunProcessorsForVersion(queueEntry.initialRequest.forgeVersionId)) {
+                    let processorCommands = await ForgeVersionManager.GetProcessorCommandsForVersion(queueEntry.initialRequest.forgeVersionId, queueEntry);
+                    this.SendFullQueueUpdate();
+                    return; //TODO remove
+                }
 
                 queueEntry.downloadStats.statusLabel = "Finalizing...";
                 this.SendFullQueueUpdate();

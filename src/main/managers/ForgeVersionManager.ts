@@ -1,12 +1,15 @@
-import {existsSync, promises as fsPromises} from "fs";
+import {promises as fsPromises} from "fs";
 import mkdirp from "mkdirp";
-import {dirname, join} from "path";
+import {basename, dirname, join} from "path";
 import DownloadQueueEntry from "../model/DownloadQueueEntry";
 import FileToDownload from "../model/FileToDownload";
 import LegacyForgeInstallProfile from "../model/LegacyForgeInstallProfile";
+import ManifestArtifact from "../model/ManifestArtifact";
 import MavenArtifact from "../model/MavenArtifact";
 import MinecraftVersionManifest from "../model/MinecraftVersionManifest";
 import ModernForgeInstallProfile from "../model/ModernForgeInstallProfile";
+import NewForgeInstallProfile from "../model/NewForgeInstallProfile";
+import ProcessorToRun from "../model/ProcessorToRun";
 import RuleHelper from "../util/RuleHelper";
 import Utils from "../util/Utils";
 import DownloadManager from "./DownloadManager";
@@ -41,16 +44,8 @@ export default class ForgeVersionManager {
         }
     }
 
-    public static async GetFilesForVersion(queueEntry: DownloadQueueEntry): Promise<FileToDownload[]> {
-        const FORGE_MAVEN = "https://files.minecraftforge.net/maven";
-        let ret: FileToDownload[] = [];
-        let id = queueEntry.initialRequest.forgeVersionId;
-
-        if (!id) return ret;
-
-        queueEntry.log += `\nWorking out what files we need for forge ${id}...`;
-
-        //Id will be in the format mcvers-forgevers or maybe mcvers-forgevers-mcvers
+    private static GetForgeVersionComponents(id: string) {
+        //Id will be in the format minecraft-forge or maybe minecraft-forge-minecraft
         let forgeVersion: string;
         let re = /-/g;
         let dashIndices: number[] = [];
@@ -63,7 +58,19 @@ export default class ForgeVersionManager {
             forgeVersion = id.substr(dashIndices[0]);
 
         //[10, 13, 4, 1614] for example
-        let forgeVersionComponents = forgeVersion.split(".").map(Number);
+        return forgeVersion.split(".").map(Number);
+    }
+
+    public static async GetFilesForVersion(queueEntry: DownloadQueueEntry): Promise<FileToDownload[]> {
+        const FORGE_MAVEN = "https://files.minecraftforge.net/maven";
+        let ret: FileToDownload[] = [];
+        let id = queueEntry.initialRequest.forgeVersionId;
+
+        if (!id) return ret;
+
+        queueEntry.log += `\nWorking out what files we need for forge ${id}...`;
+
+        let forgeVersionComponents = this.GetForgeVersionComponents(id);
 
         if (forgeVersionComponents[0] < 7 || (forgeVersionComponents[0] == 7 && forgeVersionComponents[1] < 8)) {
             //Less than 7.8.xx.xx == 1.5.1 or earlier.
@@ -96,7 +103,7 @@ export default class ForgeVersionManager {
 
         //Pre 14.23.5.2850 we use the legacy installer.
         if (forgeVersionComponents.length === 4 && (forgeVersionComponents[0] < 14 || (forgeVersionComponents[0] == 14 && forgeVersionComponents[3] < 2850))) {
-            return this.getLegacyInstallerFiles(queueEntry, forgeVersion);
+            return this.getLegacyInstallerFiles(queueEntry);
         }
 
         //Modern installer stuff here.
@@ -117,7 +124,7 @@ export default class ForgeVersionManager {
         if (!await Utils.existsAsync(versionJsonPath) && !await Utils.tryExtractFileFromArchive(localInstallerPath, versionFolder, "version.json"))
             throw new Error("Failed to extract version_json from modern installer jar.");
 
-        //For modern versions, version.json's format matches MinecraftVersionManifest so we can use that.
+        //For modern versions, the format of version.json matches MinecraftVersionManifest so we can use that.
         //Need all the libraries from that, and all the libraries from the installer profile.
         queueEntry.log += "\n\tFinding libraries we need to install for forge...";
 
@@ -126,7 +133,7 @@ export default class ForgeVersionManager {
 
         let allLibraries = installProfile.libraries.concat(versionJson.libraries);
         //Remove exact duplicates
-        queueEntry.log += `\n\tDeduplicating forge library requirements. Started at ${allLibraries.length}...`;
+        queueEntry.log += `\n\tDe-duplicating forge library requirements. Started at ${allLibraries.length}...`;
 
         allLibraries = allLibraries.filter((value, index, array) => array.indexOf(value) === index);
 
@@ -184,12 +191,11 @@ export default class ForgeVersionManager {
         return ret;
     }
 
-    private static async getLegacyInstallerFiles(queueEntry: DownloadQueueEntry, forgeVersion: string): Promise<FileToDownload[]> {
-        const FORGE_MAVEN = "https://files.minecraftforge.net/maven";
+    private static async getLegacyInstallerFiles(queueEntry: DownloadQueueEntry): Promise<FileToDownload[]> {
         let ret: FileToDownload[] = [];
         let id = queueEntry.initialRequest.forgeVersionId;
 
-        queueEntry.log += `\n\tPulling legacy installer for forge ${forgeVersion}...`;
+        queueEntry.log += `\n\tPulling legacy installer for forge ${id}...`;
         //Again pull installer
         await this.DownloadInstallerForVersion(queueEntry, id);
 
@@ -208,6 +214,8 @@ export default class ForgeVersionManager {
             throw new Error("Failed to extract install_profile from legacy installer jar.");
 
         const installProfile: LegacyForgeInstallProfile = JSON.parse(await readFile(installProfilePath, {encoding: "utf8"}));
+
+        await writeFile(join(versionFolder, "version.json"), JSON.stringify(installProfile.versionInfo, null, 4));
 
         //Special handling - first library is forge itself and their path is completely wacky.
         let forgeLib = installProfile.versionInfo.libraries.shift();
@@ -271,5 +279,157 @@ export default class ForgeVersionManager {
         }
 
         return ret;
+    }
+
+    public static async ShouldRunProcessorsForVersion(id: string) {
+        const components = this.GetForgeVersionComponents(id);
+        return components[0] >= 25;
+    }
+
+    public static async GetProcessorCommandsForVersion(id: string, queueEntry: DownloadQueueEntry): Promise<ProcessorToRun[]> {
+        if(!this.ShouldRunProcessorsForVersion(id)) return; //Sanity check
+
+        queueEntry.log += "\nBuilding list of processor commands to execute..."
+        const versionDir = join(EnvironmentManager.versionsDir, id);
+        const installProfile: NewForgeInstallProfile = JSON.parse(await readFile(join(versionDir, "install_profile.json"), "utf8"));
+
+        let forgeInstallerPath = join(EnvironmentManager.librariesDir, MavenArtifact.FromString(`net.minecraftforge:forge:${id}:installer`).fullPath);
+
+        //Build data list.
+        let data = {
+            "SIDE": "client",
+            "MINECRAFT_JAR": join(EnvironmentManager.versionsDir, installProfile.minecraft, installProfile.minecraft + ".jar")
+        };
+
+        for(let key in installProfile.data) {
+            let values = installProfile.data[key];
+            let value: string = values[data.SIDE];
+
+            let firstChar = value.charAt(0);
+            switch(firstChar) {
+                case "[":
+                    //Maven artifact
+                    let relativePath = MavenArtifact.FromString(value.substr(1, value.length - 2)).fullPath;
+                    data[key] = join(EnvironmentManager.librariesDir, relativePath);
+                    break;
+                case "'":
+                    //String literal
+                    data[key] = value.substr(1, value.length - 2);
+                    break;
+                case "/":
+                    //File in jar
+                    await Utils.tryExtractFileFromArchive(forgeInstallerPath, EnvironmentManager.tempDir, value.substr(1));
+                    let fileName = basename(value);
+                    data[key] = join(EnvironmentManager.tempDir, fileName);
+                    break;
+            }
+        }
+
+        queueEntry.log += "\n\tProcessor Data Map:";
+        for(let key in data) {
+            queueEntry.log += `\n\t\t${key.padEnd(15)}\t${data[key]}`;
+        }
+        DownloadManager.SendFullQueueUpdate();
+
+        //Find any processors which have already run.
+        let thoseRun = [];
+        for(let index in installProfile.processors) {
+            let processor = installProfile.processors[index];
+            if(!processor.outputs) {
+                thoseRun[index] = null; //Unknown
+                continue;
+            }
+
+            let mismatch = false;
+            for(let key in processor.outputs) {
+                let path = this.ReplaceKey(data, key);
+                let sha = this.ReplaceKey(data, processor.outputs[key]);
+                if(!await Utils.checkSha1Async(path, sha)) {
+                    mismatch = true;
+                    break;
+                }
+            }
+            //Do all outputs match SHA sums?
+            thoseRun[index] = !mismatch;
+        }
+
+        let lastRunIndex = thoseRun.lastIndexOf(true);
+        if(lastRunIndex === thoseRun.length - 1) {
+            //No processors need running as all have been run
+            queueEntry.log += "\n\tSkipping all processors as the last one is up to date.";
+            return [];
+        }
+
+        if(lastRunIndex >= 0) {
+            queueEntry.log += `\n\tSkipping processors 0 through ${lastRunIndex} as they've already been run`;
+            installProfile.processors.splice(0, lastRunIndex + 1);
+        }
+
+        //Determine main classes
+        let mainClassMap = new Map<string, string>();
+        for(let processor of installProfile.processors) {
+            if(mainClassMap.has(processor.jar)) continue;
+
+            let artifact = MavenArtifact.FromString(processor.jar);
+            let localPathToProcessor = join(EnvironmentManager.librariesDir, artifact.fullPath);
+
+            if(!await Utils.tryExtractFileFromArchive(localPathToProcessor, EnvironmentManager.tempDir, "META-INF/MANIFEST.MF")) {
+                throw new Error(`Failed to extract MANIFEST from processor ${processor.jar}`);
+            }
+
+            let manifestContent = await readFile(join(EnvironmentManager.tempDir, "MANIFEST.MF"), "utf-8");
+            let lines = manifestContent.split("\n");
+            let mainClassLine = lines.find(l => l.startsWith("Main-Class:"));
+            let mainClass = mainClassLine.replace("Main-Class:", "").trim();
+            mainClassMap.set(processor.jar, mainClass);
+        }
+
+        //Build command line.
+        let ret: ProcessorToRun[] = [];
+
+        queueEntry.log += "\n\tGathering processor commands to run...";
+        for(let processor of installProfile.processors) {
+            //Main classpath entries
+            const classpath = processor.classpath.map(l => join(EnvironmentManager.librariesDir, MavenArtifact.FromString(l).fullPath));
+
+            //Main class container jar
+            classpath.push(join(EnvironmentManager.librariesDir, MavenArtifact.FromString(processor.jar).fullPath));
+
+            //Arguments with maven artifacts and keys replaced.
+            let processorArguments = processor.args.map(arg => this.ReplaceKey(data, this.ReplaceMavenArtifact(arg)));
+
+            let outputSums = new Map<string, string>();
+            for(let key in processor.outputs) {
+                let path = this.ReplaceKey(data, key);
+                let sha = this.ReplaceKey(data, processor.outputs[key]);
+                outputSums.set(path, sha);
+            }
+
+            ret.push({
+                javaArgs: `-cp ${classpath.join(";")} ${mainClassMap.get(processor.jar)} ${processorArguments.join(" ")}`,
+                outputShaSums: outputSums
+            });
+        }
+
+        queueEntry.log += `\n\t${ret.length} processors to run.`;
+
+        return ret;
+    }
+
+    private static ReplaceKey(data: {[key: string]: string}, value: string): string {
+        let match = /{([A-Z_]+)}/g.exec(value);
+        if(match) {
+            //Replace the matching key with the data value at that key
+            value = value.substr(1, value.length - 2);
+            return value.replace(match[1], data[match[1]]);
+        }
+        return value;
+    }
+
+    private static ReplaceMavenArtifact(value: string): string {
+        if(!value.startsWith("[")) return value;
+
+        value = value.substr(1, value.length - 2);
+        return join(EnvironmentManager.librariesDir, MavenArtifact.FromString(value).fullPath);
     }
 }

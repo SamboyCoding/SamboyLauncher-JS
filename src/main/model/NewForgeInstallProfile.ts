@@ -4,6 +4,7 @@ export default class NewForgeInstallProfile {
     public version: string;
     public json: string;
     public path: string;
+    public minecraft: string;
     public data: {
         [key: string]: {
             client: string,

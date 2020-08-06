@@ -8,7 +8,6 @@ import AuthenticationManager from "./managers/AuthenticationManager";
 import ConfigurationManager from "./managers/ConfigurationManager";
 import ElectronManager from "./managers/ElectronManager";
 import EnvironmentManager from "./managers/EnvironmentManager";
-import InstalledPackManager from "./managers/InstalledPackManager";
 import MainIPCHandler from "./managers/MainIPCHandler";
 import UpdateManager from "./managers/UpdateManager";
 import MCVersion from "./model/MCVersion";
@@ -35,8 +34,8 @@ async function InitializeApp() {
 
         await ConfigurationManager.LoadFromDisk();
         AuthenticationManager.LoadFromDisk();
-        await MCVersion.InitCache(); //Preload these.
-        InstalledPackManager.LoadFromDisk();
+        // await MCVersion.InitCache(); //Preload these.
+        // InstalledPackManager.LoadFromDisk();
         MainIPCHandler.Init();
         UpdateManager.Init();
         ElectronManager.SetupElectron();
