@@ -27,7 +27,7 @@
             MainProcessActions.requestInstall({
                 forgeVersionId: "1.6.4-9.11.1.1345",
                 gameVersionId: "1.6.4",
-                packName: null,
+                packName: "Forge Test 1.6.4",
                 mods: []
             });
         }
@@ -36,7 +36,7 @@
             MainProcessActions.requestInstall({
                 forgeVersionId: "1.12.2-14.23.5.2847",
                 gameVersionId: "1.12.2",
-                packName: null,
+                packName: "Forge Test 1.12.2 Legacy",
                 mods: []
             });
         }
@@ -45,7 +45,7 @@
             MainProcessActions.requestInstall({
                 forgeVersionId: "1.12.2-14.23.5.2854",
                 gameVersionId: "1.12.2",
-                packName: null,
+                packName: "Forge Test 1.12.2 Modern",
                 mods: []
             });
         }
@@ -54,7 +54,7 @@
             MainProcessActions.requestInstall({
                 forgeVersionId: "1.13.2-25.0.219",
                 gameVersionId: "1.13.2",
-                packName: null,
+                packName: "Forge Test 1.13.2",
                 mods: []
             });
         }
@@ -63,7 +63,7 @@
             MainProcessActions.requestInstall({
                 forgeVersionId: "1.16.1-32.0.106",
                 gameVersionId: "1.16.1",
-                packName: null,
+                packName: "Forge Test 1.16.1",
                 mods: []
             });
         }
