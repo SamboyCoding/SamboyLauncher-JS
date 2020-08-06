@@ -1,14 +1,18 @@
+import {spawn, spawnSync} from "child_process";
 import {IncomingMessage} from "electron";
 import {constants, existsSync, promises as fsPromises} from "fs";
 import hasha from "hasha";
 import mkdirp from "mkdirp";
 import {dirname, join} from "path";
 import toArray from "stream-to-array";
+import {setInterval} from "timers";
 import Logger from "../logger";
 import DownloadQueueEntry from "../model/DownloadQueueEntry";
 import DownloadRecord from "../model/DownloadRecord";
 import DownloadWrapper from "../model/DownloadWrapper";
 import MainProcessBoundDownloadRequest from "../model/MainProcessBoundDownloadRequest";
+import ProcessorToRun from "../model/ProcessorToRun";
+import Utils from "../util/Utils";
 import ElectronManager from "./ElectronManager";
 import EnvironmentManager from "./EnvironmentManager";
 import ForgeVersionManager from "./ForgeVersionManager";
@@ -213,15 +217,24 @@ export default class DownloadManager {
                 queueEntry.log += "\nFinished downloading files.";
 
                 if(ForgeVersionManager.ShouldRunProcessorsForVersion(queueEntry.initialRequest.forgeVersionId)) {
+                    queueEntry.downloadStats.statusLabel = "Running Forge Post-Processors...";
                     let processorCommands = await ForgeVersionManager.GetProcessorCommandsForVersion(queueEntry.initialRequest.forgeVersionId, queueEntry);
                     this.SendFullQueueUpdate();
-                    return; //TODO remove
+
+                    for(let command of processorCommands) {
+                        await this.RunProcessorAsync(queueEntry, command);
+                        this.SendFullQueueUpdate();
+                    }
+
+                    queueEntry.log += "\n\nAll Processors Ran Successfully.";
+                    this.SendFullQueueUpdate();
                 }
 
                 queueEntry.downloadStats.statusLabel = "Finalizing...";
                 this.SendFullQueueUpdate();
             }
 
+            //TODO: Change this to a field we set once the install has finished, don't process queue entries with that field set, and allow user to remove queue entries *that are complete*.
             this.downloadQueue.shift();
             if (this.downloadQueue.length > 0)
                 this.ProcessQueue();
@@ -269,5 +282,58 @@ export default class DownloadManager {
 
         if(!this.queueWasProcessing)
             this.ProcessQueue();
+    }
+
+    private static async RunProcessorAsync(queueEntry: DownloadQueueEntry, command: ProcessorToRun): Promise<void> {
+        return new Promise((ff, rj) => {
+            let javaRuntime = EnvironmentManager.javaRuntimes.find(v => v.languageVersion < 11 && v.languageVersion >= 8);
+            if (!javaRuntime) {
+                queueEntry.log += "\nFATAL: Cannot run processors due to a missing JRE.";
+                rj(new Error("Missing a JRE, can't run processors"));
+                return;
+            }
+
+            const javaExecutable = javaRuntime.javaHome ? join(javaRuntime.javaHome, "bin", `java${process.platform === "win32" ? ".exe" : ""}`) : "java";
+
+            queueEntry.log += "\n============\nInvoking post-processor now.\n\n";
+            const processor = spawn(javaExecutable, command.javaArgs.split(" "), {
+                stdio: "pipe",
+                windowsHide: true,
+            });
+
+            const timer = setInterval(() => this.SendFullQueueUpdate(), 500);
+
+            processor.stdout.addListener("data", chunk => {
+                queueEntry.log += chunk;
+            });
+
+            processor.stderr.addListener("data", chunk => {
+                queueEntry.log += chunk;
+            })
+
+            processor.on("close", async (code, signal) => {
+                clearInterval(timer);
+
+                if(code === 0) {
+                    queueEntry.log += "\n\n===Processor Completed.===\n";
+
+                    //Check SHAs
+                    for(let filePath in command.outputShaSums.keys()) {
+                        let sha = command.outputShaSums.get(filePath);
+                        if(!await Utils.checkSha1Async(filePath, sha)) {
+                            queueEntry.log += "\nSha1 mismatch for " + filePath;
+                            this.SendFullQueueUpdate();
+                            return rj(new Error("Sha1 mismatch for " + filePath));
+                        }
+                    }
+
+                    return ff();
+                }
+
+                queueEntry.log += "\n\nProcessor encountered an error and exited with code " + code;
+
+                rj(new Error("Process finished with code " + code));
+            })
+        });
     }
 }

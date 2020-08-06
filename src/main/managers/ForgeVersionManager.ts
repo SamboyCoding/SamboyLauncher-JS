@@ -384,6 +384,8 @@ export default class ForgeVersionManager {
             mainClassMap.set(processor.jar, mainClass);
         }
 
+        await unlink(join(EnvironmentManager.tempDir, "MANIFEST.MF"));
+
         //Build command line.
         let ret: ProcessorToRun[] = [];
 
