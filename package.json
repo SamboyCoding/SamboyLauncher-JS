@@ -49,7 +49,7 @@
         "electron-is-dev": "^1.2.0",
         "electron-updater": "^4.3.4",
         "fast-xml-parser": "^3.17.4",
-        "hasha": "5.0.0",
+        "hasha": "5.2.0",
         "hazardous": "^0.3.0",
         "jsonfile": "^6.0.1",
         "material-icons": "^0.3.1",
