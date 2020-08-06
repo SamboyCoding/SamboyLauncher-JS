@@ -7,7 +7,7 @@ import {basename, join} from "path";
 import Logger from "../logger";
 import EnvironmentManager from "../managers/EnvironmentManager";
 import Utils from "../util/Utils";
-import ForgeVersionManifest from "./ForgeVersionManifest";
+import LegacyForgeVersionManifest from "./LegacyForgeVersionManifest";
 import ManifestArtifact from "./ManifestArtifact";
 import MavenArtifact from "./MavenArtifact";
 import NewForgeInstallProfile from "./NewForgeInstallProfile";
@@ -16,7 +16,7 @@ export default class ForgeVersion {
     private static _cache = new Map<string, ForgeVersion>();
 
     public name: string;
-    public manifest: ForgeVersionManifest;
+    public manifest: LegacyForgeVersionManifest;
     public needsPatch: boolean = false;
     public data?: Map<string, MavenArtifact | string> = new Map<string, MavenArtifact | string>();
     public installProfile?: NewForgeInstallProfile;
@@ -67,7 +67,7 @@ export default class ForgeVersion {
 
             if (json.versionInfo) {
                 Logger.debugImpl("Forge Version Manager", "OLD install profile detected.");
-                ret.manifest = json.versionInfo as ForgeVersionManifest;
+                ret.manifest = json.versionInfo as LegacyForgeVersionManifest;
 
                 ret.manifest.arguments = {
                     game: ret.manifest.minecraftArguments.split(" "),

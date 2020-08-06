@@ -11,7 +11,9 @@ import {basename, join} from "path";
 import * as rimraf from "rimraf";
 import Logger from "../logger";
 import EnvironmentManager from "../managers/EnvironmentManager";
+import {promises as fsPromises} from "fs";
 import ModJar from "../model/ModJar";
+const {access} = fsPromises;
 
 export default class Utils {
     public static toBase64(str: string): string {
@@ -32,6 +34,29 @@ export default class Utils {
 
     public static async downloadWithMD5(url: string, localPath: string, md5: string) {
         return this.downloadWithSig(url, localPath, md5, "md5");
+    }
+
+    public static async checkSha1Async(path: string, expectedSha1: string) {
+        if(!await this.existsAsync(path)) return false;
+
+        try {
+            const actualHash = await hasha.fromFile(path, {algorithm: "sha1"});
+
+            if(actualHash === expectedSha1) return true;
+
+            Logger.warnImpl("SHA1", `Mismatch between expected: ${expectedSha1} and actual ${actualHash} for ${path}`);
+        } catch(e) {
+            return false;
+        }
+    }
+
+    public static async existsAsync(path: string) {
+        try {
+            await access(path);
+            return true;
+        } catch(e) {
+            return false;
+        }
     }
 
     public static async downloadWithSig(url: string, localPath: string, sig: string, algorithm: string) {
@@ -101,7 +126,7 @@ export default class Utils {
         });
     }
 
-    public static tryExtractFileFromArchive(src: string, dest: string, file: string) {
+    public static tryExtractFileFromArchive(src: string, dest: string, file: string): Promise<boolean> {
         return new Promise(async (ff, rj) => {
             Logger.debugImpl("Extract", `Extracting ${file} from ${src} to ${dest}`);
 

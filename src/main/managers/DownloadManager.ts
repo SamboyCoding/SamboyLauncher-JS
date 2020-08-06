@@ -11,6 +11,7 @@ import DownloadWrapper from "../model/DownloadWrapper";
 import MainProcessBoundDownloadRequest from "../model/MainProcessBoundDownloadRequest";
 import ElectronManager from "./ElectronManager";
 import EnvironmentManager from "./EnvironmentManager";
+import ForgeVersionManager from "./ForgeVersionManager";
 import MinecraftVersionManager from "./MinecraftVersionManager";
 import axios from "axios";
 import ReadableStream = NodeJS.ReadableStream;
@@ -54,8 +55,19 @@ export default class DownloadManager {
                 downloadRate: (downloadedBytes * 1000 / timeTakenMs)
             };
         } catch (e) {
-            Logger.errorImpl("DownloadManager", "Failed to download file! " + e.message);
+            Logger.errorImpl("DownloadManager", `Failed to download file ${url} due to an error: ${e.message}`);
             return null;
+        }
+    }
+
+    public static async PullFileSizeFromHead(url: string): Promise<number> {
+        try {
+            const axiosResponse = await axios.head(url);
+
+            return Number(axiosResponse.headers["content-length"]);
+        } catch(e) {
+            Logger.errorImpl("DownloadManager", `Failed to request file size for ${url} due to an error: ${e.message}`);
+            return 0;
         }
     }
 
@@ -78,119 +90,145 @@ export default class DownloadManager {
     }
 
     private static async ProcessQueue() {
+        if(this.downloadQueue.length === 0) return;
         this.queueWasProcessing = true;
-        let queueEntry = this.downloadQueue[0];
 
-        //Download manifest
-        queueEntry.downloadStats.statusLabel = "Pulling manifests...";
-        const downloaded = await MinecraftVersionManager.FetchVersionListing();
-        const manifest = downloaded.content;
+        try {
+            let queueEntry = this.downloadQueue[0];
 
-        //Update download stats
-        queueEntry.downloadStats.PushCompletedFile(downloaded);
+            //Download manifest
+            queueEntry.downloadStats.statusLabel = "Pulling manifests...";
+            const downloaded = await MinecraftVersionManager.FetchVersionListing();
+            const manifest = downloaded.content;
 
-        //Find our version
-        const versionSpecification = manifest.versions.find(v => v.id === queueEntry.initialRequest.gameVersionId);
+            //Update download stats
+            queueEntry.downloadStats.PushCompletedFile(downloaded);
 
-        if (!versionSpecification) {
-            //Check failed, bail out.
-            queueEntry.log += "\nMinecraft version does not exist! Aborting download!";
-            queueEntry.downloadStats.statusLabel = "Failed";
-            this.SendFullQueueUpdate();
-        }
+            //Find our version
+            const versionSpecification = manifest.versions.find(v => v.id === queueEntry.initialRequest.gameVersionId);
 
-        Logger.infoImpl("Download Manager", "Requesting that the MCVM get us a file list.");
-        let fileList = await MinecraftVersionManager.GetFileListForGameVersion(queueEntry, versionSpecification);
-        Logger.infoImpl("Download Manager", `MCVM has returned a list of files containing ${fileList.length} entries`);
-
-        let totalSizeBytes = fileList.map(f => f.sizeBytes).reduce((previousValue, currentValue) => previousValue + currentValue, 0);
-        queueEntry.log += `\nNeed to download a total of ${fileList.length} files for vanilla game client, totalling ${totalSizeBytes} bytes (${this.BytesToMiB(totalSizeBytes)}MiB)`;
-        this.SendFullQueueUpdate(); //Update log on client.
-
-        if (queueEntry.initialRequest.forgeVersionId) {
-            //TODO Get forge file list.
-        }
-
-        //Update total size to include forge download
-
-        this.SendFullQueueUpdate(); //Update log to include forge stuff.
-
-        if (queueEntry.initialRequest.mods.length > 0) {
-            //TODO: Process mods into a download queue.
-        }
-
-        //Update total size to include mods download
-
-        queueEntry.downloadStats.totalBytes = totalSizeBytes + queueEntry.downloadStats.downloadedBytes;
-        queueEntry.downloadStats.statusLabel = "Downloading files...";
-        queueEntry.log += `\nNow downloading ${fileList.length} files...`
-
-        this.SendFullQueueUpdate(); //Update log to include mod resolve info & total size
-
-        // Actual download loop begins here
-        while (fileList.length > 0) {
-            const target = fileList.shift();
-            try {
-                //Ensure dest dir exists
-                let parentDir = dirname(target.destPath);
-
-                //Mkdir if missing
-                try {
-                    await access(parentDir);
-                } catch(e) {
-                    await mkdirp(parentDir);
-                }
-
-                const response = await this.DownloadFile<Buffer>(target.sourceUrl, true);
-
-                //Write to file
-                await writeFile(target.destPath, response.content);
-
-                //Check hash
-                if (target.sha1) {
-                    const actualHash = await hasha.fromFile(target.destPath, {algorithm: "sha1"});
-                    if (actualHash !== target.sha1) {
-                        //Fail.
-                        Logger.warnImpl("Download Manager", `SHA1 Mismatch expect ${target.sha1} got ${actualHash}`);
-                        queueEntry.log += `\nWARNING: Failed to download ${target.sourceUrl} due to a SHA1 mismatch - expected ${target.sha1}, but got ${actualHash}. Retrying...`;
-                        // await unlink(target.destPath);
-                        fileList.unshift(target);
-                        continue;
-                    }
-                }
-                if(target.md5) {
-                    const actualHash = await hasha.fromFile(target.destPath, {algorithm: "md5"});
-                    if (actualHash !== target.md5) {
-                        //Fail.
-                        Logger.warnImpl("Download Manager", `MD5 Mismatch expect ${target.sha1} got ${actualHash}`);
-                        queueEntry.log += `\nWARNING: Failed to download ${target.sourceUrl} due to an MD5 mismatch - expected ${target.md5}, but got ${actualHash}. Retrying...`;
-                        await unlink(target.destPath);
-                        fileList.unshift(target);
-                        continue;
-                    }
-                }
-
-                queueEntry.downloadStats.PushCompletedFile(response);
+            if (!versionSpecification) {
+                //Check failed, bail out.
+                queueEntry.log += "\nMinecraft version does not exist! Aborting download!";
+                queueEntry.downloadStats.statusLabel = "Failed";
                 this.SendFullQueueUpdate();
-            } catch(e) {
-                Logger.errorImpl("Download Manager", e.message);
-                queueEntry.log += `\nWARNING: Network error downloading ${target.sourceUrl}. Retrying...`;
-                fileList.unshift(target);
             }
-        }
 
-        queueEntry.log += "\nFinished downloading files.";
+            Logger.infoImpl("Download Manager", "Requesting that the MCVM get us a file list.");
+            let fileList = await MinecraftVersionManager.GetFileListForGameVersion(queueEntry, versionSpecification);
+            Logger.infoImpl("Download Manager", `MCVM has returned a list of files containing ${fileList.length} entries`);
 
-        //TODO: Forge transformers.
+            let totalSizeBytes = fileList.map(f => f.sizeBytes).reduce((previousValue, currentValue) => previousValue + currentValue, 0);
+            queueEntry.log += `\nNeed to download a total of ${fileList.length} files for vanilla game client, totalling ${totalSizeBytes} bytes (${this.BytesToMiB(totalSizeBytes)}MiB)`;
+            this.SendFullQueueUpdate(); //Update log on client.
 
-        queueEntry.downloadStats.statusLabel = "Finalizing...";
-        this.SendFullQueueUpdate();
+            if (queueEntry.initialRequest.forgeVersionId) {
+                let oldCount = fileList.length;
 
-        this.downloadQueue.shift();
-        if(this.downloadQueue.length > 0)
-            this.ProcessQueue();
-        else {
+                Logger.infoImpl("Download Manager", "Requesting that the FVM get us a file list.")
+                fileList.push(...await ForgeVersionManager.GetFilesForVersion(queueEntry));
+                Logger.infoImpl("Download Manager", `FVM has returned ${fileList.length - oldCount} additional libraries to download.`);
+
+                //Update total size to include forge download
+                let newSizeBytes = fileList.map(f => f.sizeBytes).reduce((previousValue, currentValue) => previousValue + currentValue, 0);
+                queueEntry.log += `\nNeed to download an additional ${fileList.length - oldCount} libraries for forge (an additional ${this.BytesToMiB(newSizeBytes - totalSizeBytes)}MiB)`;
+                totalSizeBytes = newSizeBytes;
+            }
+
+            this.SendFullQueueUpdate(); //Update log to include forge stuff.
+
+            if (queueEntry.initialRequest.mods.length > 0) {
+                //TODO: Process mods into a download queue.
+            }
+
+            //Update total size to include mods download
+
+            queueEntry.downloadStats.totalBytes = totalSizeBytes + queueEntry.downloadStats.downloadedBytes;
+            queueEntry.downloadStats.statusLabel = "Downloading files...";
+            queueEntry.log += `\nNow downloading ${fileList.length} files...`
+
+            this.SendFullQueueUpdate(); //Update log to include mod resolve info & total size
+
+            // Actual download loop begins here
+            let errorCount = 0;
+            while (fileList.length > 0 && errorCount < 5) {
+                const target = fileList.shift();
+                try {
+                    //Ensure dest dir exists
+                    let parentDir = dirname(target.destPath);
+
+                    //Mkdir if missing
+                    try {
+                        await access(parentDir);
+                    } catch (e) {
+                        await mkdirp(parentDir);
+                    }
+
+                    const response = await this.DownloadFile<Buffer>(target.sourceUrl, true);
+
+                    //Write to file
+                    await writeFile(target.destPath, response.content);
+
+                    //Check hash
+                    if (target.sha1) {
+                        const actualHash = await hasha.fromFile(target.destPath, {algorithm: "sha1"});
+                        if (actualHash !== target.sha1) {
+                            //Fail.
+                            Logger.warnImpl("Download Manager", `SHA1 Mismatch expect ${target.sha1} got ${actualHash}`);
+                            queueEntry.log += `\nWARNING: Failed to download ${target.sourceUrl} due to a SHA1 mismatch - expected ${target.sha1}, but got ${actualHash}. Retrying...`;
+                            // await unlink(target.destPath);
+                            fileList.unshift(target);
+                            continue;
+                        }
+                    }
+                    if (target.md5) {
+                        const actualHash = await hasha.fromFile(target.destPath, {algorithm: "md5"});
+                        if (actualHash !== target.md5) {
+                            //Fail.
+                            Logger.warnImpl("Download Manager", `MD5 Mismatch expect ${target.sha1} got ${actualHash}`);
+                            queueEntry.log += `\nWARNING: Failed to download ${target.sourceUrl} due to an MD5 mismatch - expected ${target.md5}, but got ${actualHash}. Retrying...`;
+                            await unlink(target.destPath);
+                            fileList.unshift(target);
+                            continue;
+                        }
+                    }
+
+                    queueEntry.downloadStats.PushCompletedFile(response);
+                    this.SendFullQueueUpdate();
+                    errorCount = 0;
+                } catch (e) {
+                    errorCount++;
+                    Logger.errorImpl("Download Manager", "Error downloading a file; " + e.message);
+                    queueEntry.log += `\nWARNING: Network error downloading ${target.sourceUrl}. Retrying...`;
+                    fileList.unshift(target);
+                }
+            }
+
+            if(errorCount > 0) {
+                //Failed to download a file and sanity broke-out
+                queueEntry.log += "\nOne or more files failed to download!";
+                Logger.errorImpl("Download Manager", "Repeatedly failed to download a file - aborting installation.");
+            } else {
+
+                queueEntry.log += "\nFinished downloading files.";
+
+                //TODO: Forge transformers.
+
+                queueEntry.downloadStats.statusLabel = "Finalizing...";
+                this.SendFullQueueUpdate();
+            }
+
+            this.downloadQueue.shift();
+            if (this.downloadQueue.length > 0)
+                this.ProcessQueue();
+            else {
+                this.queueWasProcessing = false;
+                this.SendFullQueueUpdate();
+            }
+        } catch(e) {
             this.queueWasProcessing = false;
+            Logger.errorImpl("Download Manager", "Exception processing queue! " + e.stack);
+            this.downloadQueue[0].log += "\n----\nException occurred processing install: " + e.stack;
             this.SendFullQueueUpdate();
         }
     }
@@ -216,6 +254,8 @@ export default class DownloadManager {
 
         if (!request.packName)
             request.packName = `Vanilla ${request.gameVersionId}`;
+
+        queueEntry.log += "It does. Installation is now in queue.";
 
         //Add to the queue
         this.downloadQueue.push(queueEntry);
