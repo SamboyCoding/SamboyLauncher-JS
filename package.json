@@ -60,7 +60,7 @@
         "rimraf": "^3.0.2",
         "semver": "^7.3.2",
         "stream-to-array": "^2.3.0",
-        "tslib": "^2.0.0",
+        "tslib": "^2.0.1",
         "vue": "^2.6.11",
         "vue-class-component": "^7.2.5",
         "vue-hot-reload-api": "^2.3.4",
