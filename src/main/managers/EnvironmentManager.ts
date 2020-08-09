@@ -130,8 +130,25 @@ export default class EnvironmentManager {
             }
         }
 
+        if (process.platform === "linux") {
+            //Test /usr/lib/jvm - this is where ubuntu and debian put it
+            let subDirs = [];
+            try {
+                const root = "/usr/lib/jvm";
+                subDirs = subDirs.concat((await readdir(root)).map(d => join(root, d)));
+            } catch (e) {
+            }
+
+            for (let subDir of subDirs) {
+                if (await Utils.existsAsync(join(subDir, "bin", "java"))) {
+                    detected.unshift(join(subDir, "bin", "java"));
+                }
+            }
+        }
+
         for (let candidate of detected) {
             try {
+                Logger.debugImpl("Environment", `Testing ${candidate}...`);
                 const process = spawnSync(candidate, ["-version"], {
                     stdio: "pipe",
                     windowsHide: true
@@ -163,7 +180,7 @@ export default class EnvironmentManager {
                 let langVer = versionSplit[0] === 1 ? versionSplit[1] : versionSplit[0];
 
                 let javaHome = dirname(dirname(candidate));
-                if(javaHome === ".") javaHome = null;
+                if (javaHome === ".") javaHome = null;
                 Logger.debugImpl("Environment", `Detected java installation. 64-bit: ${x64}. Language version ${langVer}. Provider is ${firstSplit[0]}. Java home: ${javaHome}`);
 
                 this._knownJavaRuntimes.push({
@@ -172,7 +189,7 @@ export default class EnvironmentManager {
                     languageVersion: langVer,
                     provider: firstSplit[0],
                 });
-            } catch(e) {
+            } catch (e) {
                 //Ignore.
             }
         }

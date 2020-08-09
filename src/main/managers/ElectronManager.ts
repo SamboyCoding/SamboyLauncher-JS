@@ -31,7 +31,9 @@ export default class ElectronManager {
 
         app.on("window-all-closed", () => {
             if (process.platform !== "darwin") {
+                Logger.infoImpl("ElectronManager", "All windows have been closed. Shutting down...");
                 app.quit();
+                Logger.infoImpl("ElectronManager", "Application quit complete. Terminating thread.");
             }
         });
 

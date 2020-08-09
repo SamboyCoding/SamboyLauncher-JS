@@ -216,7 +216,7 @@ export default class DownloadManager {
 
                 queueEntry.log += "\nFinished downloading files.";
 
-                if(ForgeVersionManager.ShouldRunProcessorsForVersion(queueEntry.initialRequest.forgeVersionId)) {
+                if(queueEntry.initialRequest.forgeVersionId && ForgeVersionManager.ShouldRunProcessorsForVersion(queueEntry.initialRequest.forgeVersionId)) {
                     queueEntry.downloadStats.statusLabel = "Running Forge Post-Processors...";
                     let processorCommands = await ForgeVersionManager.GetProcessorCommandsForVersion(queueEntry.initialRequest.forgeVersionId, queueEntry);
                     this.SendFullQueueUpdate();
@@ -244,6 +244,7 @@ export default class DownloadManager {
             }
         } catch(e) {
             this.queueWasProcessing = false;
+            this.downloadQueue[0].downloadStats.statusLabel = "ERROR!";
             Logger.errorImpl("Download Manager", "Exception processing queue! " + e.stack);
             this.downloadQueue[0].log += "\n----\nException occurred processing install: " + e.stack;
             this.SendFullQueueUpdate();

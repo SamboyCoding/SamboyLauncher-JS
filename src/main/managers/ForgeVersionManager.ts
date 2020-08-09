@@ -1,6 +1,7 @@
 import {promises as fsPromises} from "fs";
 import mkdirp from "mkdirp";
 import {basename, dirname, join} from "path";
+import Logger from "../logger";
 import DownloadQueueEntry from "../model/DownloadQueueEntry";
 import FileToDownload from "../model/FileToDownload";
 import LegacyForgeInstallProfile from "../model/LegacyForgeInstallProfile";
@@ -281,8 +282,9 @@ export default class ForgeVersionManager {
         return ret;
     }
 
-    public static async ShouldRunProcessorsForVersion(id: string) {
+    public static ShouldRunProcessorsForVersion(id: string) {
         const components = this.GetForgeVersionComponents(id);
+        Logger.debugImpl("Forge Version Manager", `Checking if we should run processors for ${id} - components are ${JSON.stringify(components)}`);
         return components[0] >= 25;
     }
 
@@ -407,8 +409,10 @@ export default class ForgeVersionManager {
                 outputSums.set(path, sha);
             }
 
+            let classPathJoiner = process.platform === "win32" ? ";" : ":";
+
             ret.push({
-                javaArgs: `-cp ${classpath.join(";")} ${mainClassMap.get(processor.jar)} ${processorArguments.join(" ")}`,
+                javaArgs: `-cp ${classpath.join(classPathJoiner)} ${mainClassMap.get(processor.jar)} ${processorArguments.join(" ")}`,
                 outputShaSums: outputSums
             });
         }

@@ -22,7 +22,10 @@
     export default class TopBar extends Vue {
         private MainProcessActions = MainProcessActions;
 
-        private close() {window.close()}
+        private close() {
+            MainProcessActions.logMessage("[TopBar] User requested application close.");
+            window.close()
+        }
     }
 </script>
 
