@@ -43,7 +43,7 @@
     "dependencies": {
         "7zip-bin": "^5.0.3",
         "@fortawesome/fontawesome-free": "^5.14.0",
-        "axios": "^0.19.2",
+        "axios": "^0.20.0",
         "chalk": "^4.1.0",
         "datauri": "^3.0.0",
         "download": "^8.0.0",
