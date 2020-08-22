@@ -17,7 +17,6 @@
     import RendererBoundVersionListing from "../main/model/RendererBoundVersionListing";
     import BottomNavigationBar from "./components/BottomNavigationBar.vue";
     import LaunchControls from "./components/LaunchControls.vue";
-    import PackSelect from "./components/PackSelect.vue";
     import TabBuildModpacks from "./components/TabBuildModpacks.vue";
     import TabDownloads from "./components/TabDownloads.vue";
     import TabPlayModded from "./components/TabPlayModded.vue";
@@ -31,7 +30,6 @@
         components: {
             BottomNavigationBar,
             LaunchControls,
-            PackSelect,
             TopBar,
             TabPlayModded,
             TabPlayVanilla,

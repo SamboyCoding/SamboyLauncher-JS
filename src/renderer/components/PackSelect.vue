@@ -21,8 +21,13 @@
         })
         public packs: InstalledPackJSON[];
 
+        @Prop({
+            type: String
+        })
+        public commitName: string;
+
         public selectPack(idx: number) {
-            this.$store.commit("setSelectedPack", idx);
+            this.$store.commit(this.commitName, idx);
         }
 
         get selectedPackIndex() {

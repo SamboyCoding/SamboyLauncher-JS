@@ -1,7 +1,7 @@
 <template>
     <div id="tab-play-modded">
         <!--Main content wrapper-->
-        <pack-select class="flex-grow" :packs="packs"></pack-select>
+        <pack-select class="flex-grow" :packs="packs" commit-name="setSelectedPack"></pack-select>
         <launch-controls class="flex-double-weight" :packs="packs"></launch-controls>
     </div>
 </template>
