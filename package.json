@@ -48,7 +48,7 @@
         "datauri": "^3.0.0",
         "download": "^8.0.0",
         "electron-is-dev": "^1.2.0",
-        "electron-updater": "^4.3.4",
+        "electron-updater": "^4.3.5",
         "fast-xml-parser": "^3.17.4",
         "hasha": "5.0.0",
         "hazardous": "^0.3.0",
