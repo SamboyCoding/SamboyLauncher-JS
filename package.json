@@ -49,7 +49,7 @@
         "hasha": "5.2.0",
         "hazardous": "^0.3.0",
         "jsonfile": "^6.0.1",
-        "jszip": "^3.2.2",
+        "jszip": "^3.6.0",
         "lodash": "^4.17.15",
         "lzma": "^2.3.2",
         "material-icons": "^0.3.1",
